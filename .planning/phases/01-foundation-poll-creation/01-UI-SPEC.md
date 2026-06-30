@@ -1,7 +1,8 @@
 ---
 phase: 1
 slug: foundation-poll-creation
-status: draft
+status: approved
+reviewed_at: 2026-06-30
 shadcn_initialized: false
 preset: new-york / zinc / css-variables
 created: 2026-06-30
@@ -72,14 +73,14 @@ Standard 8-point scale. All values are multiples of 4.
 
 ## Typography
 
-Four sizes, three weights. Do not introduce additional sizes or weights in Phase 1.
+Four sizes, **two weights** (400 regular, 600 semibold). Do not introduce additional sizes or weights in Phase 1. (Label uses 600 semibold at 14px — visually distinct from 16px regular body, so no medium weight is needed.)
 
 | Role | Size | Weight | Line Height | Tailwind | Usage |
 |------|------|--------|-------------|---------|-------|
 | Display | 30px | 600 (semibold) | 1.1 | `text-3xl font-semibold leading-tight` | Page headings: "Create a poll", poll title on admin page |
 | Heading | 24px | 600 (semibold) | 1.2 | `text-2xl font-semibold leading-snug` | Section headings: "Candidate dates", "Share your poll" |
 | Body | 16px | 400 (regular) | 1.5 | `text-base font-normal leading-relaxed` | Field helper text, description text, placeholder content |
-| Label | 14px | 500 (medium) | 1.5 | `text-sm font-medium leading-normal` | Field labels, link card labels, button text, badge text |
+| Label | 14px | 600 (semibold) | 1.5 | `text-sm font-semibold leading-normal` | Field labels, link card labels, button text, badge text |
 
 Font stack: `Inter, system-ui, -apple-system, sans-serif` loaded via `next/font/google`.
 
@@ -119,6 +120,8 @@ No dark mode in Phase 1.
 ### Surface 1: Poll Creation Form `/`
 
 **Layout:** Centered single-column, max-width 640px (`max-w-2xl mx-auto`), vertical padding 48px top/bottom.
+
+**Focal point:** The "Create a poll" h1 Display heading draws the eye first; the zinc-900 "Create poll" CTA button is the secondary focal anchor (the only accent-colored element on the page). On the admin page, the poll title (Display) is primary and the amber-bordered Admin link card is the secondary anchor; on the participant shell, the poll title is primary and the muted "Voting isn't available yet" banner is secondary.
 
 **Field order (top to bottom):**
 
@@ -173,12 +176,12 @@ No dark mode in Phase 1.
    - Ordered chronologically (DB returns `ORDER BY date, start_time`)
 4. Section heading: "Share your poll" (Heading / 24px / semibold)
 5. **Participant link card** (shadcn `Card`):
-   - Label: "Participant link" (Label / 14px / medium)
+   - Label: "Participant link" (Label / 14px / semibold)
    - Helper: "Share this link with your group" (Body / 16px)
    - URL displayed as truncated monospace text (`font-mono text-sm truncate`)
    - "Copy link" button (variant=`outline`, icon=`Copy` → `Check` on success)
 6. **Admin link card** (shadcn `Card`, with amber visual distinction):
-   - Label: "Admin link" (Label / 14px / medium) + "Keep private" badge (`bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2 py-0.5 text-xs font-medium`)
+   - Label: "Admin link" (Label / 14px / semibold) + "Keep private" badge (`bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2 py-0.5 text-xs font-semibold`)
    - Helper: "Do not share this link. It grants full management access to this poll." (Body / 16px, `text-muted-foreground`)
    - URL displayed as truncated monospace text
    - "Copy link" button (variant=`outline`, icon=`Copy` → `Check` on success)
@@ -433,13 +436,24 @@ No third-party registries. No third-party registry blocks. Safety gate: not appl
 
 ---
 
+## Prohibitions (UI — prohibition-probe)
+
+**Probe policy:** Deterministic edge-engine SKIPPED for this UI-SPEC — the contract introduces no new data shapes (dates/tokens were fully edge-probed at SPEC). Prohibition-probe run over the NEW UI behaviors only. Upstream-covered items (admin-link leak = SPEC P2; `new Date()` TZ shift = SPEC P3) are NOT re-probed here.
+
+| Prohibition (must-NOT statement) | Surface | Status | Verification |
+|----------------------------------|---------|--------|--------------|
+| MUST NOT display the admin link without its "Keep private" badge AND the do-not-share warning text (not color alone) | Admin page `/a/[adminUrlId]` | resolved | test — assert admin link card contains the "Keep private" badge text and the warning copy; color is not the sole signal |
+| MUST NOT show the "Copied!" success state when `navigator.clipboard.writeText()` rejects or throws | Admin page copy buttons | resolved | test — mock a clipboard rejection and assert the button does NOT enter the "Copied!"/`Check` state |
+
+These become `must_haves` for the planner / verifier (negative acceptance criteria).
+
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PASS
-- [ ] Dimension 2 Visuals: PASS
-- [ ] Dimension 3 Color: PASS
-- [ ] Dimension 4 Typography: PASS
-- [ ] Dimension 5 Spacing: PASS
-- [ ] Dimension 6 Registry Safety: PASS
+- [x] Dimension 1 Copywriting: PASS
+- [x] Dimension 2 Visuals: PASS
+- [x] Dimension 3 Color: PASS
+- [x] Dimension 4 Typography: PASS
+- [x] Dimension 5 Spacing: PASS
+- [x] Dimension 6 Registry Safety: PASS
 
-**Approval:** pending
+**Approval:** APPROVED (2026-06-30, revision 1)
