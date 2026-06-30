@@ -9,6 +9,29 @@ A developer runs `docker compose up` (Docker Desktop) and, at http://localhost:3
 
 > The skeleton's "dev deployment" IS the local Docker Desktop stack (D-12). The Vercel/Neon cloud deploy is sequenced as the final step of Phase 1, AFTER this local stack works end-to-end (D-13).
 
+## Running the Walking Skeleton (proven in 01-01)
+
+From a clean checkout, with Docker Desktop running:
+
+```bash
+# 1. Bring up the full dev stack (Postgres + Next.js dev server)
+docker compose up --build
+
+# 2. (first run / after schema changes) apply migrations to the live DB.
+#    drizzle-kit runs on the HOST and reaches Postgres via the mapped port:
+DATABASE_URL=postgres://postgres:password@localhost:5432/lfg npm run db:migrate
+
+# 3. Visit the health route in the browser:
+#    http://localhost:3000/health
+#    - the page performs a real server-side READ on load (polls count)
+#    - click "Run database check" to perform a real WRITE + READ round-trip
+```
+
+The `/health` route is a temporary diagnostic proving Next.js 16 (RSC + Server
+Action) + Drizzle (dual-driver) + Postgres work together in Docker Desktop. It
+does NOT touch the surfaces plan 01-02 owns (`/`, `/a/[adminUrlId]`,
+`/p/[participantUrlId]`) and is expected to be removed once createPoll lands.
+
 ## Architectural Decisions
 
 | Decision | Choice | Rationale |
