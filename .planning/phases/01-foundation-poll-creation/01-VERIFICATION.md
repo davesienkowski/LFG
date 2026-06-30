@@ -1,23 +1,26 @@
 ---
 phase: 01-foundation-poll-creation
 verified: 2026-06-30T14:02:00Z
-status: human_needed
+status: passed
 score: 5/5 must-haves verified
 overrides_applied: 0
+human_verification_confirmed: 2026-06-30
 human_verification:
   - test: "Create a poll end-to-end in a browser on the production URL"
     expected: "After submitting, organizer lands on /a/<adminToken> showing both links (participant and admin), admin card has 'Keep private' badge and warning copy."
     why_human: "Verifies the write path (createPoll action → Neon insert → redirect) in the real Vercel serverless runtime. Read-path automation (curl + seeded poll) cannot exercise the Next.js form submission and redirect in prod."
+    result: CONFIRMED by user 2026-06-30
   - test: "After ~5 minutes of Neon idle-suspend, create a poll — confirm no cold-start 504"
     expected: "Poll creation succeeds within the Vercel function timeout; the organizer reaches the admin page."
     why_human: "Requires waiting for Neon to auto-suspend and then triggering a real cold-start request in the browser; cannot be measured with a static curl probe."
+    result: CONFIRMED by user 2026-06-30
 ---
 
 # Phase 1: Foundation & Poll Creation — Verification Report
 
 **Phase Goal:** An organizer can create a scheduling poll (title, optional description/location, one or more candidate dates with optional start time) and land on an admin page exposing two distinct, unguessable share links — dev environment in Docker Desktop, deployed to Vercel/Neon on free tiers, with candidate dates rendering on the same calendar day in every timezone.
 **Verified:** 2026-06-30T14:02:00Z
-**Status:** human_needed
+**Status:** passed (both human spot-checks CONFIRMED by user 2026-06-30)
 **Re-verification:** No — initial verification
 
 ---
