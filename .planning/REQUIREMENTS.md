@@ -110,39 +110,41 @@ Which phases cover which requirements. **Populated by the roadmapper.**
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| POLL-01 | TBD | Pending |
-| POLL-02 | TBD | Pending |
-| POLL-03 | TBD | Pending |
-| POLL-04 | TBD | Pending |
-| LINK-01 | TBD | Pending |
-| LINK-02 | TBD | Pending |
-| LINK-03 | TBD | Pending |
-| VOTE-01 | TBD | Pending |
-| VOTE-02 | TBD | Pending |
-| VOTE-03 | TBD | Pending |
-| VOTE-04 | TBD | Pending |
-| VOTE-05 | TBD | Pending |
-| VOTE-06 | TBD | Pending |
-| DASH-01 | TBD | Pending |
-| DASH-02 | TBD | Pending |
-| DASH-03 | TBD | Pending |
-| DASH-04 | TBD | Pending |
-| DASH-05 | TBD | Pending |
-| MAIL-01 | TBD | Pending |
-| MAIL-02 | TBD | Pending |
-| MAIL-03 | TBD | Pending |
-| FNL-01 | TBD | Pending |
-| FNL-02 | TBD | Pending |
-| FNL-03 | TBD | Pending |
-| PLAT-01 | TBD | Pending |
-| PLAT-02 | TBD | Pending |
-| PLAT-03 | TBD | Pending |
-| PLAT-04 | TBD | Pending |
+| POLL-01 | Phase 1 | Pending |
+| POLL-02 | Phase 1 | Pending |
+| POLL-03 | Phase 1 | Pending |
+| POLL-04 | Phase 1 | Pending |
+| LINK-01 | Phase 1 | Pending |
+| LINK-02 | Phase 1 | Pending |
+| LINK-03 | Phase 1 | Pending |
+| VOTE-01 | Phase 2 | Pending |
+| VOTE-02 | Phase 2 | Pending |
+| VOTE-03 | Phase 2 | Pending |
+| VOTE-04 | Phase 4 | Pending |
+| VOTE-05 | Phase 2 | Pending |
+| VOTE-06 | Phase 2 | Pending |
+| DASH-01 | Phase 3 | Pending |
+| DASH-02 | Phase 3 | Pending |
+| DASH-03 | Phase 3 | Pending |
+| DASH-04 | Phase 3 | Pending |
+| DASH-05 | Phase 3 | Pending |
+| MAIL-01 | Phase 4 | Pending |
+| MAIL-02 | Phase 4 | Pending |
+| MAIL-03 | Phase 4 | Pending |
+| FNL-01 | Phase 4 | Pending |
+| FNL-02 | Phase 4 | Pending |
+| FNL-03 | Phase 4 | Pending |
+| PLAT-01 | Phase 1 | Pending |
+| PLAT-02 | Phase 1 | Pending |
+| PLAT-03 | Phase 1 | Pending |
+| PLAT-04 | Phase 1 | Pending |
 
 **Coverage:**
 - v1 requirements: 28 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 28 ⚠️ (resolved by roadmapper)
+- Mapped to phases: 28 ✓
+- Unmapped: 0 ✓
+
+**Per-phase counts:** Phase 1 = 11 (POLL-01..04, LINK-01..03, PLAT-01..04) · Phase 2 = 5 (VOTE-01, VOTE-02, VOTE-03, VOTE-05, VOTE-06) · Phase 3 = 5 (DASH-01..05) · Phase 4 = 7 (VOTE-04, MAIL-01..03, FNL-01..03)
 
 ## Definition of Done
 
@@ -154,4 +156,4 @@ Which phases cover which requirements. **Populated by the roadmapper.**
 
 ---
 *Requirements defined: 2026-06-30*
-*Last updated: 2026-06-30 after initial definition*
+*Last updated: 2026-06-30 after roadmap traceability mapping*
