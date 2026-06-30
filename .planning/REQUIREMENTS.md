@@ -21,14 +21,14 @@ Requirements for initial release. Each maps to a roadmap phase.
 
 - [ ] **POLL-01**: Organizer can create a poll with a required title
 - [ ] **POLL-02**: Organizer can add an optional description/notes and optional location to a poll
-- [ ] **POLL-03**: Organizer can add one or more candidate date slots to a poll
-- [ ] **POLL-04**: Organizer can optionally give a candidate slot a start time (date-only slots are also valid)
+- [x] **POLL-03**: Organizer can add one or more candidate date slots to a poll
+- [x] **POLL-04**: Organizer can optionally give a candidate slot a start time (date-only slots are also valid)
 
 ### Access & Links
 
 - [ ] **LINK-01**: On creation, the system generates a shareable participant link that grants voting access only
-- [ ] **LINK-02**: On creation, the system generates a separate admin link that grants poll management and is not derivable from the participant link
-- [ ] **LINK-03**: Poll and admin identifiers are cryptographically random, unguessable, and non-enumerable
+- [x] **LINK-02**: On creation, the system generates a separate admin link that grants poll management and is not derivable from the participant link
+- [x] **LINK-03**: Poll and admin identifiers are cryptographically random, unguessable, and non-enumerable
 
 ### Voting & Responses
 
@@ -61,10 +61,10 @@ Requirements for initial release. Each maps to a roadmap phase.
 
 ### Platform & Deployment
 
-- [ ] **PLAT-01**: The app runs locally on the user's PC against a local Postgres database
+- [x] **PLAT-01**: The app runs locally on the user's PC against a local Postgres database
 - [ ] **PLAT-02**: The app deploys to Vercel's free tier against a Neon Postgres database
-- [ ] **PLAT-03**: All runtime dependencies (database, email) operate within free tiers
-- [ ] **PLAT-04**: Candidate dates are stored and rendered without timezone drift (date-only stored as DATE; never parsed through the `new Date()` constructor)
+- [x] **PLAT-03**: All runtime dependencies (database, email) operate within free tiers
+- [x] **PLAT-04**: Candidate dates are stored and rendered without timezone drift (date-only stored as DATE; never parsed through the `new Date()` constructor)
 
 ## v2 Requirements
 
@@ -112,11 +112,11 @@ Which phases cover which requirements. **Populated by the roadmapper.**
 |-------------|-------|--------|
 | POLL-01 | Phase 1 | Pending |
 | POLL-02 | Phase 1 | Pending |
-| POLL-03 | Phase 1 | Pending |
-| POLL-04 | Phase 1 | Pending |
+| POLL-03 | Phase 1 | Complete |
+| POLL-04 | Phase 1 | Complete |
 | LINK-01 | Phase 1 | Pending |
-| LINK-02 | Phase 1 | Pending |
-| LINK-03 | Phase 1 | Pending |
+| LINK-02 | Phase 1 | Complete |
+| LINK-03 | Phase 1 | Complete |
 | VOTE-01 | Phase 2 | Pending |
 | VOTE-02 | Phase 2 | Pending |
 | VOTE-03 | Phase 2 | Pending |
@@ -134,12 +134,13 @@ Which phases cover which requirements. **Populated by the roadmapper.**
 | FNL-01 | Phase 4 | Pending |
 | FNL-02 | Phase 4 | Pending |
 | FNL-03 | Phase 4 | Pending |
-| PLAT-01 | Phase 1 | Pending |
+| PLAT-01 | Phase 1 | Complete |
 | PLAT-02 | Phase 1 | Pending |
-| PLAT-03 | Phase 1 | Pending |
-| PLAT-04 | Phase 1 | Pending |
+| PLAT-03 | Phase 1 | Complete |
+| PLAT-04 | Phase 1 | Complete |
 
 **Coverage:**
+
 - v1 requirements: 28 total
 - Mapped to phases: 28 ✓
 - Unmapped: 0 ✓
