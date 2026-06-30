@@ -23,6 +23,7 @@ Requirements for initial release. Each maps to a roadmap phase.
 - [x] **POLL-02**: Organizer can add an optional description/notes and optional location to a poll
 - [x] **POLL-03**: Organizer can add one or more candidate date slots to a poll
 - [x] **POLL-04**: Organizer can optionally give a candidate slot a start time (date-only slots are also valid)
+- [ ] **POLL-05**: Organizer selects candidate dates from a month calendar (multi-select), with a side list to set an optional start time per date and apply one start time to all selected dates at once
 
 ### Access & Links
 
@@ -38,6 +39,7 @@ Requirements for initial release. Each maps to a roadmap phase.
 - [ ] **VOTE-04**: A participant receives a confirmation email containing a unique link to review/edit their response
 - [ ] **VOTE-05**: A participant can edit their own response while the poll is open
 - [ ] **VOTE-06**: The edit action verifies a per-participant token before allowing changes (no name-only edits; no editing another participant's row)
+- [ ] **VOTE-07**: A participant can set availability for multiple dates at once via per-row quick actions (set all available / set all unavailable / clear), in addition to per-date selection
 
 ### Results Dashboard
 
@@ -114,6 +116,7 @@ Which phases cover which requirements. **Populated by the roadmapper.**
 | POLL-02 | Phase 1 | Complete |
 | POLL-03 | Phase 1 | Complete |
 | POLL-04 | Phase 1 | Complete |
+| POLL-05 | Phase 1 | Pending |
 | LINK-01 | Phase 1 | Complete |
 | LINK-02 | Phase 1 | Complete |
 | LINK-03 | Phase 1 | Complete |
@@ -123,6 +126,7 @@ Which phases cover which requirements. **Populated by the roadmapper.**
 | VOTE-04 | Phase 4 | Pending |
 | VOTE-05 | Phase 2 | Pending |
 | VOTE-06 | Phase 2 | Pending |
+| VOTE-07 | Phase 2 | Pending |
 | DASH-01 | Phase 3 | Pending |
 | DASH-02 | Phase 3 | Pending |
 | DASH-03 | Phase 3 | Pending |
@@ -141,11 +145,11 @@ Which phases cover which requirements. **Populated by the roadmapper.**
 
 **Coverage:**
 
-- v1 requirements: 28 total
-- Mapped to phases: 28 ✓
+- v1 requirements: 30 total
+- Mapped to phases: 30 ✓
 - Unmapped: 0 ✓
 
-**Per-phase counts:** Phase 1 = 11 (POLL-01..04, LINK-01..03, PLAT-01..04) · Phase 2 = 5 (VOTE-01, VOTE-02, VOTE-03, VOTE-05, VOTE-06) · Phase 3 = 5 (DASH-01..05) · Phase 4 = 7 (VOTE-04, MAIL-01..03, FNL-01..03)
+**Per-phase counts:** Phase 1 = 12 (POLL-01..05, LINK-01..03, PLAT-01..04) · Phase 2 = 6 (VOTE-01, VOTE-02, VOTE-03, VOTE-05, VOTE-06, VOTE-07) · Phase 3 = 5 (DASH-01..05) · Phase 4 = 7 (VOTE-04, MAIL-01..03, FNL-01..03)
 
 ## Definition of Done
 
@@ -157,4 +161,4 @@ Which phases cover which requirements. **Populated by the roadmapper.**
 
 ---
 *Requirements defined: 2026-06-30*
-*Last updated: 2026-06-30 after roadmap traceability mapping*
+*Last updated: 2026-06-30 — added POLL-05 (Phase 1 calendar revision) and VOTE-07 (Phase 2 bulk-vote input) per 01-04 design*
