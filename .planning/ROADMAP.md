@@ -48,7 +48,7 @@ Plans:
 **Goal**: A participant can open the shared link and record three-state availability for every candidate date without creating an account, then return to edit only their own response.
 **Mode:** mvp
 **Depends on**: Phase 1
-**Requirements**: VOTE-01, VOTE-02, VOTE-03, VOTE-05, VOTE-06
+**Requirements**: VOTE-01, VOTE-02, VOTE-03, VOTE-05, VOTE-06, VOTE-07
 **Success Criteria** (what must be TRUE):
 
   1. A participant can open the participant link and submit a response (name, optional email, availability) without creating an account.
@@ -56,14 +56,15 @@ Plans:
   3. After submitting, the participant sees a confirmation showing a personal edit link to bookmark, and returning from the same device auto-loads their previous response.
   4. A participant can return via their edit link and change their selections while the poll is open.
   5. Editing requires the participant's own per-participant token; another participant's token (or no token, or a name-only attempt) cannot modify the response.
+  6. Per-row bulk actions (Set all Available / Set all Not available / Clear) set the whole row at once before per-date adjustment (VOTE-07, added by the 01-04 revision).
 
 **Plans**: 2 plans
 **UI hint**: yes
 
 Plans:
 
-- [ ] 02-01: Participant + Vote schema; `AvailabilityGrid` client island (3-state toggle); `submitResponse` action; `/p/[participantUrlId]` view + `/thanks` (edit link + same-device cookie)
-- [ ] 02-02: `/p/[participantUrlId]/edit/[editToken]` route + `updateResponse` action with server-side per-participant token ownership check
+- [ ] 02-01-PLAN.md — participants + votes schema (local migration gate), AvailabilityGrid 3-state grid + VOTE-07 bulk actions, INSERT-only submitResponse, live vote view + /thanks edit link (VOTE-01/02/03/07)
+- [ ] 02-02-PLAN.md — token-verified updateResponse upsert + edit route + same-device auto-load, then the blocking Neon migration + production redeploy (VOTE-05/06)
 
 ### Phase 3: Results Dashboard
 
