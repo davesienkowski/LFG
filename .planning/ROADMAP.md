@@ -30,12 +30,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Poll and admin identifiers are long crypto-random strings; altering or incrementing a link returns 404 rather than another poll (non-enumerable).
   4. The app runs locally against a local Postgres database and deploys to Vercel against Neon Postgres, both entirely within free tiers.
   5. Candidate dates render on the same calendar day in every timezone (no off-by-one drift; date-only stored as DATE, never parsed via the `new Date()` constructor).
-**Plans**: 2 plans
+**Plans**: 3 plans
 **UI hint**: yes
 
 Plans:
-- [ ] 01-01: Scaffold Next.js + Drizzle; Postgres-everywhere (Docker local + Neon pooled connection); nanoid token helpers; Poll + Option schema with DATE storage; Vercel/Neon deploy
-- [ ] 01-02: `createPoll` server action + `/` creation form (title/description/location/dates) + `/a/[adminUrlId]` admin page rendering participant and admin share links
+- [ ] 01-01-PLAN.md — Scaffold Next.js 16 + Drizzle + nanoid/date helpers; Dockerized dev environment (db + web in Docker Desktop, D-12); Poll + Option schema migrated into live Docker Postgres; Walking Skeleton DB round-trip proven locally
+- [ ] 01-02-PLAN.md — `createPoll` server action + `/` creation form (title/description/location/dates) + `/a/[adminUrlId]` admin page (both share links, Keep-private admin badge) + `/p/[participantUrlId]` participant shell + 404
+- [ ] 01-03-PLAN.md — Vercel/Neon deploy (FINAL, sequenced after the local Docker skeleton works per D-13): migrate schema to Neon, configure env, deploy, verify cold-start poll creation on free tiers
 
 ### Phase 2: Participant Voting
 **Goal**: A participant can open the shared link and record three-state availability for every candidate date without creating an account, then return to edit only their own response.
@@ -99,7 +100,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation & Poll Creation | 0/2 | Not started | - |
+| 1. Foundation & Poll Creation | 0/3 | Not started | - |
 | 2. Participant Voting | 0/2 | Not started | - |
 | 3. Results Dashboard | 0/2 | Not started | - |
 | 4. Email & Finalization | 0/2 | Not started | - |
