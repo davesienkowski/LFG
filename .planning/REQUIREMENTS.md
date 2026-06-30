@@ -62,7 +62,7 @@ Requirements for initial release. Each maps to a roadmap phase.
 ### Platform & Deployment
 
 - [x] **PLAT-01**: The app runs locally on the user's PC against a local Postgres database
-- [ ] **PLAT-02**: The app deploys to Vercel's free tier against a Neon Postgres database
+- [x] **PLAT-02**: The app deploys to Vercel's free tier against a Neon Postgres database
 - [x] **PLAT-03**: All runtime dependencies (database, email) operate within free tiers
 - [x] **PLAT-04**: Candidate dates are stored and rendered without timezone drift (date-only stored as DATE; never parsed through the `new Date()` constructor)
 
@@ -135,7 +135,7 @@ Which phases cover which requirements. **Populated by the roadmapper.**
 | FNL-02 | Phase 4 | Pending |
 | FNL-03 | Phase 4 | Pending |
 | PLAT-01 | Phase 1 | Complete |
-| PLAT-02 | Phase 1 | Pending |
+| PLAT-02 | Phase 1 | Complete |
 | PLAT-03 | Phase 1 | Complete |
 | PLAT-04 | Phase 1 | Complete |
 
