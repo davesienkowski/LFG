@@ -13,7 +13,9 @@ export default defineConfig({
     },
   },
   test: {
+    // Default to node for DB/action/helper tests. Component tests (.test.tsx)
+    // opt into jsdom per-file via a `// @vitest-environment jsdom` pragma.
     environment: "node",
-    include: ["src/**/*.test.ts"],
+    include: ["src/**/*.test.{ts,tsx}"],
   },
 });
