@@ -56,9 +56,8 @@ P3-input (TZ), P-dupe, P-order, P-applyclear, P-pastghost, single-source-of-trut
 - [x] **Production redeploy succeeds** — `vercel deploy --prod` → `dpl_DkzAHtmqZdTC5NLys5TABCohFywP`
   (READY), aliased to https://looking-for-group-eight.vercel.app. Live `/` serves the calendar (all
   new markers present; old "Add date"/past-warning markers gone; HTTP 200). No Neon migration needed.
-- [ ] **Human browser spot-checks** (consistent with Phase 1's pattern): on the deployed `/`, pick days
-  out-of-order across a month boundary → list sorts; set one time + Apply to all; remove one; submit →
-  admin page lists the correct calendar days with no off-by-one.
+- [x] **Human browser spot-checks** — confirmed by the user (2026-06-30) on the deployed `/`: calendar
+  pick/sort, per-date time + Apply to all, remove, and submit → admin page render all look good.
 
 ## Notes
 
