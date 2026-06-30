@@ -5,7 +5,7 @@ milestone_name: milestone
 current_phase: 1
 current_phase_name: Foundation & Poll Creation
 status: complete
-stopped_at: 01-04 calendar revision executed + verified locally (44/44 tests, dual-TZ green); prod redeploy pending
+stopped_at: 01-04 calendar revision shipped — 44/44 tests green + redeployed to prod (dpl_DkzAHtmqZdTC5NLys5TABCohFywP); human browser spot-check pending
 last_updated: "2026-06-30T19:30:00.000Z"
 last_activity: 2026-06-30
 last_activity_desc: 01-04 calendar multi-select revision (POLL-05) — UI-only, no schema/action change
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-06-30)
 
 Phase: 1 (Foundation & Poll Creation) — COMPLETE ✓ (+ revision 01-04)
 Plan: 4 of 4 complete (01-04 = calendar date-selection revision, POLL-05)
-Status: 01-04 executed + verified locally (lint/build clean, 44/44 tests green incl. dual-TZ input test, no migration). Phase 1 live at https://looking-for-group-eight.vercel.app. Pending: production redeploy of the calendar revision + human browser spot-check.
+Status: 01-04 SHIPPED — lint/build clean, 44/44 tests green incl. dual-TZ input test, no migration, redeployed to production (https://looking-for-group-eight.vercel.app serves the calendar UI). Pending: human browser spot-check of the calendar interaction + create flow.
 Next: Phase 2 — Participant Voting (VOTE-01, 02, 03, 05, 06, 07) — VOTE-07 (per-row bulk vote actions) added by 01-04
 Last activity: 2026-06-30 — 01-04 calendar multi-select revision implemented
 

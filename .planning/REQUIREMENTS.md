@@ -23,7 +23,7 @@ Requirements for initial release. Each maps to a roadmap phase.
 - [x] **POLL-02**: Organizer can add an optional description/notes and optional location to a poll
 - [x] **POLL-03**: Organizer can add one or more candidate date slots to a poll
 - [x] **POLL-04**: Organizer can optionally give a candidate slot a start time (date-only slots are also valid)
-- [ ] **POLL-05**: Organizer selects candidate dates from a month calendar (multi-select), with a side list to set an optional start time per date and apply one start time to all selected dates at once
+- [x] **POLL-05**: Organizer selects candidate dates from a month calendar (multi-select), with a side list to set an optional start time per date and apply one start time to all selected dates at once
 
 ### Access & Links
 
@@ -116,7 +116,7 @@ Which phases cover which requirements. **Populated by the roadmapper.**
 | POLL-02 | Phase 1 | Complete |
 | POLL-03 | Phase 1 | Complete |
 | POLL-04 | Phase 1 | Complete |
-| POLL-05 | Phase 1 | Pending |
+| POLL-05 | Phase 1 | Complete |
 | LINK-01 | Phase 1 | Complete |
 | LINK-02 | Phase 1 | Complete |
 | LINK-03 | Phase 1 | Complete |

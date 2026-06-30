@@ -53,7 +53,9 @@ P3-input (TZ), P-dupe, P-order, P-applyclear, P-pastghost, single-source-of-trut
 - [x] Same `[{date,startTime}]` payload; createPoll/validation/dedupe/ordering unchanged; existing tests green
 - [x] Clicked day correct under UTC+14 and UTC−12 (dual-TZ test green both ways)
 - [x] No schema migration; no `polls`/`options` change
-- [ ] **Production redeploy succeeds** — final step (Vercel)
+- [x] **Production redeploy succeeds** — `vercel deploy --prod` → `dpl_DkzAHtmqZdTC5NLys5TABCohFywP`
+  (READY), aliased to https://looking-for-group-eight.vercel.app. Live `/` serves the calendar (all
+  new markers present; old "Add date"/past-warning markers gone; HTTP 200). No Neon migration needed.
 - [ ] **Human browser spot-checks** (consistent with Phase 1's pattern): on the deployed `/`, pick days
   out-of-order across a month boundary → list sorts; set one time + Apply to all; remove one; submit →
   admin page lists the correct calendar days with no off-by-one.
