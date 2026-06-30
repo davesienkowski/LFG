@@ -1,0 +1,40 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-06-30T22:07:01.442Z",
+  "phase": "2",
+  "phase_name": "Participant Voting",
+  "phase_dir": ".planning/phases/02-participant-voting",
+  "plan": null,
+  "task": 0,
+  "total_tasks": 6,
+  "status": "paused",
+  "pause_boundary": "plan-complete / pre-execution",
+  "completed_tasks": [
+    {"id": "spec", "name": "02-SPEC.md — 6 reqs (VOTE-01/02/03/05/06/07), edge + prohibition probes", "status": "done", "commit": "48c314b"},
+    {"id": "context", "name": "02-CONTEXT.md — D2-01..D2-11 locked (--auto)", "status": "done", "commit": "109cec0"},
+    {"id": "research", "name": "02-RESEARCH.md — upsert/cookie/serialization, HIGH confidence", "status": "done", "commit": "40db33a"},
+    {"id": "ui-spec", "name": "02-UI-SPEC.md — AvailabilityGrid 3-state vocabulary, verified 6/6 (1 non-blocking FLAG)", "status": "done", "commit": "ef0ae2e"},
+    {"id": "patterns", "name": "02-PATTERNS.md — 13/13 analogs", "status": "done", "commit": "4e6463f"},
+    {"id": "plans", "name": "02-01-PLAN.md + 02-02-PLAN.md (2 plans, 2 waves)", "status": "done", "commit": "c532cc3"}
+  ],
+  "remaining_tasks": [
+    {"id": "plan-check", "name": "OPTIONAL: gsd-plan-checker on the 2 plans (intentionally skipped at pause — plans are UNVERIFIED by the checker)", "status": "not_started"},
+    {"id": "exec-02-01", "name": "Execute 02-01: BLOCKING local schema migration gate (participants+votes), AvailabilityGrid, insert-only submitResponse, vote view + /thanks (VOTE-01/02/03/07)", "status": "not_started"},
+    {"id": "exec-02-02", "name": "Execute 02-02: token-verified updateResponse upsert + edit route + same-device auto-load; then BLOCKING Neon migration + prod redeploy + human prod smoke test (VOTE-05/06)", "status": "not_started"}
+  ],
+  "blockers": [],
+  "async_jobs": [],
+  "human_actions_pending": [
+    {"action": "When executing 02-02: run `npm run db:migrate` against production Neon for the new participants/votes tables BEFORE/at the prod redeploy", "context": "neon-http will 500 on every vote write in prod if the tables are missing (RESEARCH Pitfall 6). Works fine locally regardless.", "blocking": true},
+    {"action": "When executing 02-02: human production smoke test at the deploy checkpoint (submit a vote, edit it, confirm same-device auto-load)", "context": "02-02 is a non-autonomous plan with a blocking deploy human-verify checkpoint, matching Phase 1's deploy pattern.", "blocking": true}
+  ],
+  "decisions": [
+    {"decision": "Paused at the plan->execute boundary; auto-chain (`--chain --auto`) was stopped before execute-phase per user request", "rationale": "Cleanest GSD seam: Phase 2 fully designed + planned + committed, before the expensive code-writing stage", "phase": "2"},
+    {"decision": "workflow._auto_chain_active set to false", "rationale": "So resume does NOT auto-advance discuss->plan->execute; resume is an explicit /gsd-execute-phase 02", "phase": "2"},
+    {"decision": "Planner split insert-only first-submit (02-01) from all return/edit paths through the updateResponse upsert (02-02)", "rationale": "A same-device re-submit must UPDATE not duplicate (SPEC Round-2 / D2-04/D2-05); the original split risked duplicate participant rows", "phase": "2"},
+    {"decision": "Added VOTE-07 to ROADMAP Phase 2 Requirements + success criteria", "rationale": "VOTE-07 was added by the 01-04 revision after the roadmap was written; phase_req_ids and the coverage gate now include it", "phase": "2"}
+  ],
+  "uncommitted_files": [],
+  "next_action": "Run /gsd-execute-phase 02 (or first /gsd-plan-phase 02 review / plan-checker if you want the plans verified before building). Execution starts with 02-01 Task 1, the BLOCKING local schema migration gate.",
+  "context_notes": "Full GSD pipeline ran this session: /gsd-spec-phase 2 -> /gsd-discuss-phase 2 --chain --auto -> /gsd-plan-phase 2 --auto, which fanned out researcher + ui-researcher + ui-checker + pattern-mapper + planner (all sonnet except planner=opus). All five design artifacts + both plans are committed. The plan-checker (gsd-plan-checker) was deliberately NOT spawned because the user asked to pause before execution; the plans are therefore unverified by the checker but were self-consistent at write time. Local Postgres is the docker-compose container lfg-db-1 (up, healthy) on :5432; DB-backed vitest needs DATABASE_URL exported (vitest does not auto-load .env.local). neon-http has NO interactive transactions — all writes use the createPoll two-statement pattern / single onConflictDoUpdate upsert."
+}
