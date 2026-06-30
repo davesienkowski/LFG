@@ -19,14 +19,14 @@ Requirements for initial release. Each maps to a roadmap phase.
 
 ### Poll Creation
 
-- [ ] **POLL-01**: Organizer can create a poll with a required title
-- [ ] **POLL-02**: Organizer can add an optional description/notes and optional location to a poll
+- [x] **POLL-01**: Organizer can create a poll with a required title
+- [x] **POLL-02**: Organizer can add an optional description/notes and optional location to a poll
 - [x] **POLL-03**: Organizer can add one or more candidate date slots to a poll
 - [x] **POLL-04**: Organizer can optionally give a candidate slot a start time (date-only slots are also valid)
 
 ### Access & Links
 
-- [ ] **LINK-01**: On creation, the system generates a shareable participant link that grants voting access only
+- [x] **LINK-01**: On creation, the system generates a shareable participant link that grants voting access only
 - [x] **LINK-02**: On creation, the system generates a separate admin link that grants poll management and is not derivable from the participant link
 - [x] **LINK-03**: Poll and admin identifiers are cryptographically random, unguessable, and non-enumerable
 
@@ -110,11 +110,11 @@ Which phases cover which requirements. **Populated by the roadmapper.**
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| POLL-01 | Phase 1 | Pending |
-| POLL-02 | Phase 1 | Pending |
+| POLL-01 | Phase 1 | Complete |
+| POLL-02 | Phase 1 | Complete |
 | POLL-03 | Phase 1 | Complete |
 | POLL-04 | Phase 1 | Complete |
-| LINK-01 | Phase 1 | Pending |
+| LINK-01 | Phase 1 | Complete |
 | LINK-02 | Phase 1 | Complete |
 | LINK-03 | Phase 1 | Complete |
 | VOTE-01 | Phase 2 | Pending |
