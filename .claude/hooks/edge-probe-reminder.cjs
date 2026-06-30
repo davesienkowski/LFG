@@ -26,7 +26,16 @@ process.stdin.on("end", () => {
     /\.planning\//.test(fp) && /(SPEC|PLAN)\.md$/i.test(fp);
   if (!isSpecOrPlan) process.exit(0);
 
-  const kind = /SPEC\.md$/i.test(fp) ? "SPEC" : "PLAN";
+  // Recognize the SPEC variants distinctly: UI-SPEC and AI-SPEC are design
+  // contracts with their own requirements/acceptance criteria — they get the
+  // edge-probe family too, not just the plain phase SPEC and PLAN.
+  const kind = /UI-SPEC\.md$/i.test(fp)
+    ? "UI-SPEC"
+    : /AI-SPEC\.md$/i.test(fp)
+      ? "AI-SPEC"
+      : /SPEC\.md$/i.test(fp)
+        ? "SPEC"
+        : "PLAN";
   const reminder = [
     `EDGE-PROBE GATE — a ${kind}.md was just written (${fp}).`,
     `Before execution, run the edge-probe FAMILY for this phase and resolve every applicable finding:`,
