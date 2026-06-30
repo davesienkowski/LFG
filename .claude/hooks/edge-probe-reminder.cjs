@@ -36,16 +36,31 @@ process.stdin.on("end", () => {
       : /SPEC\.md$/i.test(fp)
         ? "SPEC"
         : "PLAN";
-  const reminder = [
-    `EDGE-PROBE GATE — a ${kind}.md was just written (${fp}).`,
-    `Before execution, run the edge-probe FAMILY for this phase and resolve every applicable finding:`,
-    `  1. edge-probe (deterministic): build [{"id":"<REQ-ID>","text":"<requirement>"}] from this phase's requirements and run:`,
-    `       node ~/.claude/gsd-core/bin/lib/edge-probe.cjs <reqs.json>`,
-    `     Treat 'unclassified' rows as must-NOT requirements the shape taxonomy can't see.`,
-    `  2. prohibition-probe (manual): ask of this phase's gate — "What could this silently become that the author would NOT want, but the spec does not forbid?" Source-verify each candidate (trust-but-verify).`,
-    `  3. Fold real findings into the plan (gap items / must_haves) or verifier checks. Do NOT start execution until every applicable edge is resolved or dismissed with a source-backed reason.`,
-    `  Refs: ~/.claude/gsd-core/references/{edge-probe,prohibition-probe,domain-probes}.md`,
-  ].join("\n");
+  // Policy (project memory: edge-probe-at-spec-and-plan):
+  //  - PLAN / SPEC / AI-SPEC → FULL family (deterministic engine + prohibition-probe)
+  //  - UI-SPEC → prohibition-probe ONLY; skip the engine unless the UI contract
+  //    introduces genuinely NEW data shapes (e.g. a sort/filter ordering).
+  //  - Never re-probe edges already covered/dismissed upstream — only what this doc adds.
+  const uiOnly = kind === "UI-SPEC";
+  const reminder = uiOnly
+    ? [
+        `EDGE-PROBE GATE — a ${kind}.md was just written (${fp}).`,
+        `Per policy, UI-SPEC gets the PROHIBITION-PROBE ONLY (skip the deterministic engine UNLESS this UI contract introduces genuinely new data shapes, e.g. a sort/filter ordering — then run the full edge-probe too):`,
+        `  1. prohibition-probe (manual): for the NEW UI behaviors this contract adds, ask — "What could this UI silently become that the author would NOT want, but the contract does not forbid?" (e.g. false success feedback, a credential shown without its warning).`,
+        `  2. Do NOT re-probe edges/prohibitions already covered or dismissed in this phase's SPEC.md — only probe what the UI layer adds.`,
+        `  3. Fold real findings into the plan (must_haves / acceptance) before execution.`,
+        `  Refs: ~/.claude/gsd-core/references/{prohibition-probe,domain-probes}.md`,
+      ].join("\n")
+    : [
+        `EDGE-PROBE GATE — a ${kind}.md was just written (${fp}).`,
+        `Before execution, run the FULL edge-probe family for this phase and resolve every applicable finding:`,
+        `  1. edge-probe (deterministic): build [{"id":"<REQ-ID>","text":"<requirement>"}] from this phase's NEW requirements and run:`,
+        `       node ~/.claude/gsd-core/bin/lib/edge-probe.cjs <reqs.json>`,
+        `     Treat 'unclassified' rows as must-NOT requirements the shape taxonomy can't see.`,
+        `  2. prohibition-probe (manual): ask of this phase's gate — "What could this silently become that the author would NOT want, but the spec does not forbid?" Source-verify each candidate (trust-but-verify).`,
+        `  3. Do NOT re-probe edges already covered/dismissed upstream (SPEC) — only probe what this doc adds. Fold real findings into the plan (must_haves) or verifier checks. Do NOT start execution until every applicable edge is resolved or dismissed with a source-backed reason.`,
+        `  Refs: ~/.claude/gsd-core/references/{edge-probe,prohibition-probe,domain-probes}.md`,
+      ].join("\n");
 
   process.stdout.write(
     JSON.stringify({
