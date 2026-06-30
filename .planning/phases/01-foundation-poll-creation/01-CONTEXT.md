@@ -42,9 +42,11 @@ Downstream agents MUST read `01-SPEC.md` before planning or implementing. Requir
 - **D-01:** Bootstrap with `create-next-app` — Next.js 16, App Router, TypeScript, Tailwind CSS, ESLint, `src/` directory. Rationale: STACK.md recommendation; App Router + Server Actions removes a separate API layer for this CRUD scale.
 - **D-02:** Drizzle ORM + drizzle-kit. Schema and client live under `src/lib/db/` (`schema.ts`, `index.ts`); server actions under `src/lib/actions/` (e.g. `create-poll.ts`).
 
-### Database Connection Strategy
-- **D-03:** One Drizzle schema, two drivers selected by environment: `node-postgres` (`pg`) against a local Docker Postgres in development; Neon serverless (pooled) on Vercel. Rationale: Postgres-everywhere avoids the SQLite/Postgres dialect divergence (PITFALLS.md); Neon chosen over Supabase for ~1–3s resume vs ~30s pause.
-- **D-04:** Local dev Postgres via Docker Compose (documented `docker compose up`); connection via `DATABASE_URL`. Neon via `DATABASE_URL` (pooled connection string) on Vercel. Migrations applied with `drizzle-kit`.
+### Database Connection Strategy & Dev Environment
+- **D-03:** One Drizzle schema, two drivers selected by environment: `node-postgres` (`pg`) against a local Postgres in development; Neon serverless (pooled) on Vercel. Rationale: Postgres-everywhere avoids the SQLite/Postgres dialect divergence (PITFALLS.md); Neon chosen over Supabase for ~1–3s resume vs ~30s pause.
+- **D-04:** Migrations applied with `drizzle-kit` (`generate` + `migrate`).
+- **D-12 (dev runs in Docker Desktop — user decision 2026-06-30):** The local DEV environment runs in **Docker Desktop** via a `docker-compose.yml` with TWO services: (1) `db` — Postgres (matching the Neon major version), and (2) `web` — the Next.js app (dev server with hot-reload, source bind-mounted, `DATABASE_URL` pointing at the `db` service). `docker compose up` brings up the whole dev stack; the app is reachable on a mapped localhost port. A `Dockerfile` (or `Dockerfile.dev`) builds the web image. This is the primary dev workflow — develop and prove the Walking Skeleton end-to-end IN Docker Desktop first.
+- **D-13 (deploy sequencing — user decision 2026-06-30):** Vercel/Neon deployment (PLAT-02) happens **AFTER** the local Docker Desktop skeleton works end-to-end. In the plan, the Vercel/Neon deploy is the FINAL wave/task of Phase 1 — the Walking Skeleton's "dev deployment" is the local Docker Desktop stack, NOT a cloud deploy. Vercel still consumes the same one Drizzle schema via the Neon driver; no code divergence.
 
 ### Schema Shape
 - **D-05:** `polls` table: internal PK (uuid), `participant_url_id` (text, unique, indexed), `admin_url_id` (text, unique, indexed), `title` (text, not null), `description` (text, nullable), `location` (text, nullable), `status` (text, default `'open'`), `created_at` (timestamptz default now).

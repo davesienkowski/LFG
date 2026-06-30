@@ -54,15 +54,15 @@ Greenfield — the repository contains only `.planning/` artifacts and the edge-
    - Target: After creation the organizer lands on the admin page showing the participant link and the admin link, clearly labelled and copyable.
    - Acceptance: The admin page displays both URLs; the participant URL contains only `participantUrlId`, the admin URL only `adminUrlId`.
 
-9. **Runs locally on Postgres**: The app runs locally against a local Postgres database.
+9. **Runs locally in Docker Desktop**: The dev environment runs in Docker Desktop (app + Postgres).
    - Current: No app, no DB config.
-   - Target: With a local Postgres (Docker) and env config, the app boots, runs migrations, and serves poll creation end-to-end.
-   - Acceptance: From a clean checkout + documented setup, `npm run dev` against local Postgres creates a poll successfully.
+   - Target: A `docker-compose.yml` defines a `db` (Postgres) service and a `web` (Next.js dev server) service; `docker compose up` brings up the whole dev stack, runs migrations, and serves poll creation end-to-end with the app reachable on a mapped localhost port.
+   - Acceptance: From a clean checkout + documented setup, `docker compose up` brings up app + Postgres in Docker Desktop and creates a poll successfully. (PLAT-01)
 
-10. **Deploys to Vercel/Neon (free tier)**: The app deploys to Vercel against Neon Postgres, within free tiers.
+10. **Deploys to Vercel/Neon (free tier) — after local Docker works**: The app deploys to Vercel against Neon Postgres, within free tiers, sequenced AFTER the local Docker Desktop skeleton works.
     - Current: No deploy.
-    - Target: A Vercel deployment connected to Neon (pooled connection) serves poll creation; the first request after Neon idle-suspend completes within the Vercel function timeout.
-    - Acceptance: The deployed URL creates a poll successfully, including a cold-start request after Neon has auto-suspended.
+    - Target: Once the local Docker dev stack works end-to-end, a Vercel deployment connected to Neon (pooled connection) serves poll creation; the first request after Neon idle-suspend completes within the Vercel function timeout. Same single Drizzle schema, Neon driver selected by env — no code divergence.
+    - Acceptance: The deployed URL creates a poll successfully, including a cold-start request after Neon has auto-suspended. (PLAT-02)
 
 11. **No timezone date drift**: Candidate dates render on the same calendar day in every timezone.
     - Current: No date handling.
@@ -73,7 +73,9 @@ Greenfield — the repository contains only `.planning/` artifacts and the edge-
 
 **In scope:**
 - Next.js 16 (App Router + Server Actions) + Drizzle ORM scaffold
-- Postgres-everywhere: local Docker Postgres + Neon (pooled) for Vercel
+- Dockerized dev environment in Docker Desktop: `docker-compose.yml` with `web` (Next.js dev) + `db` (Postgres) services, plus a `Dockerfile`/`Dockerfile.dev` for the web image
+- Postgres-everywhere: local Postgres (Docker Desktop) + Neon (pooled) for Vercel
+- Vercel/Neon deploy sequenced as the FINAL step, after the local Docker skeleton works
 - `Poll` and `Option` schema with DATE storage and crypto-random `participantUrlId` / `adminUrlId`
 - `createPoll` server action + creation form (`/`) with title, description, location, dates (+ optional time)
 - Admin page (`/a/[adminUrlId]`) rendering both share links
@@ -106,8 +108,8 @@ Greenfield — the repository contains only `.planning/` artifacts and the edge-
 - [ ] The admin token is independent crypto-random — not derivable from the participant token
 - [ ] Altering/incrementing any valid participant or admin link returns HTTP 404
 - [ ] Generated identifiers are ≥ 21 chars (nanoid, ≥126-bit entropy)
-- [ ] The app creates a poll end-to-end against local Docker Postgres
-- [ ] The app creates a poll end-to-end on Vercel against Neon, including a post-idle cold-start request
+- [ ] `docker compose up` brings up the app + Postgres in Docker Desktop and creates a poll end-to-end (local dev environment)
+- [ ] AFTER local Docker works, the app creates a poll end-to-end on Vercel against Neon, including a post-idle cold-start request
 - [ ] A `YYYY-MM-DD` date renders as the same calendar day under TZ `Pacific/Kiritimati` (UTC+14) and `Etc/GMT+12` (UTC−12)
 
 ## Edge Coverage
