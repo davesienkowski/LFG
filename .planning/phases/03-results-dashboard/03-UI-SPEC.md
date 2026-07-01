@@ -67,7 +67,7 @@ Reused verbatim from Phase 1/2 — no new tokens. All values are multiples of 4.
 
 ## Typography
 
-**Reused verbatim from Phase 1/2 — same 4 roles, same 2 weights. No new sizes or weights introduced.**
+**Reused verbatim from Phase 1/2 — same 5 roles (4 carried forward + 1 formalized this phase), same 2 weights. No new sizes or weights introduced; the 5th size already ships in production.**
 
 | Role | Size | Weight | Line Height | Tailwind | Usage |
 |------|------|--------|-------------|---------|-------|
@@ -75,8 +75,9 @@ Reused verbatim from Phase 1/2 — no new tokens. All values are multiples of 4.
 | Heading | 24px | 600 (semibold) | 1.2 | `text-2xl font-semibold leading-snug` | "Results" section heading, empty-state heading |
 | Body | 16px | 400 (regular) | 1.5 | `text-base font-normal leading-relaxed` | Empty-state body copy, zero-match message body |
 | Label | 14px | 600 (semibold) | 1.5 | `text-sm font-semibold leading-normal` | Filter field labels, participant name (row header), column date label |
+| Caption / Badge | 12px | 400 or 600 (regular or semibold) | 1.5 | `text-xs font-normal` / `text-xs font-semibold` | Tally caption (`"{yes} yes · {ifneedbe} if-need-be"`), `BestDayBadge` pill text, active-filter chip text, cell state chip text |
 
-**Exception (carried forward from Phase 1's badge precedent, not a new declared role):** the tally caption (`"{yes} yes · {ifneedbe} if-need-be"`), the `BestDayBadge` pill text, the active-filter chip text, and the cell state chip text all use `text-xs` (12px, semibold) — identical in scale to Phase 1's "Keep private" badge (`text-xs font-semibold`), which was never promoted to a declared typography role either. This keeps the declared role count at 4, consistent with the project's typography contract.
+**Caption / Badge role — carried forward from Phase 1, formalized this phase.** `text-xs` (12px) is not new UI vocabulary: it already ships in production on Phase 1's "Keep private" badge (`src/app/a/[adminUrlId]/page.tsx:85` — `text-xs font-semibold`). Phase 3 reuses this exact size for its own secondary/caption/badge text (tally caption, `BestDayBadge`, active-filter chip, cell state chip) rather than inventing a new size, so this contract formally declares it as the project's 5th typography role instead of leaving it an undocumented exception. The weight budget stays at 2 (regular 400 + semibold 600) — this role only ever borrows those two existing weights, never introduces a third. Scope is intentionally narrow: 12px is reserved exclusively for secondary/caption/badge text and is never used for body copy or headings, so the role addition doesn't erode the heading/body hierarchy.
 
 Font stack: `Inter, system-ui, -apple-system, sans-serif` (unchanged).
 
