@@ -76,8 +76,8 @@ Recent decisions affecting current work:
 - [Phase 1]: Schema-push gate honored: polls/options migrated into live Docker Postgres and verified via psql before asserting reads/writes
 - [Phase ?]: 01-02: Order options ASC NULLS FIRST so date-only sorts before timed same-day, matching insert-time position
 - [Phase ?]: 01-02: createPoll uses no interactive transaction (neon-http production-safe); only the poll insert carries the token-collision retry
-- [Phase ?]: submitResponse is INSERT-only; editToken is a third independent nanoid(21), never derived from participantUrlId (D2-11)
-- [Phase ?]: vote.state stored as text constrained by Zod enum at the action boundary, not a Postgres enum (D2-03)
+- [Phase ?]: submitResponse is INSERT-only; editToken is a third independent nanoid(21), never derived from participantUrlId (D-11)
+- [Phase ?]: vote.state stored as text constrained by Zod enum at the action boundary, not a Postgres enum (D-03)
 - [Phase ?]: VoteForm gained an optional heading prop so 02-02's edit route reuses it verbatim
 - [Phase ?]: 02-02: Fixed missing Secure flag on lfg_edit cookie (secure: NODE_ENV==='production'), found by the production smoke test rather than unit tests
 - [Phase ?]: 02-02: updateResponse re-derives the participant strictly from the server-validated editToken, never a client-supplied participantId (VOTE-06 IDOR defense)
@@ -114,15 +114,11 @@ Last session: 2026-07-01T17:54:48.452Z
 Stopped at: Phase 3 UI-SPEC approved
 Resume file: .planning/phases/03-results-dashboard/03-UI-SPEC.md
 
-**Planning gate override (2026-07-01):** decision-coverage-plan gate returned `could-not-parse`
-(total:0) — a false negative from the phase-prefixed `D2-NN` decision IDs (parser expects `D-NN`).
-Coverage is real: gsd-plan-checker independently confirmed no D2-01..D2-11 decision contradicted,
-and both plans cite D2-04/D2-05. Proceeded with override rather than rewrite committed CONTEXT.md +
-plan D2-* references. verify-phase may re-surface this (non-blocking there by design).
-
-**Planning gate override (2026-07-01, Phase 3):** SAME parser false-negative recurred with the
-phase-prefixed `D3-NN` decision IDs — decision-coverage-plan returned `could-not-parse` (total:0).
-Coverage is real: gsd-plan-checker PASSED "Context Compliance: D3-01..D3-07 all traceable to
-specific tasks" and requirements coverage is a clean 5/5 (DASH-01..05). Proceeded with override
-(not rewriting committed CONTEXT.md D3-* refs to satisfy the parser). verify-phase may re-surface
-this (non-blocking there by design).
+**Planning gate note — RESOLVED (2026-07-01):** During Phase 2 and Phase 3 planning, the
+`decision-coverage-plan` gate returned `could-not-parse` (total:0) because those phases'
+CONTEXT.md used phase-prefixed decision IDs (the `D<phase>-NN` form) but the parser only
+recognizes bare `D-NN`. Both times coverage was real (gsd-plan-checker independently confirmed
+all decisions traceable to tasks; requirements coverage 6/6 and 5/5 respectively) and the phases
+were shipped under a documented override. **Fixed:** all decision IDs across `.planning/` renamed
+to bare `D-NN` (Phase 1 already used it); the gate now parses (Phase 2 total:11, Phase 3 total:7).
+Going forward, author CONTEXT.md decisions as bare `D-NN`.

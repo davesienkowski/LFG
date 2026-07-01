@@ -53,7 +53,7 @@ export const options = pgTable(
 );
 ```
 
-**Apply to `participants`/`votes` (per D2-01/D2-02):**
+**Apply to `participants`/`votes` (per D-01/D-02):**
 ```typescript
 export const participants = pgTable("participants", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -113,7 +113,7 @@ const CreatePollSchema = z.object({
   dates: DateOptionSchema.array().min(1, "Add at least one candidate date"),
 });
 ```
-Apply to submit-response per D2-10: `name` (trim, 1-100), `email` (optional, valid format, ≤200), `votes` array `{ optionId, state: z.enum(["yes","ifneedbe","no"]) }`.
+Apply to submit-response per D-10: `name` (trim, 1-100), `email` (optional, valid format, ≤200), `votes` array `{ optionId, state: z.enum(["yes","ifneedbe","no"]) }`.
 
 **Unique-violation retry helper** (lines 56-63) — copy verbatim, reused by both submitResponse for `editToken` collision:
 ```typescript
@@ -260,7 +260,7 @@ export async function getPollByParticipantUrlId(participantUrlId: string) {
   return poll ?? null;
 }
 ```
-**Apply to new helpers (D2-11 — never select `editToken` back out beyond what's needed; never select another participant's email into a multi-row payload):**
+**Apply to new helpers (D-11 — never select `editToken` back out beyond what's needed; never select another participant's email into a multi-row payload):**
 ```typescript
 export async function getParticipantByEditToken(editToken: string) {
   const [participant] = await db
@@ -433,13 +433,13 @@ import { Card } from "@/components/ui/card";
 const h = await headers();
 const base = resolveBaseUrl(h.get("host"), h.get("x-forwarded-proto"));
 ```
-**Apply:** build the edit URL per D2-09: `${base}/p/${participantUrlId}/edit/${editToken}` (note: NOT `buildAdminUrl`/`buildParticipantUrl` — add a new `buildEditUrl(base, participantUrlId, editToken)` helper to `src/lib/urls.ts`, mirroring `buildAdminUrl`'s shape, lines 21-23):
+**Apply:** build the edit URL per D-09: `${base}/p/${participantUrlId}/edit/${editToken}` (note: NOT `buildAdminUrl`/`buildParticipantUrl` — add a new `buildEditUrl(base, participantUrlId, editToken)` helper to `src/lib/urls.ts`, mirroring `buildAdminUrl`'s shape, lines 21-23):
 ```typescript
 export function buildEditUrl(base: string, participantUrlId: string, editToken: string): string {
   return `${base.replace(/\/+$/, "")}/p/${participantUrlId}/edit/${editToken}`;
 }
 ```
-Read the just-set `editToken` from the cookie (`cookieStore.get(`lfg_edit_${participantUrlId}`)?.value`) — fall back to `notFound()` if absent (no direct-navigation-without-submit case). Render a `Card` exactly like the admin-link card (lines 81-97) with `<CopyLinkButton url={editUrl} label="Copy edit link" />` plus "bookmark this to change your answer" copy (D2-09).
+Read the just-set `editToken` from the cookie (`cookieStore.get(`lfg_edit_${participantUrlId}`)?.value`) — fall back to `notFound()` if absent (no direct-navigation-without-submit case). Render a `Card` exactly like the admin-link card (lines 81-97) with `<CopyLinkButton url={editUrl} label="Copy edit link" />` plus "bookmark this to change your answer" copy (D-09).
 
 ---
 

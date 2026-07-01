@@ -21,7 +21,7 @@ affects: [02-02-edit-route, 03-results-aggregation, 04-email-and-close]
 tech-stack:
   added: []
   patterns:
-    - "INSERT-only two-statement write (participant insert w/ token-retry, then one batched votes insert) — no interactive transaction (neon-http, D2-04)"
+    - "INSERT-only two-statement write (participant insert w/ token-retry, then one batched votes insert) — no interactive transaction (neon-http, D-04)"
     - "Server-side gap-fill: vote rows built by iterating authoritative getOptionsForPoll, untouched options => 'no', foreign optionIds ignored"
     - "Server action sets httpOnly cookie (keyed on participantUrlId) then redirect; RSC reads it via next/headers on /thanks"
     - "Shared client-island form (AvailabilityGrid -> hidden votes input -> useActionState) parameterized for reuse across submit and edit routes"
@@ -42,8 +42,8 @@ key-files:
     - src/app/p/[participantUrlId]/page.test.ts
 
 key-decisions:
-  - "editToken is a third independent nanoid(21) minted via generateToken(), never derived from participantUrlId (D2-11, extends P1)"
-  - "vote.state stored as text constrained by Zod enum at the action boundary, not a Postgres enum (D2-03)"
+  - "editToken is a third independent nanoid(21) minted via generateToken(), never derived from participantUrlId (D-11, extends P1)"
+  - "vote.state stored as text constrained by Zod enum at the action boundary, not a Postgres enum (D-03)"
   - "Added an optional `heading` prop to VoteForm (default 'Your availability') so 02-02's edit route can render 'Edit your availability' without forking the component"
   - "Read-only (closed) grid cells render as non-interactive <span>, not disabled <button>; bulk row + submit button omitted entirely (UI-SPEC a11y)"
 

@@ -32,14 +32,14 @@ created: 2026-07-01
 | Font | Inter via `next/font/google`, exposed as `--font-sans` | `src/app/layout.tsx` (unchanged) |
 | Color space | OKLCH CSS variables (grayscale neutral theme; no dark mode) | `src/app/globals.css` |
 
-**No new shadcn components required for Phase 3.** Reuse `button` and `card` only. The results table is a **hand-written semantic `<table>`** (D3-04 — a shadcn DataGrid/Table block is not installed and RESEARCH.md's "zero new runtime dependencies" directive means we don't add one for a single admin-only read view). The date/status filter uses **native `<select>`** elements (not a shadcn `Select`, which is not installed) — native selects are fully keyboard- and screen-reader-operable out of the box and match the project's existing precedent of preferring native form controls where they satisfy the requirement (Phase 1 used native `<input type="date">` over a Calendar for the same reason). `BestDayBadge` and the active-filter chip are hand-styled `<span>` pills — the exact pattern already used for Phase 1's "Keep private" badge, not an installed shadcn `Badge`.
+**No new shadcn components required for Phase 3.** Reuse `button` and `card` only. The results table is a **hand-written semantic `<table>`** (D-04 — a shadcn DataGrid/Table block is not installed and RESEARCH.md's "zero new runtime dependencies" directive means we don't add one for a single admin-only read view). The date/status filter uses **native `<select>`** elements (not a shadcn `Select`, which is not installed) — native selects are fully keyboard- and screen-reader-operable out of the box and match the project's existing precedent of preferring native form controls where they satisfy the requirement (Phase 1 used native `<input type="date">` over a Calendar for the same reason). `BestDayBadge` and the active-filter chip are hand-styled `<span>` pills — the exact pattern already used for Phase 1's "Keep private" badge, not an installed shadcn `Badge`.
 
 | Component | Used On | Usage |
 |-----------|---------|-------|
 | `button` | Results section | "Clear filter" button (reused, `variant="ghost"` or `variant="outline"`) |
-| `card` | Not used this phase | The results table is NOT wrapped in a `Card` — a full-bleed `overflow-x-auto` table reads better at grid widths than a padded card interior; matches D3-04's `overflow-x-auto` container literally |
-| `<table>` (native) | Results grid | `ResultsGrid` — participants × dates, `<th scope="row">` / `<th scope="col">` (D3-04) |
-| `<select>` (native) | Filter control | Date selector + status selector (D3-06) |
+| `card` | Not used this phase | The results table is NOT wrapped in a `Card` — a full-bleed `overflow-x-auto` table reads better at grid widths than a padded card interior; matches D-04's `overflow-x-auto` container literally |
+| `<table>` (native) | Results grid | `ResultsGrid` — participants × dates, `<th scope="row">` / `<th scope="col">` (D-04) |
+| `<select>` (native) | Filter control | Date selector + status selector (D-06) |
 
 ---
 
@@ -96,7 +96,7 @@ Reuses the live `globals.css` OKLCH token system (neutral, light mode only — u
 
 **Accent reserved for:** nothing this phase — explicitly documented as unused rather than silently omitted, so the checker can confirm this is intentional, not an oversight.
 
-### Vote-state palette (reused verbatim from Phase 2 — D3-05)
+### Vote-state palette (reused verbatim from Phase 2 — D-05)
 
 Cell chips reuse the exact `STATE_META` vocabulary Phase 2 locked, extracted to `src/lib/vote-state.ts` per RESEARCH.md Pattern 3 (do not re-derive a second copy of this palette):
 
@@ -106,13 +106,13 @@ Cell chips reuse the exact `STATE_META` vocabulary Phase 2 locked, extracted to 
 | If-need-be (`ifneedbe`) | `CircleHelp` | "If-need-be" | `bg-amber-50 text-amber-700 border border-amber-300` |
 | Not available (`no`) — default/gap-fill | `X` | "Not available" | `bg-muted text-muted-foreground border border-border` |
 
-### Best-day highlight palette (new — D3-07)
+### Best-day highlight palette (new — D-07)
 
 Echoes the "Available" emerald because winning day = "the most-available day" (CONTEXT.md Specific Ideas):
 
 | Element | Tailwind | Notes |
 |---------|----------|-------|
-| `BestDayBadge` pill | `inline-flex items-center rounded-full border border-emerald-300 bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800` | Text "Best" always accompanies the tint — never color-only (D3-07) |
+| `BestDayBadge` pill | `inline-flex items-center rounded-full border border-emerald-300 bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800` | Text "Best" always accompanies the tint — never color-only (D-07) |
 | Column header tint (`<th scope="col">`) | `bg-emerald-50` | Applied to every co-leading date column's header cell |
 | Column body tint (`<td>` in a best column) | `bg-emerald-50/50` | 50%-opacity wash so it doesn't visually collide with a "yes" cell chip's own `bg-emerald-50` fill sitting on top (the chip's border keeps it distinguishable regardless) |
 
@@ -128,22 +128,22 @@ No dark mode in Phase 3.
 | Section heading | "Results" | `<h2>` Heading, mounted below the existing "Share your poll" section |
 | Empty state heading (zero participants) | "No responses yet" | Heading, exact copy locked by SPEC AC-1 |
 | Empty state body (zero participants) | "No one has responded yet. Share the participant link above to start collecting availability." | Body, `text-muted-foreground`; references the already-visible participant link card rather than duplicating it |
-| Empty-filtered state (zero matches) | "No participants match" | Exact copy locked by CONTEXT D3-06 / SPEC AC-6 |
+| Empty-filtered state (zero matches) | "No participants match" | Exact copy locked by CONTEXT D-06 / SPEC AC-6 |
 | Empty-filtered body | "Try a different date or status, or clear the filter." | Body, `text-muted-foreground` |
-| Error state | **None this phase.** | Pure server-side read with no user-supplied input beyond client-only filter state; no network call can fail after page load (D3-06: filter is 100% client-side, zero round-trips). The only failure mode (invalid `adminUrlId`) is Phase 1's existing 404 surface, unchanged. |
+| Error state | **None this phase.** | Pure server-side read with no user-supplied input beyond client-only filter state; no network call can fail after page load (D-06: filter is 100% client-side, zero round-trips). The only failure mode (invalid `adminUrlId`) is Phase 1's existing 404 surface, unchanged. |
 | Destructive actions | **None this phase.** | "Clear filter" resets transient view state only — no data is mutated, so no confirmation dialog is needed (same low-stakes precedent as Phase 1's date-row removal and Phase 2's "Clear" bulk action). |
 
 ---
 
 ## Component Spec: `ResultsGrid`
 
-The core net-new component (SPEC DASH-01..05; CONTEXT D3-04..07).
+The core net-new component (SPEC DASH-01..05; CONTEXT D-04..07).
 
 ### Structure
 
 ```
 <ResultsGrid>
-  ┌─ Filter control (D3-06) ──────────────────────────────────────┐
+  ┌─ Filter control (D-06) ──────────────────────────────────────┐
   │ Date [Choose a date… ▾]   Status [Available ▾]  [Clear filter]│
   │ (active-filter chip)              {count} of {total} shown    │
   └──────────────────────────────────────────────────────────────┘
@@ -165,9 +165,9 @@ The core net-new component (SPEC DASH-01..05; CONTEXT D3-04..07).
 </ResultsGrid>
 ```
 
-- Table columns render in `getOptionsForPoll` chronological order (D3-05) — no re-sort, mirrors Phase 2's `AvailabilityGrid` row order convention applied to columns here.
+- Table columns render in `getOptionsForPoll` chronological order (D-05) — no re-sort, mirrors Phase 2's `AvailabilityGrid` row order convention applied to columns here.
 - Rows render in `getResultsForPoll` order — `participants.createdAt asc` (submission order), same "no re-sort, trust the query" convention.
-- **Sticky first column:** `<th scope="row">` (and the corner `<th scope="col">Participant</th>`) use `sticky left-0 z-10 bg-background border-r` so the participant name stays visible while horizontally scrolling on mobile (`overflow-x-auto` container, D3-04). This is the Claude's-Discretion sticky-column implementation the RESEARCH.md/CONTEXT.md left open — resolved here as the default.
+- **Sticky first column:** `<th scope="row">` (and the corner `<th scope="col">Participant</th>`) use `sticky left-0 z-10 bg-background border-r` so the participant name stays visible while horizontally scrolling on mobile (`overflow-x-auto` container, D-04). This is the Claude's-Discretion sticky-column implementation the RESEARCH.md/CONTEXT.md left open — resolved here as the default.
 - Row striping: `tbody tr:nth-child(even)` gets `bg-muted/40` for readability at up to ~10 rows — a minimal, low-risk addition consistent with the "calm, minimal" existing pages.
 - **Scroll-edge affordance (prohibition-probe finding — see Prohibitions table below):** the `overflow-x-auto` wrapper carries a right-edge fade (`mask-image: linear-gradient(to right, black calc(100% - 24px), transparent)` or an equivalent `after:` gradient overlay) whenever the table's scrollable width exceeds its visible width, so a viewer on a narrow screen sees a visual cue that additional date columns — potentially including the `BestDayBadge` column — exist off-screen. Without this, the single most decision-relevant element on the page (which day is "Best") could scroll out of view with zero indication there was more to see. The fade is a pure CSS affordance (no new dependency); a plain `overflow-x-auto` with no cue is not acceptable per this finding.
 
@@ -187,7 +187,7 @@ The core net-new component (SPEC DASH-01..05; CONTEXT D3-04..07).
 
 - `dateLabel` via `formatDateWithTime` (timezone-safe, D-11/P3) — identical helper/format Phase 1/2 already use.
 - Tally caption is **always rendered**, including `0 yes · 0 if-need-be` for a zero-vote date (SPEC AC-4) — never hidden or omitted at zero.
-- `BestDayBadge` renders only when `isBest === true` for that column (computed by `computeResults`, D3-02); **all** co-leading columns render it (never collapsed to one).
+- `BestDayBadge` renders only when `isBest === true` for that column (computed by `computeResults`, D-02); **all** co-leading columns render it (never collapsed to one).
 
 ### Row header anatomy (`<th scope="row">`)
 
@@ -213,7 +213,7 @@ Two participants sharing a display name render as two distinct rows (keyed by pa
 </td>
 ```
 
-- `state = normalizeVoteState(participant.votes[optionId])` — routes through the shared gap-fill/fallback helper (D3-03); a missing vote or unrecognized literal renders "Not available" (`X` icon, neutral chip), never throws, never blank.
+- `state = normalizeVoteState(participant.votes[optionId])` — routes through the shared gap-fill/fallback helper (D-03); a missing vote or unrecognized literal renders "Not available" (`X` icon, neutral chip), never throws, never blank.
 - **Color is never the only signal** — every chip renders `Icon` (`aria-hidden`) **and** the visible text label together, identical invariant to Phase 2's `AvailabilityGrid`.
 - Not a touch target (read-only `<span>`, not a `<button>`) — no `min-h-*` requirement; sized for table density instead (see Spacing exceptions).
 
@@ -234,9 +234,9 @@ The filter control is **not rendered** in this state (nothing to filter).
 
 ---
 
-## Component Spec: Filter Control (DASH-05, D3-06)
+## Component Spec: Filter Control (DASH-05, D-06)
 
-A `"use client"` island holding local `useState<{ dateId: string | null; status: VoteState }>`. **No network round-trip** on any interaction (D3-06) — filters the already-rendered participant array in memory.
+A `"use client"` island holding local `useState<{ dateId: string | null; status: VoteState }>`. **No network round-trip** on any interaction (D-06) — filters the already-rendered participant array in memory.
 
 ### Structure
 
@@ -291,9 +291,9 @@ A `"use client"` island holding local `useState<{ dateId: string | null; status:
 ### Behavior
 
 - **Status defaults to "Available"** (`yes`) — the organizer's most common question is "who's available on date X" (RESEARCH.md/CONTEXT rationale). **Date defaults to unselected** (placeholder "Choose a date…").
-- The filter engages the moment a date is selected (using whatever status is currently selected, default "Available") — a single interaction (pick a date) is enough to see a filtered result; changing the status re-filters instantly. No separate "Apply" button (matches D3-06: filter reacts to selection, not a submit action).
+- The filter engages the moment a date is selected (using whatever status is currently selected, default "Available") — a single interaction (pick a date) is enough to see a filtered result; changing the status re-filters instantly. No separate "Apply" button (matches D-06: filter reacts to selection, not a submit action).
 - **"Clear filter"** resets `dateId` to `null` (status may stay at its last value or reset to "Available" — either is acceptable; resetting to "Available" keeps behavior predictable). Disabled/inert until a date is selected (nothing to clear beforehand).
-- **Filtering hides non-matching rows** (D3-06: "Filter-hide chosen over sort-to-top") — the `<tbody>` renders only participant rows whose `state` for the selected date equals the selected status; the table header/columns are unaffected (all date columns and tallies keep displaying, only participant *rows* filter).
+- **Filtering hides non-matching rows** (D-06: "Filter-hide chosen over sort-to-top") — the `<tbody>` renders only participant rows whose `state` for the selected date equals the selected status; the table header/columns are unaffected (all date columns and tallies keep displaying, only participant *rows* filter).
 - **Zero matches:** the table's `<tbody>` is replaced with a single full-width message row (not a blank table, not a missing table) — see below.
 - The active-filter chip and result count (`"{count} of {total} participants"`) render only while a date is selected; disappear entirely when cleared.
 
@@ -410,10 +410,10 @@ These are two distinct, non-interchangeable states — do not conflate their cop
 
 ## Accessibility Requirements
 
-- Table uses proper semantic structure: `<th scope="col">` for every date column header (including the corner "Participant" header) and `<th scope="row">` for every participant name — screen readers announce row/column context automatically when navigating cells (D3-04).
+- Table uses proper semantic structure: `<th scope="col">` for every date column header (including the corner "Participant" header) and `<th scope="row">` for every participant name — screen readers announce row/column context automatically when navigating cells (D-04).
 - `<caption class="sr-only">` on the table gives assistive tech a one-line summary of the table's purpose before diving into cells.
-- **Every cell communicates state via icon + text label, never color alone** — locked invariant, identical to Phase 2's `AvailabilityGrid` (STATE_META reuse, D3-05).
-- **The best-day highlight is never color-only** — the "Best" text label always accompanies the emerald tint (D3-07); a colorblind or screen-reader user gets the same information as a sighted user scanning for color.
+- **Every cell communicates state via icon + text label, never color alone** — locked invariant, identical to Phase 2's `AvailabilityGrid` (STATE_META reuse, D-05).
+- **The best-day highlight is never color-only** — the "Best" text label always accompanies the emerald tint (D-07); a colorblind or screen-reader user gets the same information as a sighted user scanning for color.
 - Filter `<select>` elements have associated `<label htmlFor>` pairing (native semantics — fully keyboard operable via arrow keys/typeahead without any extra ARIA).
 - The "Clear filter" button is disabled (not merely styled dim) until a date is selected — `disabled` attribute prevents a no-op activation from confusing keyboard/AT users.
 - A `sr-only aria-live="polite"` region announces filter-result changes (count + active date/status) — compensates for the filtered `<tbody>` update not otherwise producing a screen-reader announcement (same rationale as Phase 2's cell-change live region).
@@ -438,11 +438,11 @@ No third-party registries. No new shadcn component installs this phase — the r
 
 | Decision | Source |
 |----------|--------|
-| Semantic `<table>`, `<th scope="row">`/`<th scope="col">`, `overflow-x-auto` wrapper | D3-04 (03-CONTEXT.md) — LOCKED |
-| Cells reuse `STATE_META` icon+label vocabulary; chronological column order via `getOptionsForPoll` | D3-05 (03-CONTEXT.md) — LOCKED |
-| Gap-fill/unrecognized-state fallback → "Not available", never throws | D3-03 (03-CONTEXT.md) + SPEC AC-3 — LOCKED |
-| Client filter island: date selector + status selector, filters rows, chip + count + Clear, "No participants match" on zero matches, no network round-trip | D3-06 (03-CONTEXT.md) + SPEC AC-6 — LOCKED |
-| `BestDayBadge` = "Best" pill + emerald tint, text label carries the signal, all co-leaders highlighted, none when max yes = 0 | D3-07 (03-CONTEXT.md) + SPEC AC-5 — LOCKED |
+| Semantic `<table>`, `<th scope="row">`/`<th scope="col">`, `overflow-x-auto` wrapper | D-04 (03-CONTEXT.md) — LOCKED |
+| Cells reuse `STATE_META` icon+label vocabulary; chronological column order via `getOptionsForPoll` | D-05 (03-CONTEXT.md) — LOCKED |
+| Gap-fill/unrecognized-state fallback → "Not available", never throws | D-03 (03-CONTEXT.md) + SPEC AC-3 — LOCKED |
+| Client filter island: date selector + status selector, filters rows, chip + count + Clear, "No participants match" on zero matches, no network round-trip | D-06 (03-CONTEXT.md) + SPEC AC-6 — LOCKED |
+| `BestDayBadge` = "Best" pill + emerald tint, text label carries the signal, all co-leaders highlighted, none when max yes = 0 | D-07 (03-CONTEXT.md) + SPEC AC-5 — LOCKED |
 | "No responses yet" empty state on zero participants | SPEC AC-1/AC-7 — LOCKED |
 | No email addresses anywhere in the results output | SPEC Prohibitions table — LOCKED (verified server-side, not a UI styling concern, but the component contract never accepts an `email` prop to prevent accidental rendering) |
 | Reused spacing scale, typography roles, base color tokens, `base-nova`/`neutral`/`base-ui` preset | 01-UI-SPEC.md / 02-UI-SPEC.md — reused verbatim |

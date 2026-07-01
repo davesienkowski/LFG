@@ -40,7 +40,7 @@ and call `setAnnouncement` outside the updater. (New in Phase 2.)
 The `lfg_edit_<participantUrlId>` cookie is per-poll, not per-person. Two people on one shared
 device answering the same poll: the 2nd sees the 1st's prefilled name/votes and a submit
 UPDATES (overwrites) the 1st's row with no confirmation. Residual risk of an accepted design
-decision (D2-05: same-device re-submit must UPDATE, not duplicate). **Fix (follow-up):** add a
+decision (D-05: same-device re-submit must UPDATE, not duplicate). **Fix (follow-up):** add a
 "Not you? Start a new response" affordance that clears the cookie / routes to `submitResponse`.
 
 ### 4. [LOW-MEDIUM] Unchecked `as VoteState` cast on DB-read vote state (defense-in-depth)

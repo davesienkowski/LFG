@@ -78,7 +78,7 @@
 
 ## Claude's Discretion
 
-- Grid cell visuals (colors/icons), hidden-input serialization format, cookie name/maxAge, and edit-route component reuse — left to planner/executor within the D2-04/05/08 constraints and the SPEC.
+- Grid cell visuals (colors/icons), hidden-input serialization format, cookie name/maxAge, and edit-route component reuse — left to planner/executor within the D-04/05/08 constraints and the SPEC.
 - A `/gsd-ui-phase 2` pass is recommended before execution (net-new grid + thanks UI; `workflow.ui_phase: true`).
 
 ## Deferred Ideas

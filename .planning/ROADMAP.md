@@ -90,7 +90,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [x] 03-01-PLAN.md — Data & aggregation foundation: extract shared vote-state vocabulary (`STATE_META` + `normalizeVoteState`), pure `computeResults` tally + best-day ranking (D3-02, lexicographic yes↓/if-need-be↓/date↑), and admin-only participant-safe `getResultsForPoll` LEFT JOIN with a non-vacuous no-leak DB test (DASH-01..04)
+- [x] 03-01-PLAN.md — Data & aggregation foundation: extract shared vote-state vocabulary (`STATE_META` + `normalizeVoteState`), pure `computeResults` tally + best-day ranking (D-02, lexicographic yes↓/if-need-be↓/date↑), and admin-only participant-safe `getResultsForPoll` LEFT JOIN with a non-vacuous no-leak DB test (DASH-01..04)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 

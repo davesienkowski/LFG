@@ -60,7 +60,7 @@ Reused verbatim from Phase 1 — no new tokens. All values are multiples of 4.
 
 **Exceptions (new for Phase 2):**
 
-- `AvailabilityGrid` cell button: minimum height **48px** (`min-h-12`), full row width on mobile (`w-full sm:w-auto`) — exceeds the 44px touch-target floor Phase 1 already established for icon-only controls, because this cell carries icon + text and is the single most-clicked control on the page (click-to-cycle, D2-06).
+- `AvailabilityGrid` cell button: minimum height **48px** (`min-h-12`), full row width on mobile (`w-full sm:w-auto`) — exceeds the 44px touch-target floor Phase 1 already established for icon-only controls, because this cell carries icon + text and is the single most-clicked control on the page (click-to-cycle, D-06).
 - Bulk-action buttons ("Set all Available" / "Set all Not available" / "Clear"): minimum height 44px (`h-11`), same touch-target rule as Phase 1's date/time inputs.
 - Name/email `<input>`: override the shadcn default `h-8` (32px, too small for a touch target) to `h-11` (44px) — same override pattern Phase 1 applied to date/time inputs.
 
@@ -115,7 +115,7 @@ No dark mode in Phase 2.
 
 ## Component Spec: `AvailabilityGrid`
 
-This is the core net-new component (SPEC VOTE-02, VOTE-07; CONTEXT D2-06/07).
+This is the core net-new component (SPEC VOTE-02, VOTE-07; CONTEXT D-06/07).
 
 ### Structure
 
@@ -135,9 +135,9 @@ This is the core net-new component (SPEC VOTE-02, VOTE-07; CONTEXT D2-06/07).
 
 - One row per option, rendered in the SAME chronological order as `getOptionsForPoll` already returns (mirrors Phase 1's date list ordering — no re-sort in the component).
 - Date label uses the existing `formatDateWithTime` helper verbatim (timezone-safe, D-11/P3) — same string already used on the participant shell and admin page.
-- Each row's interactive element is **one button** (not three) that cycles `no → yes → ifneedbe → no` on each click (D2-06 order: Available → If-need-be → Not available → back; default state on first render is `no`).
+- Each row's interactive element is **one button** (not three) that cycles `no → yes → ifneedbe → no` on each click (D-06 order: Available → If-need-be → Not available → back; default state on first render is `no`).
 - **Transparency requirement (prohibition-probe finding):** the default `no` state MUST render with its full visible icon+label ("✕ Not available"), identical in weight to a state the participant explicitly chose — never a blank/dimmed/placeholder-looking cell. A participant who skips a date without clicking it must SEE, before submitting, that it currently reads "Not available" — silence is never visually distinct from an explicit decline, so nothing is submitted that looks like it was merely "left blank."
-- The component owns `Record<optionId, VoteState>` client state, serializes it into a single hidden `<input name="votes">` (JSON array of `{optionId, state}`) — the exact pattern `poll-create-form.tsx` already uses for the `dates` hidden input (D2-07). The surrounding form posts via `useActionState`.
+- The component owns `Record<optionId, VoteState>` client state, serializes it into a single hidden `<input name="votes">` (JSON array of `{optionId, state}`) — the exact pattern `poll-create-form.tsx` already uses for the `dates` hidden input (D-07). The surrounding form posts via `useActionState`.
 
 ### Cell anatomy (single button, click-to-cycle)
 
@@ -158,7 +158,7 @@ Three buttons above the grid, `variant="outline"`, `size` default, `h-11` (44px 
 | "Set all Not available" | `X` | Sets every rendered option's cell to `no` |
 | "Clear" | `RotateCcw` | Resets every cell to `no` (same effect as "Set all Not available" — SPEC defines Clear as reset-to-default; both labels are kept because users scan for "Clear" as the reset affordance, mirroring the SPEC's own wording) |
 
-A subsequent single-cell click after any bulk action overrides only that cell (SPEC VOTE-07 AC, D2-06) — bulk actions do not lock the row.
+A subsequent single-cell click after any bulk action overrides only that cell (SPEC VOTE-07 AC, D-06) — bulk actions do not lock the row.
 
 **No confirmation dialog on "Clear."** Mirrors the Phase 1 precedent (removing an unsaved date row required no confirmation) — nothing is submitted to the server until the user presses the primary submit/save button, so a misclick is free to undo by re-cycling cells or clicking Clear again.
 
@@ -187,7 +187,7 @@ A subsequent single-cell click after any bulk action overrides only that cell (S
 6. `AvailabilityGrid` (see Component Spec above) — one row per candidate date
 7. Submit button — "Submit availability" (variant=`default`, full-width on mobile, auto-width on desktop)
 
-**Same-device preload (D2-08):** when the `lfg_edit_<pollId>` cookie resolves to a participant of THIS poll, the page preloads: name field value, email field value, and every grid cell's prior state — **without auto-submitting**. A small inline notice appears above the form: "Showing your previous response. Submit again to update it." (Body / 16px / `text-muted-foreground`). The notice is purely informational — it does not block editing.
+**Same-device preload (D-08):** when the `lfg_edit_<pollId>` cookie resolves to a participant of THIS poll, the page preloads: name field value, email field value, and every grid cell's prior state — **without auto-submitting**. A small inline notice appears above the form: "Showing your previous response. Submit again to update it." (Body / 16px / `text-muted-foreground`). The notice is purely informational — it does not block editing.
 
 ### Surface 2: Participant Vote View — closed poll (read-only)
 
@@ -213,7 +213,7 @@ Same layout and sections as Surface 1, with these differences:
    - Helper: "Bookmark this to change your answer later." (Body / 16px / `text-muted-foreground`)
    - **Privacy warning (prohibition-probe finding, see Prohibitions table):** "Don't share this link — anyone who has it can change your answer." (Body / 16px / `text-amber-700`, same soft-warning treatment Phase 1 used for the past-date badge) — the edit link is an unauthenticated bearer credential (VOTE-06); without this line a participant could forward it alongside the participant link with no idea it lets someone else edit on their behalf
    - URL displayed as truncated monospace text (`font-mono text-sm truncate`): `${base}/p/<participantUrlId>/edit/<editToken>`
-   - `CopyLinkButton` (reused component, D2-09) with `label="Copy edit link"`
+   - `CopyLinkButton` (reused component, D-09) with `label="Copy edit link"`
 4. Secondary text below the card: "No email was sent — save this link now." (Body / 16px / `text-muted-foreground`) — sets correct expectations since Phase 4 owns email, not this phase
 
 ### Surface 4: Edit View `/p/[participantUrlId]/edit/[editToken]`
@@ -390,12 +390,12 @@ No third-party registries. No new shadcn component installs this phase. The `Ava
 
 | Decision | Source |
 |----------|--------|
-| Three-state click-to-cycle (Available → If-need-be → Not available → back) | D2-06 (02-CONTEXT.md) — LOCKED |
-| Bulk actions "Set all Available / Not available / Clear" above the grid | D2-06 + VOTE-07 (02-SPEC.md) — LOCKED |
-| Grid is a `"use client"` island serializing to a hidden input, posted via `useActionState` | D2-07 (02-CONTEXT.md) — LOCKED, mirrors `poll-create-form.tsx` |
+| Three-state click-to-cycle (Available → If-need-be → Not available → back) | D-06 (02-CONTEXT.md) — LOCKED |
+| Bulk actions "Set all Available / Not available / Clear" above the grid | D-06 + VOTE-07 (02-SPEC.md) — LOCKED |
+| Grid is a `"use client"` island serializing to a hidden input, posted via `useActionState` | D-07 (02-CONTEXT.md) — LOCKED, mirrors `poll-create-form.tsx` |
 | Untouched cell = "Not available" (default state) | VOTE-02 acceptance criteria (02-SPEC.md) — LOCKED |
-| Same-device cookie preloads without being the authorization mechanism | D2-08 (02-CONTEXT.md) — LOCKED |
-| `/thanks` reuses `CopyLinkButton`, "bookmark this" guidance | D2-09 (02-CONTEXT.md) — LOCKED |
+| Same-device cookie preloads without being the authorization mechanism | D-08 (02-CONTEXT.md) — LOCKED |
+| `/thanks` reuses `CopyLinkButton`, "bookmark this" guidance | D-09 (02-CONTEXT.md) — LOCKED |
 | Read-only render + server reject when `poll.status != 'open'` | SPEC.md Constraints + Acceptance Criteria — LOCKED |
 | Name required (1–100), email optional (≤200, valid format) | SPEC.md VOTE-03 acceptance criteria — LOCKED |
 | Unknown participant/edit token → 404, no leak of which part was wrong | D-08 (01-CONTEXT.md, carried forward) + SPEC.md VOTE-06 |

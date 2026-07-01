@@ -16,21 +16,21 @@ The write-strategy constraint carried from Phase 1 (`neon-http` has no interacti
 
 ### Locked Decisions
 
-- **D2-01:** `participants` table: `id` (uuid PK), `poll_id` (uuid FK → polls, cascade delete), `name` (text not null), `email` (text, nullable — collected for Phase 4, not sent now), `edit_token` (text not null, **unique**), `created_at` (timestamptz default now).
-- **D2-02:** `votes` table: `id` (uuid PK), `poll_id` (uuid FK → polls, cascade — denormalized so Phase 3 can aggregate by poll with a single index), `participant_id` (uuid FK → participants, cascade), `option_id` (uuid FK → options, cascade), `state` (text not null). **Unique `(participant_id, option_id)`**. Indexes on `votes(poll_id)` and `votes(participant_id)`.
-- **D2-03:** `state` is stored as **text** constrained to `'yes' | 'ifneedbe' | 'no'` by Zod at the action boundary — NOT a Postgres enum.
-- **D2-04:** `submitResponse` mirrors `createPoll`: insert the `participants` row (retry on edit-token unique collision, same pattern as `createPoll`'s token retry), then insert ALL vote rows in **one batched insert**. Two statements, no interactive transaction. Untouched options written `state = 'no'`.
-- **D2-05:** `updateResponse` uses a **single `insert(votes).values(allRows).onConflictDoUpdate({ target: [participant_id, option_id], set: { state } })`** upsert. One atomic statement → idempotent and race-safe without an interactive transaction.
-- **D2-06:** Per-cell **click-to-cycle**: Available (`yes`) → If-need-be (`ifneedbe`) → Not available (`no`) → back. VOTE-07 bulk buttons ("Set all Available", "Set all Not available", "Clear" → reset all to `no`) sit above the grid; a later per-cell click overrides only that cell.
-- **D2-07:** `AvailabilityGrid` is a `"use client"` island holding state, serialized into a hidden input (mirrors `poll-create-form`'s `dates` input); the form posts via `useActionState`.
-- **D2-08:** On successful submit, set an **httpOnly** cookie holding the participant's `edit_token` (e.g. `lfg_edit_<pollId>`), `SameSite=Lax`, long `maxAge`. The participant page (RSC) reads it via `next/headers` `cookies()`; if it resolves to a participant of THIS poll, preload that response into the grid. The cookie is convenience only — **the `edit_token` stored on the row is the sole authority** for edits.
-- **D2-09:** `/thanks` reuses `CopyLinkButton` to present the absolute edit URL `${BASE}/p/<participantUrlId>/edit/<editToken>`, built from `NEXT_PUBLIC_BASE_URL` with the header fallback (D-10 pattern), plus "bookmark this to change your answer" guidance.
-- **D2-10:** Zod schemas validate `submitResponse`/`updateResponse` server-side: `name` (trim, 1–100), `email` (optional; if present valid + ≤200), and a `votes` array of `{ optionId, state ∈ enum }`. Actions live in `src/lib/actions/` (`submit-response.ts`, `update-response.ts`). Bad/unknown participant or edit token → `notFound()` (404, D-08); a non-`open` poll → read-only render + server-side write rejection.
-- **D2-11:** `edit_token` is minted by the existing `generateToken()` (`nanoid(21)`), a third independent token. Edit/thanks queries select participant-safe columns only — `admin_url_id` never reaches these surfaces.
+- **D-01:** `participants` table: `id` (uuid PK), `poll_id` (uuid FK → polls, cascade delete), `name` (text not null), `email` (text, nullable — collected for Phase 4, not sent now), `edit_token` (text not null, **unique**), `created_at` (timestamptz default now).
+- **D-02:** `votes` table: `id` (uuid PK), `poll_id` (uuid FK → polls, cascade — denormalized so Phase 3 can aggregate by poll with a single index), `participant_id` (uuid FK → participants, cascade), `option_id` (uuid FK → options, cascade), `state` (text not null). **Unique `(participant_id, option_id)`**. Indexes on `votes(poll_id)` and `votes(participant_id)`.
+- **D-03:** `state` is stored as **text** constrained to `'yes' | 'ifneedbe' | 'no'` by Zod at the action boundary — NOT a Postgres enum.
+- **D-04:** `submitResponse` mirrors `createPoll`: insert the `participants` row (retry on edit-token unique collision, same pattern as `createPoll`'s token retry), then insert ALL vote rows in **one batched insert**. Two statements, no interactive transaction. Untouched options written `state = 'no'`.
+- **D-05:** `updateResponse` uses a **single `insert(votes).values(allRows).onConflictDoUpdate({ target: [participant_id, option_id], set: { state } })`** upsert. One atomic statement → idempotent and race-safe without an interactive transaction.
+- **D-06:** Per-cell **click-to-cycle**: Available (`yes`) → If-need-be (`ifneedbe`) → Not available (`no`) → back. VOTE-07 bulk buttons ("Set all Available", "Set all Not available", "Clear" → reset all to `no`) sit above the grid; a later per-cell click overrides only that cell.
+- **D-07:** `AvailabilityGrid` is a `"use client"` island holding state, serialized into a hidden input (mirrors `poll-create-form`'s `dates` input); the form posts via `useActionState`.
+- **D-08:** On successful submit, set an **httpOnly** cookie holding the participant's `edit_token` (e.g. `lfg_edit_<pollId>`), `SameSite=Lax`, long `maxAge`. The participant page (RSC) reads it via `next/headers` `cookies()`; if it resolves to a participant of THIS poll, preload that response into the grid. The cookie is convenience only — **the `edit_token` stored on the row is the sole authority** for edits.
+- **D-09:** `/thanks` reuses `CopyLinkButton` to present the absolute edit URL `${BASE}/p/<participantUrlId>/edit/<editToken>`, built from `NEXT_PUBLIC_BASE_URL` with the header fallback (D-10 pattern), plus "bookmark this to change your answer" guidance.
+- **D-10:** Zod schemas validate `submitResponse`/`updateResponse` server-side: `name` (trim, 1–100), `email` (optional; if present valid + ≤200), and a `votes` array of `{ optionId, state ∈ enum }`. Actions live in `src/lib/actions/` (`submit-response.ts`, `update-response.ts`). Bad/unknown participant or edit token → `notFound()` (404, D-08); a non-`open` poll → read-only render + server-side write rejection.
+- **D-11:** `edit_token` is minted by the existing `generateToken()` (`nanoid(21)`), a third independent token. Edit/thanks queries select participant-safe columns only — `admin_url_id` never reaches these surfaces.
 
 ### Claude's Discretion
 
-- Exact grid cell visuals (colors/icons), the hidden-input serialization format, cookie name/maxAge specifics, and whether the edit route reuses the participant page component or is a sibling — left to planner/executor, provided D2-04/05 (no interactive txn), D2-08 (cookie ≠ authority), and the SPEC acceptance criteria + prohibitions hold.
+- Exact grid cell visuals (colors/icons), the hidden-input serialization format, cookie name/maxAge specifics, and whether the edit route reuses the participant page component or is a sibling — left to planner/executor, provided D-04/05 (no interactive txn), D-08 (cookie ≠ authority), and the SPEC acceptance criteria + prohibitions hold.
 - **UI design contract recommended:** a `/gsd-ui-phase 2` pass before execution would lock the grid's three-state visual language and a11y; plan-phase may insert it per config.
 
 ### Deferred Ideas (OUT OF SCOPE)
@@ -73,7 +73,7 @@ No new libraries. This phase extends the existing stack with zero new dependenci
 | drizzle-orm | 0.45.2 [VERIFIED: npm registry] | `onConflictDoUpdate` upsert for `updateResponse` | Already the project's ORM; composite-target upsert is a documented, first-class feature, not a workaround |
 | next | 16.2.9 [VERIFIED: npm registry] | `cookies()` from `next/headers` for the same-device auto-load | Already the project's framework; `cookies()` is the only supported way to read/write request cookies in App Router |
 | zod | 4.4.3 [VERIFIED: npm registry] | `submitResponse`/`updateResponse` validation, vote-state enum | Already the project's validation library (used in `create-poll.ts`) |
-| nanoid | 5.1.16 [VERIFIED: npm registry] | `editToken` generation via the existing `generateToken()` wrapper | Already the project's token generator (D-07); reused as-is per D2-11 |
+| nanoid | 5.1.16 [VERIFIED: npm registry] | `editToken` generation via the existing `generateToken()` wrapper | Already the project's token generator (D-07); reused as-is per D-11 |
 
 ### Supporting
 None — no new supporting libraries required.
@@ -81,9 +81,9 @@ None — no new supporting libraries required.
 ### Alternatives Considered
 | Instead of | Could Use | Tradeoff |
 |------------|-----------|----------|
-| `onConflictDoUpdate` upsert for edits | Delete-then-insert in an app-level "transaction" | Rejected by D2-05: neon-http has no interactive/callback transactions in production; delete-then-insert without a real transaction has a race window (a concurrent request could read a transient empty state) |
-| httpOnly cookie for same-device auto-load | `localStorage` (client-only) | Rejected by D2-08: localStorage requires a client-side fetch to look up the response, costing a network round trip and an extra loading state; the RSC cookie read preloads in the same request that renders the page |
-| `state` as Postgres native enum | `state` as text + Zod enum (chosen, D2-03) | Native enum gives DB-level constraint enforcement but `ALTER TYPE ... ADD VALUE` migrations are awkward in Postgres and the project already established the text+Zod precedent with `polls.status` |
+| `onConflictDoUpdate` upsert for edits | Delete-then-insert in an app-level "transaction" | Rejected by D-05: neon-http has no interactive/callback transactions in production; delete-then-insert without a real transaction has a race window (a concurrent request could read a transient empty state) |
+| httpOnly cookie for same-device auto-load | `localStorage` (client-only) | Rejected by D-08: localStorage requires a client-side fetch to look up the response, costing a network round trip and an extra loading state; the RSC cookie read preloads in the same request that renders the page |
+| `state` as Postgres native enum | `state` as text + Zod enum (chosen, D-03) | Native enum gives DB-level constraint enforcement but `ALTER TYPE ... ADD VALUE` migrations are awkward in Postgres and the project already established the text+Zod precedent with `polls.status` |
 
 **Installation:**
 ```bash
@@ -269,7 +269,7 @@ export async function submitResponse(prevState, formData) {
     httpOnly: true,
     sameSite: "lax",
     path: `/p/${poll.participantUrlId}`, // scopes the cookie to this poll's participant path (SPEC constraint)
-    maxAge: 60 * 60 * 24 * 365, // 1 year — "long maxAge" per D2-08, exact value at planner discretion
+    maxAge: 60 * 60 * 24 * 365, // 1 year — "long maxAge" per D-08, exact value at planner discretion
   });
   redirect(`/p/${poll.participantUrlId}/thanks`); // Set-Cookie header ships on this redirect response
 }
@@ -435,20 +435,20 @@ if (!participant || participant.pollId !== poll.id) {
 **Warning signs:** A 500 on the live site after deploy, with local dev working perfectly — classic "schema drift between environments" signature.
 
 ### Pitfall 7: Don't leak the internal `poll.id` (UUID PK) into client-visible artifacts
-**What goes wrong:** CONTEXT's D2-08 example cookie name is `lfg_edit_<pollId>` — using the literal internal Drizzle-generated UUID primary key. While not exploitable (it's a random `gen_random_uuid()`, not sequential or derivable), the project's established convention (D-09/P2) is that internal primary keys never appear in any client-visible surface — only `participantUrlId`/`adminUrlId`/`editToken` are meant to be public-facing identifiers.
+**What goes wrong:** CONTEXT's D-08 example cookie name is `lfg_edit_<pollId>` — using the literal internal Drizzle-generated UUID primary key. While not exploitable (it's a random `gen_random_uuid()`, not sequential or derivable), the project's established convention (D-09/P2) is that internal primary keys never appear in any client-visible surface — only `participantUrlId`/`adminUrlId`/`editToken` are meant to be public-facing identifiers.
 **Why it happens:** `pollId` is the most readily-available identifier inside the action/RSC code (it's what every query already joins on), so it's the path of least resistance to drop into a cookie name.
 **How to avoid:** Use `participantUrlId` (already public — it's literally in the URL the cookie is scoped to) in the cookie name instead: `lfg_edit_${poll.participantUrlId}`, as shown in Code Examples §3. This also makes the cookie's `path` scoping (`/p/${participantUrlId}`) and its name consistent and human-debuggable in browser devtools without exposing an internal-only identifier.
-**Warning signs:** None functional — this is a hygiene/consistency recommendation, not a blocking security issue. Flagged because D2-08's "e.g." cookie name example used the internal ID; the planner should follow the corrected example here, not the literal CONTEXT.md example string.
+**Warning signs:** None functional — this is a hygiene/consistency recommendation, not a blocking security issue. Flagged because D-08's "e.g." cookie name example used the internal ID; the planner should follow the corrected example here, not the literal CONTEXT.md example string.
 
 ### Pitfall 8: `/thanks` route nesting — must be under `/p/[participantUrlId]/` for the cookie to be sent
-**What goes wrong:** SPEC and ROADMAP both refer to the route casually as "`/thanks`" without specifying nesting. If implemented as a bare top-level `/thanks` route, it cannot receive the `path`-scoped cookie (D2-08: "scopes to the participant path") on the redirect navigation, and has no way to know which poll/participant to look up without smuggling identifiers into a query string.
+**What goes wrong:** SPEC and ROADMAP both refer to the route casually as "`/thanks`" without specifying nesting. If implemented as a bare top-level `/thanks` route, it cannot receive the `path`-scoped cookie (D-08: "scopes to the participant path") on the redirect navigation, and has no way to know which poll/participant to look up without smuggling identifiers into a query string.
 **Why it happens:** The SPEC's prose shorthand ("lands on `/thanks`") doesn't specify the full path; the ROADMAP plan description similarly just says "`/thanks` (edit link + same-device cookie)".
-**How to avoid:** Implement as `/p/[participantUrlId]/thanks` (nested, nginx-pattern-route under the existing participant segment). This (a) keeps the cookie's `path` scope (`/p/${participantUrlId}`) actually matching the destination route so the just-set cookie is present on the very next request, (b) gives the RSC the `participantUrlId` it needs to look up the poll and build the absolute edit URL without any query-string parameters, and (c) avoids putting the raw `editToken` in a URL (query string), keeping it confined to the httpOnly cookie and the final bookmarked edit-link body content. This is flagged as a discretionary recommendation, not a locked decision — but it directly satisfies D2-08's "scopes to the participant path" language, so deviating from it would need an explicit justification.
+**How to avoid:** Implement as `/p/[participantUrlId]/thanks` (nested, nginx-pattern-route under the existing participant segment). This (a) keeps the cookie's `path` scope (`/p/${participantUrlId}`) actually matching the destination route so the just-set cookie is present on the very next request, (b) gives the RSC the `participantUrlId` it needs to look up the poll and build the absolute edit URL without any query-string parameters, and (c) avoids putting the raw `editToken` in a URL (query string), keeping it confined to the httpOnly cookie and the final bookmarked edit-link body content. This is flagged as a discretionary recommendation, not a locked decision — but it directly satisfies D-08's "scopes to the participant path" language, so deviating from it would need an explicit justification.
 **Warning signs:** None at build time — only surfaces as "the auto-load doesn't work" or "I had to add a query param with the token in it" during implementation, which is itself a sign the route nesting choice should be revisited.
 
 ## Code Examples
 
-See Architecture Patterns §1–§5 above for the load-bearing examples (no-transaction insert, atomic upsert, cookie set/read, hidden-input serialization, token-verified lookup) — all five are pulled out there because each directly implements one of D2-04 through D2-11.
+See Architecture Patterns §1–§5 above for the load-bearing examples (no-transaction insert, atomic upsert, cookie set/read, hidden-input serialization, token-verified lookup) — all five are pulled out there because each directly implements one of D-04 through D-11.
 
 ### Read helper additions to `src/lib/db/queries.ts`
 ```typescript
@@ -487,15 +487,15 @@ if (poll.status !== "open") {
 | # | Claim | Section | Risk if Wrong |
 |---|-------|---------|---------------|
 | A1 | `/thanks` should be nested as `/p/[participantUrlId]/thanks` rather than a bare top-level route | Pitfall 8, Recommended Project Structure | Low — if the planner instead chooses a bare `/thanks` with query-string params, the cookie path-scoping and token-in-URL tradeoffs change; doesn't block VOTE-01/05 functionally, just changes the cookie/URL hygiene story |
-| A2 | Cookie name should use `participantUrlId` rather than the literal `pollId` example from CONTEXT D2-08 | Pitfall 7, Pattern 3 | Low — functionally cookie name choice doesn't affect any acceptance criterion; this is a hygiene recommendation that deviates from CONTEXT's literal example text (which was explicitly marked "e.g.") |
+| A2 | Cookie name should use `participantUrlId` rather than the literal `pollId` example from CONTEXT D-08 | Pitfall 7, Pattern 3 | Low — functionally cookie name choice doesn't affect any acceptance criterion; this is a hygiene recommendation that deviates from CONTEXT's literal example text (which was explicitly marked "e.g.") |
 | A3 | The Neon production migration step for this phase's new tables should be an explicit blocking task before the next prod deploy | Pitfall 6 | Medium — if skipped, the next production deploy of Phase 2 code will 500 on every vote-related request until someone notices and runs the migration; doesn't affect local dev or automated tests |
 
 ## Open Questions
 
 1. **Exact route nesting for `/thanks` and cookie `maxAge`/`path` values**
-   - What we know: SPEC/ROADMAP name the route "`/thanks`" without full path; D2-08 says "scopes to the participant path" and "long maxAge" without exact values.
+   - What we know: SPEC/ROADMAP name the route "`/thanks`" without full path; D-08 says "scopes to the participant path" and "long maxAge" without exact values.
    - What's unclear: Whether the planner/UI-phase will choose the nested path recommended in Pitfall 8, and the exact `maxAge` (1 year suggested above is a reasonable default matching "poll stays open indefinitely" semantics, but not locked).
-   - Recommendation: Treat as planner/UI-phase discretion within the D2-08 constraint; the nested-path + `participantUrlId`-keyed-cookie-name combination in this document is the recommended default.
+   - Recommendation: Treat as planner/UI-phase discretion within the D-08 constraint; the nested-path + `participantUrlId`-keyed-cookie-name combination in this document is the recommended default.
 
 2. **Edit-route component reuse vs. sibling**
    - What we know: CONTEXT explicitly leaves "whether the edit route reuses the participant page component or is a sibling" to planner/executor discretion.
@@ -518,7 +518,7 @@ if (poll.status !== "open") {
 
 | Pattern | STRIDE | Standard Mitigation |
 |---------|--------|---------------------|
-| IDOR via guessable/sequential edit token | Tampering / Information Disclosure | Already mitigated by `nanoid(21)` (126-bit entropy) per D2-11 — not sequential, not derivable from any other token |
+| IDOR via guessable/sequential edit token | Tampering / Information Disclosure | Already mitigated by `nanoid(21)` (126-bit entropy) per D-11 — not sequential, not derivable from any other token |
 | Cross-participant write (token confusion) | Tampering / Elevation of Privilege | `updateResponse` MUST re-derive `participantId` from the server-validated `editToken`, never trust a client-submitted ID (Anti-Patterns above; this is VOTE-06's exact must-NOT) |
 | Stale read-then-write on poll status (TOCTOU) | Tampering | Both actions MUST re-fetch `poll.status` at write time, not trust a value baked into the rendered form (shown in Code Examples "Poll-status guard") |
 | SQL injection via raw `sql` template in `onConflictDoUpdate`'s `set` clause | Tampering | Use `sql\`excluded.state\`` (a fixed literal referencing the Postgres `excluded` pseudo-table, not interpolated user input) exactly as shown in Pattern 2 — never interpolate the submitted `state` string directly into a raw `sql` fragment; Zod's enum validation already constrains `state` to the three literal values before it ever reaches the query, but parameterized/typed Drizzle calls (`.values()`) are the actual SQL-injection defense, not the enum alone |

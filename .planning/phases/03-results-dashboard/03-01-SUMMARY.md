@@ -104,7 +104,7 @@ status: complete
 - **Files modified:** 7 (4 created, 3 modified)
 
 ## Accomplishments
-- Extracted `STATE_META`/`VoteState` and added `normalizeVoteState` into `src/lib/vote-state.ts` as the single source of truth for the three-state vocabulary and the D3-03 gap-fill/unrecognized-literal fallback; `availability-grid.tsx` now imports from it and re-exports `VoteState`, leaving all three participant-route importers and the grid's own test untouched.
+- Extracted `STATE_META`/`VoteState` and added `normalizeVoteState` into `src/lib/vote-state.ts` as the single source of truth for the three-state vocabulary and the D-03 gap-fill/unrecognized-literal fallback; `availability-grid.tsx` now imports from it and re-exports `VoteState`, leaving all three participant-route importers and the grid's own test untouched.
 - Implemented the pure, no-throw `computeResults` with 9 explicit edge-case tests covering the entire DASH-03 (tallies) and DASH-04 (best-day tie-break) SPEC Edge Coverage — including all co-leaders tied on (yes, if-need-be), all-zero-yes → no highlight, gap-fill, unrecognized literals, and no-re-sort output order.
 - Added `getResultsForPoll` (participants LEFT JOIN votes, createdAt-asc, participant-safe columns only) with a DB-backed test proving ordering, the zero-vote LEFT JOIN row, per-vote mapping, and a **non-vacuous** no-leak guarantee via a seeded canary email plus a structural `id/name/votes` own-key assertion.
 - Full verify gate green: `tsc`, `lint`, `build`, and the full 96-test vitest suite (stable across 3 consecutive runs).

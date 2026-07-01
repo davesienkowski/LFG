@@ -50,7 +50,7 @@ const STATE_META: Record<
 };
 ```
 
-**New addition (not in the original file — D3-03 gap-fill, closes P2 REVIEW #4):**
+**New addition (not in the original file — D-03 gap-fill, closes P2 REVIEW #4):**
 ```typescript
 export function normalizeVoteState(state: string | undefined): VoteState {
   return state === "yes" || state === "ifneedbe" ? state : "no";
@@ -133,11 +133,11 @@ Do **not** select `participants.createdAt` into the returned shape (only use it 
 
 ### `src/lib/results.ts` (NEW — `computeResults`)
 
-**Analog:** `src/lib/format-date.ts` (pure-helper-with-header-comment precedent) — no direct algorithmic analog exists in the codebase; this is new pure logic per D3-02.
+**Analog:** `src/lib/format-date.ts` (pure-helper-with-header-comment precedent) — no direct algorithmic analog exists in the codebase; this is new pure logic per D-02.
 
 **Header-comment convention** to follow (mirror `format-date.ts` lines 1-10 — state the invariant up front):
 ```typescript
-// Pure results aggregation (DASH-03/04, D3-02). No DB, no I/O — takes
+// Pure results aggregation (DASH-03/04, D-02). No DB, no I/O — takes
 // getResultsForPoll's output + getOptionsForPoll's chronological order and
 // returns per-option tallies + best-day flags in one pass. The tie-break is
 // the highest-risk correctness surface in this phase — keep it unit-testable
