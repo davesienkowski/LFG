@@ -20,13 +20,13 @@ A poll creator can propose candidate dates, get participants to mark their avail
 - [x] Participants can respond via the link without creating an account (name + per-date selection) — *Validated in Phase 2 (VOTE-01/02/03/07)*
 - [x] Each date supports three states per participant: Available (yes), Tentative (if-need-be), Not available (no) — *Validated in Phase 2*
 - [x] Participants can return and edit their own response — *Validated in Phase 2 (VOTE-05/06; token-verified ownership + same-device auto-load)*
+- [x] Results dashboard shows a grid of participants × dates with their selections — *Validated in Phase 3 (DASH-01/02/03; admin-only, participant-safe read)*
+- [x] Dashboard highlights the best day(s) and supports sorting/filtering by who is available / tentative / not available — *Validated in Phase 3 (DASH-04/05)*
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-- [ ] Results dashboard shows a grid of participants × dates with their selections — *Phase 3 (results-dashboard)*
-- [ ] Dashboard highlights the best day(s) and supports sorting/filtering by who is available / tentative / not available — *Phase 3*
 - [ ] System can email participants an invitation containing the poll link — *Phase 4*
 
 ### Out of Scope
@@ -82,4 +82,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-01 after Phase 2 (participant voting) completion*
+*Last updated: 2026-07-01 after Phase 3 (results dashboard) completion*
