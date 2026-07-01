@@ -5,8 +5,8 @@ milestone_name: milestone
 current_phase: 4
 current_phase_name: Email & Finalization
 status: planning
-stopped_at: Phase 4 context gathered
-last_updated: "2026-07-01T20:51:09.823Z"
+stopped_at: Phase 4 UI-SPEC approved
+last_updated: "2026-07-01T21:26:22.974Z"
 last_activity: 2026-07-01
 last_activity_desc: Phase 3 complete, transitioned to Phase 4
 progress:
@@ -110,9 +110,9 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-01T20:51:09.816Z
-Stopped at: Phase 4 context gathered
-Resume file: .planning/phases/04-email-finalization/04-CONTEXT.md
+Last session: 2026-07-01T21:26:22.966Z
+Stopped at: Phase 4 UI-SPEC approved
+Resume file: .planning/phases/04-email-finalization/04-UI-SPEC.md
 
 **Planning gate note — RESOLVED (2026-07-01):** During Phase 2 and Phase 3 planning, the
 `decision-coverage-plan` gate returned `could-not-parse` (total:0) because those phases'
