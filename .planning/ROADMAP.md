@@ -58,13 +58,13 @@ Plans:
   5. Editing requires the participant's own per-participant token; another participant's token (or no token, or a name-only attempt) cannot modify the response.
   6. Per-row bulk actions (Set all Available / Set all Not available / Clear) set the whole row at once before per-date adjustment (VOTE-07, added by the 01-04 revision).
 
-**Plans**: 2 plans
+**Plans**: 1/2 plans executed
 **UI hint**: yes
 
 Plans:
 **Wave 1**
 
-- [ ] 02-01-PLAN.md — participants + votes schema (local migration gate), AvailabilityGrid 3-state grid + VOTE-07 bulk actions, INSERT-only submitResponse, live vote view + /thanks edit link (VOTE-01/02/03/07)
+- [x] 02-01-PLAN.md — participants + votes schema (local migration gate), AvailabilityGrid 3-state grid + VOTE-07 bulk actions, INSERT-only submitResponse, live vote view + /thanks edit link (VOTE-01/02/03/07)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -123,6 +123,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & Poll Creation | 3/3 | Complete   | 2026-06-30 |
-| 2. Participant Voting | 0/2 | Not started | - |
+| 2. Participant Voting | 1/2 | In Progress|  |
 | 3. Results Dashboard | 0/2 | Not started | - |
 | 4. Email & Finalization | 0/2 | Not started | - |
