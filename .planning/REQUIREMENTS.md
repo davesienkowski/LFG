@@ -37,8 +37,8 @@ Requirements for initial release. Each maps to a roadmap phase.
 - [x] **VOTE-02**: A participant can mark each candidate date as exactly one of three states — Available (yes), If-need-be (tentative), Not available (no)
 - [x] **VOTE-03**: A participant enters their name (and email for the edit link) and submits their response
 - [ ] **VOTE-04**: A participant receives a confirmation email containing a unique link to review/edit their response
-- [ ] **VOTE-05**: A participant can edit their own response while the poll is open
-- [ ] **VOTE-06**: The edit action verifies a per-participant token before allowing changes (no name-only edits; no editing another participant's row)
+- [x] **VOTE-05**: A participant can edit their own response while the poll is open
+- [x] **VOTE-06**: The edit action verifies a per-participant token before allowing changes (no name-only edits; no editing another participant's row)
 - [x] **VOTE-07**: A participant can set availability for multiple dates at once via per-row quick actions (set all available / set all unavailable / clear), in addition to per-date selection
 
 ### Results Dashboard
@@ -124,8 +124,8 @@ Which phases cover which requirements. **Populated by the roadmapper.**
 | VOTE-02 | Phase 2 | Complete |
 | VOTE-03 | Phase 2 | Complete |
 | VOTE-04 | Phase 4 | Pending |
-| VOTE-05 | Phase 2 | Pending |
-| VOTE-06 | Phase 2 | Pending |
+| VOTE-05 | Phase 2 | Complete |
+| VOTE-06 | Phase 2 | Complete |
 | VOTE-07 | Phase 2 | Complete |
 | DASH-01 | Phase 3 | Pending |
 | DASH-02 | Phase 3 | Pending |

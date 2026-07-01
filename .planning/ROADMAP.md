@@ -14,7 +14,7 @@ LFG ships as four end-to-end vertical slices, each independently deployable to b
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation & Poll Creation** - Lock in tokens/DB/timezone foundations; organizer creates a poll and gets distinct share links (completed 2026-06-30)
-- [ ] **Phase 2: Participant Voting** - Anonymous three-state availability voting with token-verified self-editing
+- [x] **Phase 2: Participant Voting** - Anonymous three-state availability voting with token-verified self-editing (completed 2026-07-01)
 - [ ] **Phase 3: Results Dashboard** - Participant × date grid, vote tallies, best-day highlight, sort/filter
 - [ ] **Phase 4: Email & Finalization** - Free-tier email invites, edit-link confirmations, and "Book it" finalize with notices
 
@@ -58,7 +58,7 @@ Plans:
   5. Editing requires the participant's own per-participant token; another participant's token (or no token, or a name-only attempt) cannot modify the response.
   6. Per-row bulk actions (Set all Available / Set all Not available / Clear) set the whole row at once before per-date adjustment (VOTE-07, added by the 01-04 revision).
 
-**Plans**: 1/2 plans executed
+**Plans**: 2/2 plans complete
 **UI hint**: yes
 
 Plans:
@@ -68,7 +68,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 02-02-PLAN.md — token-verified updateResponse upsert + edit route + same-device auto-load, then the blocking Neon migration + production redeploy (VOTE-05/06)
+- [x] 02-02-PLAN.md — token-verified updateResponse upsert + edit route + same-device auto-load, then the blocking Neon migration + production redeploy (VOTE-05/06)
 
 ### Phase 3: Results Dashboard
 
@@ -123,6 +123,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & Poll Creation | 3/3 | Complete   | 2026-06-30 |
-| 2. Participant Voting | 1/2 | In Progress|  |
+| 2. Participant Voting | 2/2 | Complete   | 2026-07-01 |
 | 3. Results Dashboard | 0/2 | Not started | - |
 | 4. Email & Finalization | 0/2 | Not started | - |
