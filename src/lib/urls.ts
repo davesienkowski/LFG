@@ -21,3 +21,14 @@ export function buildParticipantUrl(base: string, participantUrlId: string): str
 export function buildAdminUrl(base: string, adminUrlId: string): string {
   return `${base.replace(/\/+$/, "")}/a/${adminUrlId}`;
 }
+
+// The personal edit link surfaced on /thanks (D2-09). The editToken is an
+// independent bearer credential — this helper only formats the URL; it never
+// derives or transforms the token.
+export function buildEditUrl(
+  base: string,
+  participantUrlId: string,
+  editToken: string,
+): string {
+  return `${base.replace(/\/+$/, "")}/p/${participantUrlId}/edit/${editToken}`;
+}
