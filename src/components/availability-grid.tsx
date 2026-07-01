@@ -18,11 +18,16 @@
 //    disabled <button>, and the bulk-action row is absent entirely.
 //  - date labels use formatDateWithTime (timezone-safe, D-11/P3), never new Date.
 import { useEffect, useState } from "react";
-import { Check, CircleHelp, X, RotateCcw } from "lucide-react";
+import { Check, X, RotateCcw } from "lucide-react";
 import { formatDateWithTime } from "@/lib/format-date";
 import { Button } from "@/components/ui/button";
+import { STATE_META, type VoteState } from "@/lib/vote-state";
 
-export type VoteState = "yes" | "ifneedbe" | "no";
+// Re-export VoteState so existing importers of this module keep working
+// unchanged (vote-form.tsx and the two participant-route pages import the type
+// from here). The vocabulary now lives in @/lib/vote-state (single source of
+// truth shared with the read-side results grid).
+export type { VoteState };
 
 export type GridOption = {
   id: string;
@@ -33,27 +38,6 @@ export type GridOption = {
 // Click order (D2-06): from the default "no", advance Available -> If-need-be ->
 // Not available -> back.
 const CYCLE: VoteState[] = ["yes", "ifneedbe", "no"];
-
-const STATE_META: Record<
-  VoteState,
-  { label: string; className: string; Icon: typeof Check }
-> = {
-  yes: {
-    label: "Available",
-    Icon: Check,
-    className: "bg-emerald-50 text-emerald-700 border-emerald-300",
-  },
-  ifneedbe: {
-    label: "If-need-be",
-    Icon: CircleHelp,
-    className: "bg-amber-50 text-amber-700 border-amber-300",
-  },
-  no: {
-    label: "Not available",
-    Icon: X,
-    className: "bg-muted text-muted-foreground border-border",
-  },
-};
 
 function optionLabel(opt: GridOption): string {
   return formatDateWithTime(
