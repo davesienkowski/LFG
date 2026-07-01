@@ -34,7 +34,7 @@ vi.mock("next/headers", () => ({
 import ParticipantPage from "./page";
 import ThanksPage from "./thanks/page";
 import { db } from "@/lib/db";
-import { polls, options } from "@/lib/db/schema";
+import { polls, options, participants, votes } from "@/lib/db/schema";
 import { generateToken } from "@/lib/tokens";
 
 const createdAdminIds: string[] = [];
@@ -53,12 +53,45 @@ async function seedPoll(status = "open") {
       status,
     })
     .returning({ id: polls.id });
-  await db.insert(options).values([
-    { pollId: poll.id, date: "2026-07-12", startTime: null, position: 0 },
-    { pollId: poll.id, date: "2026-07-19", startTime: "14:00", position: 1 },
-  ]);
+  const inserted = await db
+    .insert(options)
+    .values([
+      { pollId: poll.id, date: "2026-07-12", startTime: null, position: 0 },
+      { pollId: poll.id, date: "2026-07-19", startTime: "14:00", position: 1 },
+    ])
+    .returning({ id: options.id });
   createdAdminIds.push(adminUrlId);
-  return { pollId: poll.id, participantUrlId, adminUrlId };
+  return {
+    pollId: poll.id,
+    participantUrlId,
+    adminUrlId,
+    optionIds: inserted.map((r) => r.id),
+  };
+}
+
+// Seed an existing participant + one vote row per option — the prior response the
+// same-device auto-load preloads. Returns the editToken to place in the cookie.
+async function seedParticipant(
+  pollId: string,
+  optionIds: string[],
+  states: string[],
+  name = "Returning",
+  email: string | null = null,
+): Promise<{ editToken: string }> {
+  const editToken = generateToken();
+  const [participant] = await db
+    .insert(participants)
+    .values({ pollId, name, email, editToken })
+    .returning({ id: participants.id });
+  await db.insert(votes).values(
+    optionIds.map((optionId, i) => ({
+      pollId,
+      participantId: participant.id,
+      optionId,
+      state: states[i] ?? "no",
+    })),
+  );
+  return { editToken };
 }
 
 async function renderParticipant(participantUrlId: string): Promise<string> {
@@ -154,5 +187,72 @@ describe("ThanksPage", () => {
     await expect(renderThanks(participantUrlId)).rejects.toThrow(
       "NEXT_NOT_FOUND",
     );
+  });
+});
+
+describe("ParticipantPage — same-device auto-load (VOTE-05)", () => {
+  it("preloads the prior response and points the form at updateResponse (editToken carried, notice shown)", async () => {
+    const { pollId, participantUrlId, optionIds } = await seedPoll("open");
+    const { editToken } = await seedParticipant(
+      pollId,
+      optionIds,
+      ["yes", "ifneedbe"],
+      "Alex",
+      "alex@same.test",
+    );
+    mockCookieValue = editToken;
+    const html = await renderParticipant(participantUrlId);
+
+    // The same-device notice appears (informational — never auto-submits).
+    expect(html).toContain(
+      "Showing your previous response. Submit again to update it.",
+    );
+    // The editToken is carried as a hidden input so the re-submit routes through
+    // updateResponse (UPDATE, not a duplicate INSERT).
+    expect(html).toContain(editToken);
+    // Prior name + states preloaded.
+    expect(html).toContain("Alex");
+    expect(html).toContain("Available");
+    expect(html).toContain("If-need-be");
+    // Preload only fills state — a submit affordance is still present (the user
+    // must click to update; nothing is auto-submitted on load).
+    expect(html).toContain("Submit availability");
+  });
+
+  it("renders the FRESH submitResponse form (no notice, no editToken) when the cookie is absent", async () => {
+    const { participantUrlId } = await seedPoll("open");
+    mockCookieValue = undefined;
+    const html = await renderParticipant(participantUrlId);
+    expect(html).not.toContain("Showing your previous response");
+    expect(html).not.toContain('name="editToken"');
+    expect(html).toContain("Submit availability");
+  });
+
+  it("ignores a cookie whose token belongs to a DIFFERENT poll (no cross-poll preload)", async () => {
+    const other = await seedPoll("open");
+    const { editToken } = await seedParticipant(
+      other.pollId,
+      other.optionIds,
+      ["yes", "yes"],
+      "Foreign",
+    );
+    const { participantUrlId } = await seedPoll("open");
+    mockCookieValue = editToken; // valid token, wrong poll
+    const html = await renderParticipant(participantUrlId);
+    expect(html).not.toContain("Showing your previous response");
+    expect(html).not.toContain("Foreign");
+  });
+
+  it("preload still leaks no admin_url_id", async () => {
+    const { pollId, participantUrlId, optionIds, adminUrlId } =
+      await seedPoll("open");
+    const { editToken } = await seedParticipant(pollId, optionIds, [
+      "yes",
+      "no",
+    ]);
+    mockCookieValue = editToken;
+    const html = await renderParticipant(participantUrlId);
+    expect(html).not.toContain(adminUrlId);
+    expect(html).not.toContain("/a/");
   });
 });
