@@ -92,7 +92,7 @@ None yet.
 
 [Issues that affect future work]
 
-- [Phase 4]: Email needs research before build — verify a custom Resend domain (DKIM/SPF/DMARC) early due to ~48h DNS propagation; ~$10-12/yr domain is the only unavoidable cost. Also validate the local SMTP/MailHog path and 100/day (429) handling.
+- [Phase 4]: Email options researched → **SEED-001** (`.planning/seeds/SEED-001-phase4-free-email-no-domain.md`). Key finding: a domain is NOT required — Gmail SMTP + App Password is a genuinely-free, no-domain path with good deliverability (send *as* your gmail; SPF/DKIM/DMARC align), with SMTP2GO single-sender as fallback and Resend+domain as an optional deliverability upgrade. Watch the gmail-From-via-relay DMARC trap. Re-verify free-tier numbers at build time. (Original concern — ~48h DNS / ~$10-12/yr domain — only applies if we choose the Resend+domain path.)
 
 ### Quick Tasks Completed
 
