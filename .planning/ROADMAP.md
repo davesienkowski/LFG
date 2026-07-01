@@ -62,8 +62,12 @@ Plans:
 **UI hint**: yes
 
 Plans:
+**Wave 1**
 
 - [ ] 02-01-PLAN.md — participants + votes schema (local migration gate), AvailabilityGrid 3-state grid + VOTE-07 bulk actions, INSERT-only submitResponse, live vote view + /thanks edit link (VOTE-01/02/03/07)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 02-02-PLAN.md — token-verified updateResponse upsert + edit route + same-device auto-load, then the blocking Neon migration + production redeploy (VOTE-05/06)
 
 ### Phase 3: Results Dashboard
