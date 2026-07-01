@@ -31,7 +31,7 @@ Phase: 3 — Results Dashboard
 Plan: Not started
 Status: Ready to plan
 Next: Phase 2 — Participant Voting (VOTE-01, 02, 03, 05, 06, 07) — VOTE-07 (per-row bulk vote actions) added by 01-04
-Last activity: 2026-07-01 — Phase 02 complete, transitioned to Phase 3
+Last activity: 2026-07-01 — Completed quick task 260701-il0 (Phase 2 review follow-ups #1 + #2); Phase 3 planning next
 
 Progress: [██░░░░░░░░] 25% (1 of 4 phases)
 
@@ -92,6 +92,12 @@ None yet.
 [Issues that affect future work]
 
 - [Phase 4]: Email needs research before build — verify a custom Resend domain (DKIM/SPF/DMARC) early due to ~48h DNS propagation; ~$10-12/yr domain is the only unavoidable cost. Also validate the local SMTP/MailHog path and 100/day (429) handling.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260701-il0 | Phase 2 code-review follow-ups #1 (activate env validation via instrumentation register hook) + #2 (pure setState updater in AvailabilityGrid) + remove stale checkpoint | 2026-07-01 | 1570165 | [260701-il0-apply-phase-2-code-review-follow-ups-1-w](./quick/260701-il0-apply-phase-2-code-review-follow-ups-1-w/) |
 
 ## Deferred Items
 
