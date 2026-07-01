@@ -12,21 +12,22 @@ A poll creator can propose candidate dates, get participants to mark their avail
 
 ### Validated
 
-(None yet — ship to validate)
+<!-- Shipped and verified against the codebase / production. -->
+
+- [x] Creator can create a poll with a title, optional description/location, and a set of candidate dates (or date+time slots) — *Validated in Phase 1*
+- [x] Creator gets a shareable participant link and a separate admin/management link for the poll — *Validated in Phase 1*
+- [x] Runs completely free, self-hostable locally and deployable to Vercel free tier — *Validated in Phase 1 (live on Vercel free tier + local Docker Postgres)*
+- [x] Participants can respond via the link without creating an account (name + per-date selection) — *Validated in Phase 2 (VOTE-01/02/03/07)*
+- [x] Each date supports three states per participant: Available (yes), Tentative (if-need-be), Not available (no) — *Validated in Phase 2*
+- [x] Participants can return and edit their own response — *Validated in Phase 2 (VOTE-05/06; token-verified ownership + same-device auto-load)*
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-- [ ] Creator can create a poll with a title, optional description/location, and a set of candidate dates (or date+time slots)
-- [ ] Creator gets a shareable participant link and a separate admin/management link for the poll
-- [ ] Participants can respond via the link without creating an account (name + per-date selection)
-- [ ] Each date supports three states per participant: Available (yes), Tentative (if-need-be), Not available (no)
-- [ ] Results dashboard shows a grid of participants × dates with their selections
-- [ ] Dashboard highlights the best day(s) and supports sorting/filtering by who is available / tentative / not available
-- [ ] System can email participants an invitation containing the poll link
-- [ ] Participants can return and edit their own response
-- [ ] Runs completely free, self-hostable locally and deployable to Vercel free tier
+- [ ] Results dashboard shows a grid of participants × dates with their selections — *Phase 3 (results-dashboard)*
+- [ ] Dashboard highlights the best day(s) and supports sorting/filtering by who is available / tentative / not available — *Phase 3*
+- [ ] System can email participants an invitation containing the poll link — *Phase 4*
 
 ### Out of Scope
 
@@ -81,4 +82,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-30 after initialization*
+*Last updated: 2026-07-01 after Phase 2 (participant voting) completion*
