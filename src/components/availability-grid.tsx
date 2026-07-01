@@ -85,12 +85,14 @@ export function AvailabilityGrid({
   }, [cellState, options, onChange]);
 
   function cycleCell(opt: GridOption) {
-    setCellState((prev) => {
-      const current = prev[opt.id] ?? "no";
-      const next = CYCLE[(CYCLE.indexOf(current) + 1) % CYCLE.length];
-      setAnnouncement(`${optionLabel(opt)} set to ${STATE_META[next].label}`);
-      return { ...prev, [opt.id]: next };
-    });
+    const current = cellState[opt.id] ?? "no";
+    const next = CYCLE[(CYCLE.indexOf(current) + 1) % CYCLE.length];
+    // Pure updater: merge prev (so concurrent updates to OTHER keys aren't
+    // clobbered by a stale closure) with the precomputed next for THIS key.
+    setCellState((prev) => ({ ...prev, [opt.id]: next }));
+    // Announcement lives OUTSIDE the updater (mirrors setAll), removing the
+    // Strict/concurrent-render double-invocation risk on the aria-live region.
+    setAnnouncement(`${optionLabel(opt)} set to ${STATE_META[next].label}`);
   }
 
   function setAll(state: VoteState) {
