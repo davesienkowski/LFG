@@ -43,11 +43,11 @@ Requirements for initial release. Each maps to a roadmap phase.
 
 ### Results Dashboard
 
-- [ ] **DASH-01**: The poll page shows a results grid with participants as rows and candidate dates as columns
-- [ ] **DASH-02**: Each grid cell visually distinguishes the participant's three-state availability for that date
-- [ ] **DASH-03**: Each date column shows a summary count of yes votes and if-need-be votes
-- [ ] **DASH-04**: The system highlights the best date(s) by highest yes count (tie-break: if-need-be count, then chronological)
-- [ ] **DASH-05**: The organizer can sort/filter the view by availability status (available / tentative / not available) for a given date
+- [x] **DASH-01**: The poll page shows a results grid with participants as rows and candidate dates as columns
+- [x] **DASH-02**: Each grid cell visually distinguishes the participant's three-state availability for that date
+- [x] **DASH-03**: Each date column shows a summary count of yes votes and if-need-be votes
+- [x] **DASH-04**: The system highlights the best date(s) by highest yes count (tie-break: if-need-be count, then chronological)
+- [x] **DASH-05**: The organizer can sort/filter the view by availability status (available / tentative / not available) for a given date
 
 ### Email
 
@@ -127,11 +127,11 @@ Which phases cover which requirements. **Populated by the roadmapper.**
 | VOTE-05 | Phase 2 | Complete |
 | VOTE-06 | Phase 2 | Complete |
 | VOTE-07 | Phase 2 | Complete |
-| DASH-01 | Phase 3 | Pending |
-| DASH-02 | Phase 3 | Pending |
-| DASH-03 | Phase 3 | Pending |
-| DASH-04 | Phase 3 | Pending |
-| DASH-05 | Phase 3 | Pending |
+| DASH-01 | Phase 3 | Complete |
+| DASH-02 | Phase 3 | Complete |
+| DASH-03 | Phase 3 | Complete |
+| DASH-04 | Phase 3 | Complete |
+| DASH-05 | Phase 3 | Complete |
 | MAIL-01 | Phase 4 | Pending |
 | MAIL-02 | Phase 4 | Pending |
 | MAIL-03 | Phase 4 | Pending |

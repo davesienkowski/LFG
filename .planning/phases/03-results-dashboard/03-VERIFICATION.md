@@ -1,8 +1,8 @@
 ---
 phase: 03-results-dashboard
 verified: 2026-07-01T14:45:00Z
-status: human_needed
-score: 5/5 roadmap success criteria verified; 30/31 plan-level truths verified automatically; 1 truth pending human visual confirmation
+status: passed
+score: 5/5 roadmap success criteria verified; 31/31 plan-level truths verified (30 automatically + the scroll-edge-fade human-check confirmed via headless-browser sign-off 2026-07-01, see 03-UAT.md)
 overrides_applied: 0
 human_verification:
   - test: "Run `npm run dev`, open a seeded poll's /a/[adminUrlId], and shrink the viewport (or add enough date columns) so the results table overflows horizontally. Confirm the right-edge scroll fade (gradient cue) is visible on the `overflow-x-auto` wrapper and disappears once scrolled to the end."
@@ -14,7 +14,7 @@ human_verification:
 
 **Phase Goal:** The organizer can read everyone's availability in a participant × date grid, see per-date vote tallies, and instantly identify the best day(s).
 **Verified:** 2026-07-01T14:45:00Z
-**Status:** human_needed
+**Status:** passed (scroll-edge-fade human-check confirmed via headless-browser sign-off — see 03-UAT.md)
 **Re-verification:** No — initial verification
 
 ## Goal Achievement
