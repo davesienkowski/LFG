@@ -54,7 +54,59 @@ export const options = pgTable(
   ],
 );
 
+// Phase 2 (D2-01 / D2-02). Added additively — polls/options above are untouched.
+//
+//  - `email` is nullable: collected for Phase 4 (organizer confirmation), not
+//    sent this phase. `edit_token` is a THIRD independent nanoid(21) token
+//    (D2-11), never derived from participantUrlId/adminUrlId (extends P1).
+//  - `votes.state` is stored as text constrained to 'yes'|'ifneedbe'|'no' by Zod
+//    at the action boundary (D2-03) — matches the polls.status text precedent,
+//    NOT a Postgres enum, so there is no enum-alter migration friction.
+//  - `poll_id` is denormalized onto votes (D2-02) so Phase 3 can aggregate by
+//    poll through votes_poll_id_idx with a single index.
+//  - the votes_participant_option_unique constraint enforces exactly one vote per
+//    (participant, option); 02-02's updateResponse upsert targets it exactly
+//    (RESEARCH Pitfall 1).
+export const participants = pgTable("participants", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  pollId: uuid("poll_id")
+    .notNull()
+    .references(() => polls.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  email: text("email"),
+  editToken: text("edit_token").notNull().unique(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const votes = pgTable(
+  "votes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    pollId: uuid("poll_id")
+      .notNull()
+      .references(() => polls.id, { onDelete: "cascade" }),
+    participantId: uuid("participant_id")
+      .notNull()
+      .references(() => participants.id, { onDelete: "cascade" }),
+    optionId: uuid("option_id")
+      .notNull()
+      .references(() => options.id, { onDelete: "cascade" }),
+    state: text("state").notNull(),
+  },
+  (t) => [
+    unique("votes_participant_option_unique").on(t.participantId, t.optionId),
+    index("votes_poll_id_idx").on(t.pollId),
+    index("votes_participant_id_idx").on(t.participantId),
+  ],
+);
+
 export type Poll = typeof polls.$inferSelect;
 export type NewPoll = typeof polls.$inferInsert;
 export type Option = typeof options.$inferSelect;
 export type NewOption = typeof options.$inferInsert;
+export type Participant = typeof participants.$inferSelect;
+export type NewParticipant = typeof participants.$inferInsert;
+export type Vote = typeof votes.$inferSelect;
+export type NewVote = typeof votes.$inferInsert;
