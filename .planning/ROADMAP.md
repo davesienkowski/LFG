@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation & Poll Creation** - Lock in tokens/DB/timezone foundations; organizer creates a poll and gets distinct share links (completed 2026-06-30)
 - [x] **Phase 2: Participant Voting** - Anonymous three-state availability voting with token-verified self-editing (completed 2026-07-01)
-- [ ] **Phase 3: Results Dashboard** - Participant × date grid, vote tallies, best-day highlight, sort/filter
+- [x] **Phase 3: Results Dashboard** - Participant × date grid, vote tallies, best-day highlight, sort/filter (completed 2026-07-01)
 - [ ] **Phase 4: Email & Finalization** - Free-tier email invites, edit-link confirmations, and "Book it" finalize with notices
 
 ## Phase Details
@@ -84,17 +84,17 @@ Plans:
   4. The best date(s) are highlighted by highest yes count, breaking ties by if-need-be count and then chronological order.
   5. The organizer can sort/filter the view by availability status (available / tentative / not available) for a given date.
 
-**Plans**: 2 plans
+**Plans**: 2/2 plans complete
 **UI hint**: yes
 
 Plans:
 **Wave 1**
 
-- [ ] 03-01-PLAN.md — Data & aggregation foundation: extract shared vote-state vocabulary (`STATE_META` + `normalizeVoteState`), pure `computeResults` tally + best-day ranking (D3-02, lexicographic yes↓/if-need-be↓/date↑), and admin-only participant-safe `getResultsForPoll` LEFT JOIN with a non-vacuous no-leak DB test (DASH-01..04)
+- [x] 03-01-PLAN.md — Data & aggregation foundation: extract shared vote-state vocabulary (`STATE_META` + `normalizeVoteState`), pure `computeResults` tally + best-day ranking (D3-02, lexicographic yes↓/if-need-be↓/date↑), and admin-only participant-safe `getResultsForPoll` LEFT JOIN with a non-vacuous no-leak DB test (DASH-01..04)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 03-02-PLAN.md — `ResultsGrid` `"use client"` island: semantic table, three-state cells, per-date tallies, best-day highlight/badge, scroll-edge fade, and a concurrency-safe client-only date/status filter, mounted on `/a/[adminUrlId]` (DASH-01..05)
+- [x] 03-02-PLAN.md — `ResultsGrid` `"use client"` island: semantic table, three-state cells, per-date tallies, best-day highlight/badge, scroll-edge fade, and a concurrency-safe client-only date/status filter, mounted on `/a/[adminUrlId]` (DASH-01..05)
 
 ### Phase 4: Email & Finalization
 
@@ -128,5 +128,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Foundation & Poll Creation | 3/3 | Complete   | 2026-06-30 |
 | 2. Participant Voting | 2/2 | Complete    | 2026-07-01 |
-| 3. Results Dashboard | 0/2 | Not started | - |
+| 3. Results Dashboard | 2/2 | Complete   | 2026-07-01 |
 | 4. Email & Finalization | 0/2 | Not started | - |
