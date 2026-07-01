@@ -82,8 +82,19 @@ async function loadCreated(adminUrlId: string) {
   return { poll, opts };
 }
 
+// Count only polls THIS file created (tracked via createdAdminIds). A global
+// `SELECT count(*) FROM polls` is race-unsafe: other DB-backed test files run in
+// parallel vitest workers and INSERT polls, so a global count can change between
+// the before/after snapshots of a validation-reject test through no fault of the
+// call under test. Scoping to our own admin tokens — mutated only by this file's
+// sequential success tests, never by a parallel worker — keeps the "a rejected
+// validation creates no poll" intent while being immune to cross-file races.
 async function pollCount(): Promise<number> {
-  const rows = await db.select({ id: polls.id }).from(polls);
+  if (createdAdminIds.length === 0) return 0;
+  const rows = await db
+    .select({ id: polls.id })
+    .from(polls)
+    .where(inArray(polls.adminUrlId, createdAdminIds));
   return rows.length;
 }
 

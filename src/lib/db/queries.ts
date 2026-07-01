@@ -9,7 +9,7 @@
 //    'YYYY-MM-DD' strings end-to-end — never a JS Date (D-11 / P3).
 import { db } from "@/lib/db";
 import { polls, options, participants, votes } from "@/lib/db/schema";
-import { eq, asc, sql } from "drizzle-orm";
+import { eq, asc, sql, and } from "drizzle-orm";
 
 /** Full poll row by admin token (admin route is the management surface). */
 export async function getPollByAdminUrlId(adminUrlId: string) {
@@ -104,4 +104,59 @@ export async function getVotesForParticipant(
     .from(votes)
     .where(eq(votes.participantId, participantId));
   return Object.fromEntries(rows.map((r) => [r.optionId, r.state]));
+}
+
+/**
+ * Admin-only results read (DASH-01..04). Returns every participant for the poll
+ * ordered by createdAt asc (submission order), each with a
+ * `Record<optionId, state>` of their votes. Selects participant-safe columns
+ * ONLY — `id`/`name` plus the vote `optionId`/`state`. It DELIBERATELY OMITS
+ * `email`, `edit_token`, and `admin_url_id` (SPEC Prohibition #1/#2): a
+ * screenshot-able admin grid must never leak an email, and the results payload
+ * must never carry a token (preserves the three-token model).
+ *
+ * `participants.createdAt` is selected ONLY to drive the ORDER BY — it is NOT
+ * projected into the returned shape. It is a real JS `Date` (not a mode:"string"
+ * column) and must not cross the RSC->client boundary as a prop (Pitfall 2). The
+ * returned shape is fully JSON-serializable: `{ id, name, votes }`.
+ *
+ * LEFT JOIN so a participant with zero vote rows still appears (with an empty
+ * `votes` record) — never start the query FROM votes, which structurally cannot
+ * represent a voteless participant (Pitfall 3). computeResults/ResultsGrid then
+ * gap-fill each missing (participant, option) cell to "no" (D3-03). The join
+ * condition also matches votes.pollId so the planner may use votes_poll_id_idx.
+ *
+ * No throw / empty-array-on-miss, matching the other read helpers here.
+ */
+export async function getResultsForPoll(pollId: string) {
+  const rows = await db
+    .select({
+      participantId: participants.id,
+      participantName: participants.name,
+      optionId: votes.optionId,
+      state: votes.state,
+    })
+    .from(participants)
+    .leftJoin(
+      votes,
+      and(eq(votes.participantId, participants.id), eq(votes.pollId, pollId)),
+    )
+    .where(eq(participants.pollId, pollId))
+    .orderBy(asc(participants.createdAt));
+
+  const byParticipant = new Map<
+    string,
+    { id: string; name: string; votes: Record<string, string> }
+  >();
+  for (const r of rows) {
+    let p = byParticipant.get(r.participantId);
+    if (!p) {
+      p = { id: r.participantId, name: r.participantName, votes: {} };
+      byParticipant.set(r.participantId, p);
+    }
+    // A LEFT JOIN miss yields null optionId/state -> leave the empty record.
+    if (r.optionId && r.state) p.votes[r.optionId] = r.state;
+  }
+  // Map preserves insertion order = the SQL createdAt-asc order.
+  return [...byParticipant.values()];
 }
