@@ -123,6 +123,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & Poll Creation | 3/3 | Complete   | 2026-06-30 |
-| 2. Participant Voting | 2/2 | Complete   | 2026-07-01 |
+| 2. Participant Voting | 2/2 | Complete    | 2026-07-01 |
 | 3. Results Dashboard | 0/2 | Not started | - |
 | 4. Email & Finalization | 0/2 | Not started | - |
