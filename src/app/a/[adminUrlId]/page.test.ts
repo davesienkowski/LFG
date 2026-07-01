@@ -21,14 +21,23 @@ vi.mock("next/headers", () => ({
 
 import AdminPage from "./page";
 import { db } from "@/lib/db";
-import { polls, options } from "@/lib/db/schema";
+import { polls, options, participants, votes } from "@/lib/db/schema";
 import { generateToken } from "@/lib/tokens";
 
 const createdAdminIds: string[] = [];
 
+type VoteState = "yes" | "ifneedbe" | "no";
+
 async function seedPoll(overrides?: {
   description?: string | null;
   location?: string | null;
+  // Participants to seed, each with votes keyed by OPTION INDEX (0 = 2026-07-12,
+  // 1 = 2026-07-19). `email` seeds a leak canary (SPEC Prohibition #1).
+  participants?: {
+    name: string;
+    email?: string | null;
+    votes?: Partial<Record<number, VoteState>>;
+  }[];
 }) {
   const participantUrlId = generateToken();
   const adminUrlId = generateToken();
@@ -42,10 +51,37 @@ async function seedPoll(overrides?: {
       adminUrlId,
     })
     .returning({ id: polls.id });
-  await db.insert(options).values([
-    { pollId: poll.id, date: "2026-07-12", startTime: null, position: 0 },
-    { pollId: poll.id, date: "2026-07-19", startTime: "14:00", position: 1 },
-  ]);
+  const insertedOptions = await db
+    .insert(options)
+    .values([
+      { pollId: poll.id, date: "2026-07-12", startTime: null, position: 0 },
+      { pollId: poll.id, date: "2026-07-19", startTime: "14:00", position: 1 },
+    ])
+    .returning({ id: options.id, position: options.position });
+  // Map option index (== position) -> id, independent of RETURNING row order.
+  const optionIdByIndex = [...insertedOptions]
+    .sort((a, b) => a.position - b.position)
+    .map((o) => o.id);
+
+  for (const p of overrides?.participants ?? []) {
+    const [part] = await db
+      .insert(participants)
+      .values({
+        pollId: poll.id,
+        name: p.name,
+        email: p.email ?? null,
+        editToken: generateToken(),
+      })
+      .returning({ id: participants.id });
+    const voteRows = Object.entries(p.votes ?? {}).map(([idx, state]) => ({
+      pollId: poll.id,
+      participantId: part.id,
+      optionId: optionIdByIndex[Number(idx)],
+      state: state as VoteState,
+    }));
+    if (voteRows.length) await db.insert(votes).values(voteRows);
+  }
+
   createdAdminIds.push(adminUrlId);
   return { pollId: poll.id, participantUrlId, adminUrlId };
 }
@@ -98,6 +134,43 @@ describe("AdminPage", () => {
     });
     const html = await renderAdmin(adminUrlId);
     expect(html).toContain("Admin Render Poll");
+  });
+
+  it("renders the Results section (heading, names, exact tally, Best badge) and never leaks the canary email", async () => {
+    // opt-0 (2026-07-12): yes=2 (Alex, Sam), ifneedbe=1 (Jordan) -> strict best.
+    // opt-1 (2026-07-19): yes=0, ifneedbe=0.
+    const { adminUrlId } = await seedPoll({
+      participants: [
+        {
+          name: "Alex Canary",
+          email: "alex-canary@example.com",
+          votes: { 0: "yes", 1: "no" },
+        },
+        { name: "Sam Ryder", votes: { 0: "yes", 1: "no" } },
+        { name: "Jordan Vale", votes: { 0: "ifneedbe", 1: "no" } },
+      ],
+    });
+    const html = await renderAdmin(adminUrlId);
+
+    // (a) heading + every participant name render.
+    expect(html).toContain("Results");
+    expect(html).toContain("Alex Canary");
+    expect(html).toContain("Sam Ryder");
+    expect(html).toContain("Jordan Vale");
+    // (b) exact tally caption for the known date column.
+    expect(html).toContain("2 yes · 1 if-need-be");
+    // (c) the strict yes-leader renders the Best badge.
+    expect(html).toContain("Best");
+    // (d) NEGATIVE, non-vacuous: the seeded participant IS rendered (name above),
+    // yet the canary email never appears in the admin HTML (SPEC Prohibition #1).
+    expect(html).not.toContain("alex-canary@example.com");
+  });
+
+  it("renders the 'No responses yet' empty state (no table) for a poll with zero participants", async () => {
+    const { adminUrlId } = await seedPoll();
+    const html = await renderAdmin(adminUrlId);
+    expect(html).toContain("No responses yet");
+    expect(html).not.toContain("<table");
   });
 
   it("calls notFound() (404) for an unknown admin token", async () => {

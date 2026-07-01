@@ -11,6 +11,7 @@ import { headers } from "next/headers";
 import {
   getPollByAdminUrlId,
   getOptionsForPoll,
+  getResultsForPoll,
 } from "@/lib/db/queries";
 import {
   resolveBaseUrl,
@@ -18,8 +19,10 @@ import {
   buildAdminUrl,
 } from "@/lib/urls";
 import { formatDateWithTime } from "@/lib/format-date";
+import { computeResults } from "@/lib/results";
 import { PollSummary } from "@/components/poll-summary";
 import { CopyLinkButton } from "@/components/copy-link-button";
+import { ResultsGrid } from "@/components/results-grid";
 import { Card } from "@/components/ui/card";
 
 export default async function AdminPage({
@@ -33,6 +36,8 @@ export default async function AdminPage({
   if (!poll) notFound();
 
   const options = await getOptionsForPoll(poll.id);
+  const participants = await getResultsForPoll(poll.id);
+  const results = computeResults(participants, options);
 
   const h = await headers();
   const base = resolveBaseUrl(h.get("host"), h.get("x-forwarded-proto"));
@@ -95,6 +100,16 @@ export default async function AdminPage({
             <CopyLinkButton url={adminLink} label="Copy admin link" />
           </div>
         </Card>
+      </div>
+
+      {/* Results (DASH-01..05) — appended as the last section, below Share. */}
+      <div className="flex flex-col gap-4">
+        <h2 className="text-2xl font-semibold leading-snug">Results</h2>
+        <ResultsGrid
+          options={options}
+          participants={participants}
+          results={results}
+        />
       </div>
     </main>
   );
