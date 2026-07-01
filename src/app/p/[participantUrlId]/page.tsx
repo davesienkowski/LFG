@@ -1,15 +1,23 @@
-// Participant shell `/p/[participantUrlId]` (UI-SPEC Surface 3). RSC: resolve the
-// poll by participant token via getPollByParticipantUrlId, which selects ONLY
-// participant-safe columns and DELIBERATELY OMITS admin_url_id — so the rendered
-// HTML and the serialized RSC payload can never contain the admin token
-// (D-09 / prohibition P2). 404 on miss. Voting UI is deferred to Phase 2.
+// Participant vote view `/p/[participantUrlId]` (UI-SPEC Surface 1/2). RSC:
+// resolve the poll by participant token via getPollByParticipantUrlId — which
+// selects ONLY participant-safe columns and DELIBERATELY OMITS admin_url_id, so
+// the rendered HTML and RSC payload can never carry the admin token
+// (D-09 / prohibition P2). 404 on miss.
+//
+// Renders the shared VoteForm pointed at submitResponse. This is a FRESH submit
+// form: there is NO same-device cookie preload here — the returning-participant
+// auto-load + updateResponse routing is deliberately 02-02's slice (scope note).
+// When poll.status != 'open' the form renders read-only (disabled inputs,
+// non-interactive grid, no submit button) and submitResponse rejects the write
+// server-side.
 import { notFound } from "next/navigation";
 import {
   getPollByParticipantUrlId,
   getOptionsForPoll,
 } from "@/lib/db/queries";
-import { formatDateWithTime } from "@/lib/format-date";
+import { submitResponse } from "@/lib/actions/submit-response";
 import { PollSummary } from "@/components/poll-summary";
+import { VoteForm } from "@/components/vote-form";
 
 export default async function ParticipantPage({
   params,
@@ -27,31 +35,21 @@ export default async function ParticipantPage({
     <main className="mx-auto w-full max-w-2xl px-4 py-12 flex flex-col gap-8">
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-semibold leading-tight">{poll.title}</h1>
-        <PollSummary
-          description={poll.description}
-          location={poll.location}
-        />
+        <PollSummary description={poll.description} location={poll.location} />
       </div>
 
-      <ul className="flex flex-col gap-1">
-        {options.map((opt) => (
-          <li key={opt.id} className="text-base">
-            {formatDateWithTime(
-              opt.date,
-              opt.startTime ? opt.startTime.slice(0, 5) : null,
-            )}
-          </li>
-        ))}
-      </ul>
-
-      <div className="rounded-lg border bg-muted p-6 text-center">
-        <h2 className="text-2xl font-semibold leading-snug">
-          Voting isn&apos;t available yet
-        </h2>
-        <p className="text-base text-muted-foreground">
-          The organizer is still setting up this poll. Check back soon.
-        </p>
-      </div>
+      <VoteForm
+        action={submitResponse}
+        participantUrlId={participantUrlId}
+        options={options.map((o) => ({
+          id: o.id,
+          date: o.date,
+          startTime: o.startTime,
+        }))}
+        readOnly={poll.status !== "open"}
+        submitLabel="Submit availability"
+        pendingLabel="Submitting..."
+      />
     </main>
   );
 }
