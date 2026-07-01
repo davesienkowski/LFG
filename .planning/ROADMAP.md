@@ -88,9 +88,13 @@ Plans:
 **UI hint**: yes
 
 Plans:
+**Wave 1**
 
-- [ ] 03-01: `getResultsAggregation` SQL GROUP BY + `ResultsGrid` + `BestDayBadge`; three-state cells, summary counts, and best-day highlight on the admin page (index `votes.poll_id`)
-- [ ] 03-02: Sort/filter the results view by availability status for a given date
+- [ ] 03-01-PLAN.md — Data & aggregation foundation: extract shared vote-state vocabulary (`STATE_META` + `normalizeVoteState`), pure `computeResults` tally + best-day ranking (D3-02, lexicographic yes↓/if-need-be↓/date↑), and admin-only participant-safe `getResultsForPoll` LEFT JOIN with a non-vacuous no-leak DB test (DASH-01..04)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 03-02-PLAN.md — `ResultsGrid` `"use client"` island: semantic table, three-state cells, per-date tallies, best-day highlight/badge, scroll-edge fade, and a concurrency-safe client-only date/status filter, mounted on `/a/[adminUrlId]` (DASH-01..05)
 
 ### Phase 4: Email & Finalization
 
