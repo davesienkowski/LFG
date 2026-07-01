@@ -46,7 +46,7 @@ created: 2026-07-01
 | Component | Used On | Usage |
 |-----------|---------|-------|
 | `card` | Invite-by-email card, Book-it card, Poll-finalized card, unconfigured-email notice | Reused verbatim, `p-6` interior per existing pattern |
-| `button` | Send invites, Book this date (trigger), Confirm and close poll, Cancel | `variant="default"` for primary actions, `variant="ghost"`/`variant="outline"` for Cancel |
+| `button` | Send invites, Book this date (trigger), Confirm and close poll, Keep poll open | `variant="default"` for primary actions, `variant="ghost"`/`variant="outline"` for Keep poll open |
 | `input` | Not used this phase | Multi-address entry uses `textarea`, not `input` — addresses are naturally multi-line/comma-separated (see Component Spec) |
 | `label` | Invite-by-email card | "Email addresses" label above the textarea |
 | `textarea` | Invite-by-email card | Multi-address free-text entry |
@@ -85,6 +85,8 @@ Reused verbatim from Phase 1/2/3 — no new tokens. All values are multiples of 
 | Body | 16px | 400 (regular) | 1.5 | `text-base font-normal leading-relaxed` | Card helper copy, confirm-step warning text, empty-state body |
 | Label | 14px | 600 (semibold) | 1.5 | `text-sm font-semibold leading-normal` | "Email addresses" field label, per-recipient email address text |
 | Caption / Badge | 12px | 400 or 600 (regular or semibold) | 1.5 | `text-xs font-normal` / `text-xs font-semibold` | Send-result chip text, "Booked" badge, "Suggested best day" badge, rate-limit caption |
+
+**Caption / Badge role — approved 5th typography role, reused verbatim (no new size/weight introduced by Phase 4).** This is not a new size added by this phase. `text-xs` (12px) is the project's formally-approved 5th typography role: it was declared and justified in the SHIPPED Phase 3 contract (`.planning/phases/03-results-dashboard/03-UI-SPEC.md:78-80`), which itself traces the role back to Phase 1's "Keep private" badge (`src/app/a/[adminUrlId]/page.tsx` — `text-xs font-semibold`), already in production. Phase 3's contract formally declared 12px as the project's 5th typography role and it passed the Phase 3 UI checker under that declaration. Phase 4 reuses this same role verbatim for its own secondary/caption/badge text (send-result chip text, "Booked"/"Suggested best day" badges, rate-limit caption) — zero new sizes and zero new weights are introduced by this phase; the weight budget stays at 2 (regular 400 + semibold 600), matching the Phase 3 precedent exactly.
 
 Font stack (app UI): `Inter, system-ui, -apple-system, sans-serif` (unchanged).
 
@@ -140,7 +142,7 @@ No dark mode in Phase 4.
 | Primary CTA (invite) | **"Send invites"** | Button label, Invite-by-email card |
 | Primary CTA (finalize, step 1 — trigger) | **"Book this date"** | Button label that opens the confirm disclosure; disabled until a candidate date is selected |
 | Primary CTA (finalize, step 2 — confirm) | **"Confirm and close poll"** | Button label inside the confirm disclosure; the actual destructive/irreversible write |
-| Secondary action (finalize, step 2 — cancel) | **"Cancel"** | `variant="ghost"`, collapses the confirm disclosure without writing anything |
+| Secondary action (finalize, step 2 — cancel) | **"Keep poll open"** | `variant="ghost"`, collapses the confirm disclosure without writing anything — the exact inverse of "Confirm and close poll" |
 | Empty state heading (email not configured) | **"Email isn't set up"** | Invite-by-email card, MAIL-03 |
 | Empty state body (email not configured) | **"Copy the participant link above and share it manually."** | References the already-visible Participant-link Card's `CopyLinkButton` rather than duplicating a second copy button (D-05) |
 | Error state (send failure, per-recipient) | **"Failed to send — share the link manually."** | Inline next to the failed address; never blocks the rest of the batch (D-05) |
@@ -290,7 +292,7 @@ Mounted as its own section below "Results" (see Layout Skeleton) — the organiz
             onClick={() => setShowConfirm(false)}
             disabled={isPending}
           >
-            Cancel
+            Keep poll open
           </Button>
         </div>
       </div>
@@ -302,7 +304,7 @@ Mounted as its own section below "Results" (see Layout Skeleton) — the organiz
 - Radio group pre-selects the `isBest` option(s) from `computeResults` (D-08) — if multiple dates tie for best, pre-select the chronologically-first tying option (native radio groups permit exactly one `defaultChecked`); the organizer may still pick any other candidate date.
 - "Book this date" is disabled only in the trivial case of zero candidate dates (never possible in this app — `POLL-03` requires at least one date at creation) — otherwise always enabled once a radio is selected (one is always pre-selected, so the button is enabled on first render).
 - Clicking "Book this date" **does not submit anything yet** — it only reveals the amber confirm panel (`showConfirm` is local client state, not a server round-trip). The actual `closePoll` server action only fires on "Confirm and close poll".
-- "Cancel" collapses the confirm panel back to the plain picker with no side effects — matches the reversible, no-cost-to-cancel precedent already used for Phase 3's "Clear filter".
+- "Keep poll open" collapses the confirm panel back to the plain picker with no side effects — matches the reversible, no-cost-to-cancel precedent already used for Phase 3's "Clear filter".
 - Native `<input type="radio">` (not a shadcn `RadioGroup` — not installed, and a plain radio group needs no extra dependency), consistent with Phase 1/3's "native form control over a new shadcn install" precedent.
 
 ### Finalized state (poll closed)
@@ -428,7 +430,7 @@ Three plain-HTML templates in `src/lib/email/templates.ts`. **No `react-email`.*
 │  Poll finalized                                   [h2, Heading]       │
 │  ┌─ emerald Card ──────────────────────────────────────────────┐    │
 │  │  Sat Jul 19 at 2:00 PM is booked. Everyone who voted and      │  │
-│  │  gave an email was notified.                                  │  │
+│  │  gave an email should get a confirmation.                     │  │
 │  └────────────────────────────────────────────────────────────────┘  │
 └────────────────────────────────────────────────────────────────────┘
 ```
@@ -448,11 +450,11 @@ Three plain-HTML templates in `src/lib/email/templates.ts`. **No `react-email`.*
 
 - The empty-state Card renders on every page load when `EMAIL_PROVIDER` is unset/`"none"` — this is a build-time/env-derived state, not a client-side toggle; there is no button to "enable" it from the UI.
 
-### Book It — Picker → Confirm → Cancel
+### Book It — Picker → Confirm → Keep poll open
 
 - Selecting a different radio button changes which date the eventual `closePoll` submit will use — purely client state, no network call (matches Phase 3's filter-control precedent of zero round-trips for non-committing interactions).
 - Clicking "Book this date" reveals the amber confirm panel in place (no page navigation, no modal/portal) — the radio group remains visible and still changeable while the confirm panel is open (changing the selection while the panel is open keeps the panel open, reflecting the newly-selected date's copy — the confirm copy is date-agnostic, so no re-render of the confirm text is needed).
-- Clicking "Cancel" collapses the confirm panel with zero side effects — equivalent to the panel never having been opened.
+- Clicking "Keep poll open" collapses the confirm panel with zero side effects — equivalent to the panel never having been opened.
 - Clicking "Confirm and close poll" submits the actual `closePoll` server action; the button enters a pending state ("Booking…") and both buttons disable during the pending window (matches the disabled-both-during-pending pattern already used in `vote-form.tsx`).
 - On success, the page re-renders (via the existing RSC + redirect/revalidate pattern already used elsewhere in this app) into the **Finalized state** — the picker Card is completely replaced by the "Poll finalized" Card; there is no transient "just booked!" toast — the finalized Card itself IS the confirmation, consistent with this app's no-toast precedent (Phase 1/2 confirmations are always a persistent on-page state, e.g., `/thanks`, never an ephemeral toast).
 
@@ -468,7 +470,7 @@ Three plain-HTML templates in `src/lib/email/templates.ts`. **No `react-email`.*
 - **Every send-result and finalize-state signal communicates via icon + text label, never color alone** — identical invariant to Phase 2/3's `STATE_META`/`BestDayBadge` rule, applied here to the Sent/Rate-limited/Failed chips and the "Suggested"/"Booked" badges.
 - Textarea has an associated `<Label htmlFor>` (native semantics, unchanged shadcn `Label`/`Textarea` pairing already used elsewhere in this app).
 - The radio group uses a native `<fieldset>`/`<legend>`/`<input type="radio">` — fully keyboard-operable (arrow keys move selection) and screen-reader-announced (`legend` gives the group a name) without any custom ARIA.
-- Minimum touch target: 44px (`h-11`) for "Send invites", "Book this date", "Confirm and close poll", and "Cancel" — same override pattern already applied throughout Phase 1/2/3.
+- Minimum touch target: 44px (`h-11`) for "Send invites", "Book this date", "Confirm and close poll", and "Keep poll open" — same override pattern already applied throughout Phase 1/2/3.
 - `aria-live="polite"` region on the invite result list, mirroring Phase 2/3's live-region precedent for asynchronous, non-navigational state changes.
 - The amber confirm panel is **not** a modal (no focus trap, no `aria-modal`) — it is inline content that receives normal document flow and tab order; this is an intentional accessibility simplification (no focus-trap bugs possible) consistent with the "hand-written disclosure over a Dialog" decision above.
 - Email templates: every link (CTA button and fallback plain-text link) carries descriptive link text (never bare "click here") — "View the poll & vote", "View or edit my response", "View the poll" — screen readers and email clients that strip button styling both get meaningful link text.
