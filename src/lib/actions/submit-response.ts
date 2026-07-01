@@ -128,6 +128,9 @@ export async function submitResponse(
         value: participant.editToken,
         httpOnly: true,
         sameSite: "lax",
+        // Secure under HTTPS in production (Vercel); omitted in local HTTP dev
+        // so the same-device auto-load cookie still works over localhost.
+        secure: process.env.NODE_ENV === "production",
         path: `/p/${poll.participantUrlId}`,
         maxAge: 60 * 60 * 24 * 365,
       });

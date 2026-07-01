@@ -281,6 +281,9 @@ describe("submitResponse — success path", () => {
     const set = cookieSets.find((c) => c.name === `lfg_edit_${participantUrlId}`);
     expect(set).toBeTruthy();
     expect(set?.httpOnly).toBe(true);
+    // Secure is env-conditional: true under HTTPS in production, false in local
+    // HTTP dev/test so the same-device cookie still works over localhost.
+    expect(set?.secure).toBe(process.env.NODE_ENV === "production");
     expect(set?.path).toBe(`/p/${participantUrlId}`);
   });
 });
