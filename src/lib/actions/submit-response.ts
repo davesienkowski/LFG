@@ -24,7 +24,8 @@
 
 import { z } from "zod";
 import { redirect, notFound } from "next/navigation";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
+import { after } from "next/server";
 import { db } from "@/lib/db";
 import { participants, votes } from "@/lib/db/schema";
 import {
@@ -32,6 +33,9 @@ import {
   getOptionsForPoll,
 } from "@/lib/db/queries";
 import { generateToken } from "@/lib/tokens";
+import { resolveBaseUrl, buildEditUrl } from "@/lib/urls";
+import { sendEmail } from "@/lib/email/send";
+import { renderConfirmationEmail } from "@/lib/email/templates";
 
 const SubmitResponseSchema = z.object({
   // trim() BEFORE min(1) so a whitespace-only name is rejected (UI-SPEC).
@@ -113,6 +117,9 @@ export async function submitResponse(
   // Insert the participant, retrying on the astronomically-improbable editToken
   // collision (same bounded loop as createPoll's token mint).
   let participantId: string | null = null;
+  // Captured for the best-effort confirmation email below (VOTE-04) — the SAME
+  // edit token /thanks surfaces, an additional channel, not a new credential.
+  let mintedEditToken: string | null = null;
   for (let attempt = 0; ; attempt++) {
     const editToken = generateToken();
     try {
@@ -121,6 +128,7 @@ export async function submitResponse(
         .values({ pollId: poll.id, name, email: email ?? null, editToken })
         .returning({ id: participants.id, editToken: participants.editToken });
       participantId = participant.id;
+      mintedEditToken = participant.editToken;
       // Set the edit cookie once the token is durably minted.
       const cookieStore = await cookies();
       cookieStore.set({
@@ -153,6 +161,33 @@ export async function submitResponse(
     state: submittedByOption.get(opt.id) ?? "no",
   }));
   await db.insert(votes).values(rows);
+
+  // Best-effort VOTE-04 confirmation (D-07). Fires ONLY when the participant
+  // supplied an email. This action is INSERT-only, so every call is a FIRST
+  // submit by construction — the "first submit only" rule is satisfied without a
+  // guard here (edits route through updateResponse, which must NOT gain this
+  // hook). The send is scheduled via after() so it never blocks or fails the
+  // vote: after() runs even after redirect() and, on Vercel, extends the
+  // invocation via waitUntil so the SMTP handshake isn't dropped (Pitfall 2).
+  //
+  // The base URL is captured HERE, inside the request, BEFORE after() runs — the
+  // deferred callback must not call next/headers after the redirect is issued.
+  if (email && mintedEditToken) {
+    const h = await headers();
+    const base = resolveBaseUrl(h.get("host"), h.get("x-forwarded-proto"));
+    const editToken = mintedEditToken;
+    const confirmationEmail = email;
+    after(async () => {
+      const editUrl = buildEditUrl(base, poll.participantUrlId, editToken);
+      // Result is intentionally ignored — a send failure must never surface past
+      // after() or affect the already-issued redirect (D-07).
+      await sendEmail({
+        to: confirmationEmail,
+        subject: `Your response to ${poll.title}`,
+        html: renderConfirmationEmail({ title: poll.title, editUrl }),
+      });
+    });
+  }
 
   // redirect() throws — no code runs after this line.
   redirect(`/p/${poll.participantUrlId}/thanks`);

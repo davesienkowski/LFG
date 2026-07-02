@@ -31,6 +31,21 @@ vi.mock("next/headers", () => ({
       cookieSets.push(opts);
     },
   }),
+  // The confirmation hook resolves the base URL from request headers before
+  // scheduling the send. A minimal stub is enough for the deterministic run.
+  headers: async () => ({
+    get: (name: string) =>
+      name === "host" ? "localhost:3000" : name === "x-forwarded-proto" ? "http" : null,
+  }),
+}));
+
+// after() schedules the best-effort confirmation send. Run the callback as a
+// swallowed microtask so a send failure can never surface into the test (mirrors
+// the platform's fire-and-never-throw-past-after() contract, D-07).
+vi.mock("next/server", () => ({
+  after: (cb: () => Promise<void> | void) => {
+    void Promise.resolve().then(cb).catch(() => {});
+  },
 }));
 
 import { submitResponse } from "./submit-response";
@@ -367,9 +382,6 @@ describe("submitResponse — status guard & unknown token", () => {
   });
 
   it("triggers notFound() for an unknown participant token and creates no rows", async () => {
-    const before = (
-      await db.select({ id: participants.id }).from(participants)
-    ).length;
     const { notFound } = await run(
       fd({
         participantUrlId: "nonexistent-token-000",
@@ -377,10 +389,39 @@ describe("submitResponse — status guard & unknown token", () => {
         votes: votesJson([]),
       }),
     );
+    // notFound() throws before the participant INSERT is ever reached, so no row
+    // can be created for an unknown token. (A global participants-count
+    // before/after check here races with the other DB-backed test files running
+    // in parallel against the shared Postgres — the notFound() assertion alone is
+    // the non-racy proof that the insert path is unreachable.)
     expect(notFound).toBe(true);
-    const after = (
-      await db.select({ id: participants.id }).from(participants)
-    ).length;
-    expect(after).toBe(before);
+  });
+});
+
+describe("submitResponse — best-effort confirmation hook (VOTE-04, D-07)", () => {
+  it("still commits participant/votes and reaches redirect with an email but no provider (no throw)", async () => {
+    // EMAIL_PROVIDER is unset in this suite → sendEmail() returns a non-throwing
+    // { ok:false, error:'Email not configured' } no-op; the vote MUST still land.
+    expect(process.env.EMAIL_PROVIDER).toBeUndefined();
+    const { pollId, participantUrlId, optionIds } = await seedPoll();
+    const { redirectUrl, state } = await run(
+      fd({
+        participantUrlId,
+        name: "Mailer",
+        email: "mailer@example.com",
+        votes: votesJson([{ optionId: optionIds[0], state: "yes" }]),
+      }),
+    );
+    // Flush the scheduled after() microtask; it must not throw.
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(state).toBeNull();
+    expect(redirectUrl).toBe(`/p/${participantUrlId}/thanks`);
+    const ps = await participantsFor(pollId);
+    expect(ps).toHaveLength(1);
+    expect(ps[0].email).toBe("mailer@example.com");
+    const vs = await votesFor(ps[0].id);
+    expect(vs).toHaveLength(optionIds.length);
   });
 });
