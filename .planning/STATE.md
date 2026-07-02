@@ -6,7 +6,7 @@ current_phase: 04
 current_phase_name: email-finalization
 status: executing
 stopped_at: Phase 4 UI-SPEC approved
-last_updated: "2026-07-02T16:44:43.031Z"
+last_updated: "2026-07-02T16:49:37.219Z"
 last_activity: 2026-07-02
 last_activity_desc: Phase 04 execution started
 progress:
@@ -98,6 +98,7 @@ None yet.
 [Issues that affect future work]
 
 - [Phase 4]: Email options researched → **SEED-001** (`.planning/seeds/SEED-001-phase4-free-email-no-domain.md`). Key finding: a domain is NOT required — Gmail SMTP + App Password is a genuinely-free, no-domain path with good deliverability (send *as* your gmail; SPF/DKIM/DMARC align), with SMTP2GO single-sender as fallback and Resend+domain as an optional deliverability upgrade. Watch the gmail-From-via-relay DMARC trap. Re-verify free-tier numbers at build time. (Original concern — ~48h DNS / ~$10-12/yr domain — only applies if we choose the Resend+domain path.)
+- 04-03 Task 1 BLOCKED: prod Neon DATABASE_URL flagged Sensitive in Vercel (env pull returns empty for prod+dev). Cannot self-serve db:migrate (0002_superb_skaar) — no connection string retrievable, no neon CLI. Need human to supply the Neon prod pooled connection string OR temporarily un-flag DATABASE_URL as Sensitive. Deploy intentionally NOT run (must migrate-first; new code reads winning_option_id). Prod alias: looking-for-group-eight.vercel.app
 
 ### Quick Tasks Completed
 
