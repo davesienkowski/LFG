@@ -24,62 +24,62 @@ libraries, CSS approaches, tokens, or animation. No renaming of vote states.
 <decisions>
 ## Implementation Decisions (locked — from the handoff)
 
-### D-01 — The one breaking change: AvailabilityGrid → radio matrix
+- **D-01 — The one breaking change: AvailabilityGrid → radio matrix**
 `src/components/availability-grid.tsx` changes from a single click-to-cycle `<button>` per date
 (`no→yes→ifneedbe→no`) to a **radio-style matrix**: each date row is a `role="radiogroup"` of three
 `role="radio"` cells (Available / If-need-be / Not available), exactly one selected. Tap the state
 you mean — no hidden cycling. The participant grid now mirrors the admin `ResultsGrid` layout (one
 mental model across both surfaces).
 
-### D-02 — Desktop (≥640px): icon-only cells + persistent labelled column headers
+- **D-02 — Desktop (≥640px): icon-only cells + persistent labelled column headers**
 Desktop cells are **icon-only**; the icon **+** text label lives in a persistent column header
 (`grid-template-columns: 1.6fr 1fr 1fr 1fr`; header row = empty label cell + three state headers).
 a11y is satisfied at the column level — this is the only new a11y-load-bearing surface.
 
-### D-03 — Mobile (<640px): stacked full-width icon+text segments
+- **D-03 — Mobile (<640px): stacked full-width icon+text segments**
 Collapse to stacked full-width segments (the `1a` layout), each **≥48px**, each carrying its own
 icon **+** text — so **no icon-only cells exist at mobile width**. Primary action (submit / closed
 banner) is `position: sticky` / pinned footer so a long date list never buries it (content scrolls,
 action pinned). The prototype's `mobileScroll`/`mobileViewportH` knobs are demo-only.
 
-### D-04 — Preserve the "never blank" invariant (data correctness)
+- **D-04 — Preserve the "never blank" invariant (data correctness)**
 Default/untouched row = **Not available** selected, never blank. This preserves the shipped Phase-2
 invariant that an unclicked date reads `no`, which the results/counting path depends on.
 
-### D-05 — Preserve bulk actions, closed read-only, and labels
+- **D-05 — Preserve bulk actions, closed read-only, and labels**
 Bulk-action row (VOTE-07): `Set all Available` / `Set all Not available` / `Clear`, ≥44px, above
 the grid, **absent entirely when read-only**. Closed poll → each row renders a single
 non-interactive chip (icon+text) of its chosen state; no matrix, no bulk row, no submit; "Voting is
 closed" banner (`border bg-muted p-6`). Do **not** rename states or labels (`Available` /
 `If-need-be` / `Not available`) — Doodle parity + shipped tests depend on them.
 
-### D-06 — a11y (WCAG AA), icon-or-color-never-alone
+- **D-06 — a11y (WCAG AA), icon-or-color-never-alone**
 Every state is icon **+** text (text via column header on desktop, on the segment itself on mobile);
 never color alone. Radio cells expose `role="radio"` / `aria-checked` inside `role="radiogroup"` per
 date row, `aria-label="{date}: {state}"`. Retain the existing `aria-live` announcement region.
 Focus ring `ring-3 ring-ring/50` (shipped). Targets ≥44px (vote cells 44–48px).
 
-### D-07 — Tokens, palette, type, spacing reused verbatim
+- **D-07 — Tokens, palette, type, spacing reused verbatim**
 No token moves. Reuse `src/app/globals.css` OKLCH tokens and the `src/lib/vote-state.ts` palette
 (`yes`=emerald-50/700/300 `Check`; `ifneedbe`=amber-50/700/300 `CircleHelp`; `no`=muted/muted-foreground/border `X`)
 exactly. Best-day highlight = emerald-100/800 + literal "Best" text badge. Type scale
 Display 30 / Heading 24 / Body 16 / Label 14 / Caption·Badge 12, weights 400+600 only, Inter
 (`--font-sans`), 8-pt spacing, `--radius: 0.625rem`.
 
-### D-08 — Tests: rewrite the grid test + add a11y tests
+- **D-08 — Tests: rewrite the grid test + add a11y tests**
 `availability-grid.test.tsx` currently asserts click-to-cycle and **will break** — rewrite it to
 assert radio semantics + the mobile segmented fallback + desktop column-header association. Add new
 a11y tests: (a) icon-only desktop cells associate with their labelled column header; (b) the <640px
 segmented fallback carries its own icon+text.
 
-### D-09 — Other screens + emails are pixel targets (visual reconciliation only)
+- **D-09 — Other screens + emails are pixel targets (visual reconciliation only)**
 `ResultsGrid`, `InviteByEmailForm`, `BookItControl`, `PollCreateForm`, `CalendarDatePicker`, the three
 email templates, and the `event.ics` route already exist (Phases 1–4). Treat the mocks (ids 3a–3h,
 2a–2e) as pixel targets against the shipped structure — adjust Tailwind classes **only where they
 drift** from the mocks. No structural rewrite of these. Prototype inline styles map to existing
 utilities (`min-h-12`, `rounded-lg`, `border-emerald-300`, …) — no new utility or `@layer` rule.
 
-### D-10 — Optional: per-provider calendar-button color (templates.ts)
+- **D-10 — Optional: per-provider calendar-button color (templates.ts)**
 `calLink()` in `src/lib/email/templates.ts` currently hardcodes a neutral background. Per the
 handoff, give it a per-provider `background` argument so the two finalization-email calendar buttons
 are distinguishable without icons (email clients strip images): **Google `#1a73e8`** vs neutral
