@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Foundation & Poll Creation** - Lock in tokens/DB/timezone foundations; organizer creates a poll and gets distinct share links (completed 2026-06-30)
 - [x] **Phase 2: Participant Voting** - Anonymous three-state availability voting with token-verified self-editing (completed 2026-07-01)
 - [x] **Phase 3: Results Dashboard** - Participant × date grid, vote tallies, best-day highlight, sort/filter (completed 2026-07-01)
-- [ ] **Phase 4: Email & Finalization** - Free-tier email invites, edit-link confirmations, and "Book it" finalize with notices
+- [x] **Phase 4: Email & Finalization** - Free-tier email invites, edit-link confirmations, and "Book it" finalize with notices (completed 2026-07-02)
 
 ## Phase Details
 
@@ -110,7 +110,7 @@ Plans:
   4. The organizer can finalize the poll by selecting the winning date ("Book it"), which closes voting so the response form becomes read-only.
   5. On finalization, every participant who voted receives a confirmation email with the chosen date and event details.
 
-**Plans**: 2/3 plans executed
+**Plans**: 3/3 plans complete
 **Research**: Required — Resend custom-domain DNS/deliverability (DKIM/SPF/DMARC, up to ~48h propagation; verify before sending real invites) and the local SMTP/Mailpit dev path; handle the 100/day cap (429) visibly. (Resolved to SEED-001: Gmail SMTP + App Password for $0 no-domain prod sending, Mailpit for local capture.)
 **UI hint**: yes
 
@@ -125,8 +125,8 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2; production ship)*
 
-- [ ] 04-03-PLAN.md — Prod Neon migrate + Vercel deploy + prod happy-path smoke (graceful email fallback), then a human-action checkpoint to enable real Gmail SMTP sending and verify a live invite delivery (MAIL-02 in production)
-  - Task 1 ✅ done (efab035): prod Neon migrated (`winning_option_id`), Vercel prod deploy live, `.env.example` documents email vars. Task 2 (human-action: enable Gmail SMTP) pending — OPTIONAL, prod runs on MAIL-03 fallback.
+- [x] 04-03-PLAN.md — Prod Neon migrate + Vercel deploy + prod happy-path smoke (graceful email fallback), then a human-action checkpoint to enable real Gmail SMTP sending and verify a live invite delivery (MAIL-02 in production)
+  - Task 1 ✅ done (efab035): prod Neon migrated (`winning_option_id`), Vercel prod deploy live, `.env.example` documents email vars. Task 2 ✅ done: owner enabled 2FA + Gmail App Password + the 7 Gmail SMTP vars in Vercel Production; prod redeployed, build now selects the Gmail transport (MAIL-02 configured in prod). End-of-phase human checks: a real prod invite arriving in the owner's inbox (not spam, working link) + the full interactive prod happy-path smoke; SMTP2GO single-sender is the recorded fallback (T-04-13).
 
 ## Progress
 
@@ -138,4 +138,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Foundation & Poll Creation | 3/3 | Complete   | 2026-06-30 |
 | 2. Participant Voting | 2/2 | Complete    | 2026-07-01 |
 | 3. Results Dashboard | 2/2 | Complete    | 2026-07-01 |
-| 4. Email & Finalization | 2/3 | In Progress|  |
+| 4. Email & Finalization | 3/3 | Complete   | 2026-07-02 |

@@ -4,16 +4,16 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 04
 current_phase_name: email-finalization
-status: executing
-stopped_at: 04-03 Task 1 complete — awaiting Task 2 human-action checkpoint (enable prod Gmail SMTP)
-last_updated: "2026-07-02T16:49:37.219Z"
+status: ready-for-verification
+stopped_at: 04-03 complete — Phase 04 execution done; Gmail SMTP enabled in prod (ready for verification)
+last_updated: "2026-07-02T17:40:17Z"
 last_activity: 2026-07-02
-last_activity_desc: 04-03 Wave 3 in progress — prod Neon migrate + Vercel deploy live; email env documented
+last_activity_desc: 04-03 complete — prod Neon migrate + Vercel deploy live, Gmail SMTP enabled (owner set 2FA + App Password + 7 vars); Phase 04 execution complete
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 11
-  completed_plans: 10
+  completed_plans: 11
 ---
 
 # Project State
@@ -27,13 +27,13 @@ See: .planning/PROJECT.md (updated 2026-06-30)
 
 ## Current Position
 
-Phase: 04 (email-finalization) — EXECUTING
-Plan: 3 of 3 (Wave 3) — Task 1 complete, Task 2 (human-action checkpoint) pending
-Status: Awaiting Task 2 human-action — enable prod Gmail SMTP (OPTIONAL; prod runs on MAIL-03 fallback)
-Next: Owner replies "done" (set Vercel Production Gmail SMTP vars) to send a real prod invite, or "skip" to defer real prod email and close the phase on local Mailpit + prod-fallback evidence
-Last activity: 2026-07-02 — 04-03 Task 1: prod Neon migrate + Vercel deploy live; .env.example documents email vars
+Phase: 04 (email-finalization) — EXECUTION COMPLETE, ready for verification
+Plan: 3 of 3 (Wave 3) — COMPLETE (Task 1 + Task 2 done)
+Status: Phase 04 execution complete — Gmail SMTP enabled in prod (owner set 2FA + App Password + 7 vars); prod redeployed, build selects the Gmail transport
+Next: Phase 04 verification — two end-of-phase human checks remain: (1) a real prod invite arrives in the owner's inbox (not spam) with a working link (MAIL-02, executor has no inbox access); (2) full prod happy-path smoke (create → vote → results/best-day → Book it → closed/read-only). SMTP2GO single-sender is the recorded fallback if Gmail spam-folders/DMARC-fails or hits the 100/day cap (T-04-13).
+Last activity: 2026-07-02 — 04-03 complete: prod Neon migrate + Vercel deploy live; Gmail SMTP enabled; SUMMARY written
 
-Progress: [██░░░░░░░░] 25% (1 of 4 phases)
+Progress: [███████░░░] 75% (3 of 4 phases complete; Phase 04 execution done, pending verification)
 
 ## Performance Metrics
 
@@ -62,6 +62,7 @@ Progress: [██░░░░░░░░] 25% (1 of 4 phases)
 | Phase 02 P02 | 35min | 3 tasks | 9 files |
 | Phase 04 P01 | 13min | 3 tasks | 14 files |
 | Phase 04 P02 | 9min | 3 tasks | 12 files |
+| Phase 04 P03 | checkpoint-gated | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -86,6 +87,8 @@ Recent decisions affecting current work:
 - [Phase ?]: 04-01: sendEmail() is the single env-switched outbound-email seam (none|smtp|resend); 04-02 finalization reuses it
 - [Phase ?]: 04-01: email fully optional (D-02) — Mailpit local capture, zero email config still builds/tests green; EMAIL_FROM DMARC discipline (D-03) documented
 - [Phase ?]: 04-01: VOTE-04 confirmation fires best-effort via after() only from submitResponse (first-submit-only); update-response.ts untouched
+- [Phase 4]: 04-03: prod Neon migrated (0002 winning_option_id) + Vercel prod deploy live; .env.example documents Mailpit + Gmail SMTP shapes (!.env.example un-ignore, Rule 3)
+- [Phase 4]: 04-03: Gmail SMTP enabled in prod (D-03 EMAIL_FROM=SMTP_USER on smtp.gmail.com self-aligns SPF/DKIM/DMARC); secrets held only in Vercel env; SMTP2GO single-sender is the pre-wired fallback behind the same D-01 seam (T-04-13)
 
 ### Pending Todos
 
@@ -99,6 +102,7 @@ None yet.
 
 - [Phase 4]: Email options researched → **SEED-001** (`.planning/seeds/SEED-001-phase4-free-email-no-domain.md`). Key finding: a domain is NOT required — Gmail SMTP + App Password is a genuinely-free, no-domain path with good deliverability (send *as* your gmail; SPF/DKIM/DMARC align), with SMTP2GO single-sender as fallback and Resend+domain as an optional deliverability upgrade. Watch the gmail-From-via-relay DMARC trap. Re-verify free-tier numbers at build time. (Original concern — ~48h DNS / ~$10-12/yr domain — only applies if we choose the Resend+domain path.)
 - 04-03 Task 1 BLOCKER — **RESOLVED (2026-07-02):** the Neon prod DATABASE_URL was obtained via `npx vercel env pull .env.vercel.local --environment=production`; `npm run db:migrate` applied `drizzle/0002_superb_skaar.sql` to prod Neon (`polls.winning_option_id` verified) and `npx vercel@latest deploy --prod --yes` shipped the Phase 4 code (dpl_2eW7gorAzFRQE45zYmKcsAen8Aew READY on looking-for-group-eight.vercel.app). `.env.vercel.local` stays gitignored/untracked.
+- 04-03 Task 2 (human-action checkpoint) — **RESOLVED (2026-07-02):** the owner enabled Google 2-Step Verification, generated a Gmail App Password, and set the 7 Gmail SMTP vars in Vercel Production (EMAIL_PROVIDER, SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASS, EMAIL_FROM). Var names verified present; prod redeployed (looking-for-group-f8uvztjhh READY; alias serves HTTP 200); the build now selects the Gmail transport. **Open (end-of-phase human check):** a real prod invite arriving in the owner's inbox (not spam) with a working link — the executor has no inbox access to self-verify.
 
 ### Quick Tasks Completed
 
