@@ -36,6 +36,8 @@ type ShellArgs = {
   ctaLabel: string;
   /** Rendered above the CTA (finalization email only); empty string otherwise. */
   eventDetailsBlock?: string;
+  /** Add-to-calendar links (finalization email only); empty string otherwise. */
+  calendarBlock?: string;
   /** When false, render only the plain-text fallback link (no styled button). */
   showButton?: boolean;
 };
@@ -54,6 +56,7 @@ function renderShell({
   ctaUrl,
   ctaLabel,
   eventDetailsBlock = "",
+  calendarBlock = "",
   showButton = true,
 }: ShellArgs): string {
   const button = showButton
@@ -67,6 +70,7 @@ function renderShell({
         <p style="font-size:24px; font-weight:600; line-height:1.2; margin:0 0 16px 0;">${heading}</p>
         <p style="font-size:16px; font-weight:400; line-height:1.5; margin:0 0 24px 0; color:${FG};">${bodyText}</p>
         ${eventDetailsBlock}
+        ${calendarBlock}
         ${button}
         <p style="font-size:14px; font-weight:400; line-height:1.5; color:${MUTED}; margin:0;">
           Or copy this link: <a href="${ctaUrl}" style="color:${FG};">${ctaUrl}</a>
@@ -130,12 +134,18 @@ export function renderFinalizationEmail({
   chosenDate,
   chosenTime,
   participantUrl,
+  googleCalendarUrl,
+  icsUrl,
 }: {
   title: string;
   location?: string | null;
   chosenDate: string;
   chosenTime: string | null;
   participantUrl: string;
+  /** Plain calendar.google.com render URL; omitted when calendar build failed. */
+  googleCalendarUrl?: string | null;
+  /** Hosted participant `/p/.../event.ics` URL; never an `/a/` admin path. */
+  icsUrl?: string | null;
 }): string {
   const locationLine = location
     ? `<p style="font-size:14px; color:${MUTED}; margin:0;">${location}</p>`
@@ -146,10 +156,24 @@ export function renderFinalizationEmail({
           ${locationLine}
         </div>`;
 
+  // Outlook-safe inline-styled links, one per present URL. Reuses the FG/BG
+  // button palette from renderShell. When BOTH are absent, calendarBlock is ""
+  // so the email degrades cleanly (MAIL-03 unconfigured path unaffected).
+  const calLink = (href: string, label: string) =>
+    `<a href="${href}" style="display:inline-block; background-color:${FG}; color:${BG}; font-size:14px; font-weight:600; text-decoration:none; padding:10px 16px; border-radius:8px; margin:0 8px 12px 0;">${label}</a>`;
+  const calendarLinks = [
+    googleCalendarUrl ? calLink(googleCalendarUrl, "Add to Google Calendar") : "",
+    icsUrl ? calLink(icsUrl, "Add to Apple / Outlook Calendar") : "",
+  ].join("");
+  const calendarBlock = calendarLinks
+    ? `<div style="margin:0 0 24px 0;">${calendarLinks}</div>`
+    : "";
+
   return renderShell({
     heading: "The date is set!",
     bodyText: `${title} is booked. Here are the details:`,
     eventDetailsBlock,
+    calendarBlock,
     ctaUrl: participantUrl,
     ctaLabel: "View the poll",
     showButton: false,

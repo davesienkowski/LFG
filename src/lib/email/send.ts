@@ -22,10 +22,20 @@
 import nodemailer, { type Transporter } from "nodemailer";
 import { Resend } from "resend";
 
+type SendAttachment = {
+  filename: string;
+  content: string;
+  contentType?: string;
+};
+
 type SendArgs = {
   to: string;
   subject: string;
   html: string;
+  // OPTIONAL (04-k1u): the finalization email attaches an event.ics so iOS Mail
+  // shows its native "Add to Calendar" banner. Absent for invite/confirmation —
+  // those sends stay byte-identical. The "none" branch never touches this.
+  attachments?: SendAttachment[];
 };
 
 export type SendResult =
@@ -70,6 +80,15 @@ export async function sendEmail(args: SendArgs): Promise<SendResult> {
         to: [args.to],
         subject: args.subject,
         html: args.html,
+        // Map to resend's attachment shape (Buffer content, utf-8 default). Only
+        // present when a caller supplies attachments (finalization email).
+        ...(args.attachments && {
+          attachments: args.attachments.map((a) => ({
+            filename: a.filename,
+            content: Buffer.from(a.content),
+            ...(a.contentType && { contentType: a.contentType }),
+          })),
+        }),
       });
       if (error) return { ok: false, error: error.message };
       return { ok: true };
@@ -82,6 +101,9 @@ export async function sendEmail(args: SendArgs): Promise<SendResult> {
       to: args.to,
       subject: args.subject,
       html: args.html,
+      // Nodemailer accepts { filename, content, contentType } directly. Passed
+      // straight through; undefined when the caller omits attachments.
+      attachments: args.attachments,
     });
     return { ok: true };
   } catch (err) {

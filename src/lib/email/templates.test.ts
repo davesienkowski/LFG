@@ -68,6 +68,34 @@ describe("renderFinalizationEmail", () => {
     expect(html).toContain("Sunday, July 19");
     expect(html).not.toContain("2026-07-19");
   });
+
+  it("renders BOTH calendar links when both URLs are provided", () => {
+    const html = renderFinalizationEmail({
+      title: "D&D Session",
+      location: null,
+      chosenDate: "2026-07-19",
+      chosenTime: "14:00",
+      participantUrl: PARTICIPANT_URL,
+      googleCalendarUrl: "https://calendar.google.com/calendar/render?action=TEMPLATE",
+      icsUrl: `${PARTICIPANT_URL}/event.ics`,
+    });
+    expect(html).toContain("Add to Google Calendar");
+    expect(html).toContain("https://calendar.google.com/calendar/render?action=TEMPLATE");
+    expect(html).toContain("Add to Apple / Outlook Calendar");
+    expect(html).toContain(`${PARTICIPANT_URL}/event.ics`);
+  });
+
+  it("renders neither calendar link when both URLs are omitted (clean degrade)", () => {
+    const html = renderFinalizationEmail({
+      title: "D&D Session",
+      location: null,
+      chosenDate: "2026-07-19",
+      chosenTime: "14:00",
+      participantUrl: PARTICIPANT_URL,
+    });
+    expect(html).not.toContain("Add to Google Calendar");
+    expect(html).not.toContain("Add to Apple / Outlook Calendar");
+  });
 });
 
 describe("no admin-path leakage (T-04-02)", () => {
@@ -86,6 +114,9 @@ describe("no admin-path leakage (T-04-02)", () => {
       chosenDate: "2026-07-19",
       chosenTime: "14:00",
       participantUrl: PARTICIPANT_URL,
+      googleCalendarUrl:
+        "https://calendar.google.com/calendar/render?action=TEMPLATE",
+      icsUrl: `${PARTICIPANT_URL}/event.ics`,
     });
     for (const html of [invite, confirmation, finalization]) {
       expect(html).not.toContain("/a/");

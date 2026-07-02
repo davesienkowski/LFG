@@ -139,6 +139,73 @@ describe("sendEmail — smtp", () => {
   });
 });
 
+describe("sendEmail — attachments (04-k1u)", () => {
+  it("threads the attachments array straight into nodemailer sendMail (smtp)", async () => {
+    process.env.EMAIL_PROVIDER = "smtp";
+    process.env.SMTP_HOST = "mailpit";
+    process.env.SMTP_PORT = "1025";
+    process.env.EMAIL_FROM = "dev@localhost";
+    sendMailSpy.mockResolvedValue({ messageId: "abc" });
+
+    const sendEmail = await importSend();
+    const attachments = [
+      {
+        filename: "event.ics",
+        content: "BEGIN:VCALENDAR\r\nEND:VCALENDAR\r\n",
+        contentType: "text/calendar",
+      },
+    ];
+    const result = await sendEmail({
+      to: "alex@example.com",
+      subject: "s",
+      html: "<p>h</p>",
+      attachments,
+    });
+
+    expect(result).toEqual({ ok: true });
+    const call = sendMailSpy.mock.calls[0][0];
+    expect(call.attachments).toEqual(attachments);
+  });
+
+  it("maps attachments to resend's { filename, content: Buffer } shape (resend)", async () => {
+    process.env.EMAIL_PROVIDER = "resend";
+    process.env.RESEND_API_KEY = "re_test_key";
+    process.env.EMAIL_FROM = "poll@lfg.example";
+    resendSendSpy.mockResolvedValue({ data: { id: "1" }, error: null });
+
+    const sendEmail = await importSend();
+    const result = await sendEmail({
+      to: "sam@example.com",
+      subject: "s",
+      html: "<p>h</p>",
+      attachments: [
+        { filename: "event.ics", content: "ICSBODY", contentType: "text/calendar" },
+      ],
+    });
+
+    expect(result).toEqual({ ok: true });
+    const call = resendSendSpy.mock.calls[0][0];
+    expect(call.attachments).toHaveLength(1);
+    expect(call.attachments[0].filename).toBe("event.ics");
+    expect(Buffer.isBuffer(call.attachments[0].content)).toBe(true);
+    expect(call.attachments[0].content.toString("utf-8")).toBe("ICSBODY");
+  });
+
+  it("does not touch any transport on the none branch even when attachments are supplied (CAL-09)", async () => {
+    // EMAIL_PROVIDER unset -> "none".
+    const sendEmail = await importSend();
+    const result = await sendEmail({
+      to: "a@example.com",
+      subject: "s",
+      html: "<p>h</p>",
+      attachments: [{ filename: "event.ics", content: "X" }],
+    });
+    expect(result).toEqual({ ok: false, error: "Email not configured" });
+    expect(sendMailSpy).not.toHaveBeenCalled();
+    expect(resendSendSpy).not.toHaveBeenCalled();
+  });
+});
+
 describe("sendEmail — resend", () => {
   it("sends via the Resend API with a single-element `to` array and returns ok", async () => {
     process.env.EMAIL_PROVIDER = "resend";
