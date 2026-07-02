@@ -6,14 +6,14 @@ current_phase: 05
 current_phase_name: vote-grid-redesign-matrix-1c-rewrite-availabilitygrid-to-a-r
 status: executing
 stopped_at: Completed 05-02-PLAN.md
-last_updated: "2026-07-02T21:44:31.459Z"
+last_updated: "2026-07-02T21:53:44.044Z"
 last_activity: 2026-07-02
 last_activity_desc: Phase 05 execution started
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 16
-  completed_plans: 14
+  completed_plans: 15
 ---
 
 # Project State
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-06-30)
 ## Current Position
 
 Phase: 05 (vote-grid-redesign-matrix-1c-rewrite-availabilitygrid-to-a-r) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Next: Phase 04 verification — two end-of-phase human checks remain: (1) a real prod invite arrives in the owner's inbox (not spam) with a working link (MAIL-02, executor has no inbox access); (2) full prod happy-path smoke (create → vote → results/best-day → Book it → closed/read-only). SMTP2GO single-sender is the recorded fallback if Gmail spam-folders/DMARC-fails or hits the 100/day cap (T-04-13).
 Last activity: 2026-07-02 — Phase 05 execution started
@@ -66,6 +66,7 @@ Progress: [███████░░░] 75% (3 of 4 phases complete; Phase 04
 | Phase 05 P01 | 15m | 2 tasks | 2 files |
 | Phase 05 P02 | 12min | 2 tasks | 1 files |
 | Phase 05 P03 | 18min | 2 tasks | 1 files |
+| Phase 05 P04 | 15min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -96,6 +97,7 @@ Recent decisions affecting current work:
 - [Phase 05]: 05-02: kept shipped semantic ResultsGrid <table> + scroll-fade (no CSS-grid port); added only the mock's bordered-card wrapper + filter select widths — D-09 forbids structural rewrites
 - [Phase 05]: 05-02: admin shell, InviteByEmailForm, BookItControl verified no-drift vs boards 3d/3e — two-step finalize + closed-poll hiding preserved
 - [Phase ?]: 05-03: D-03 mobile submit as sticky pinned footer
+- [Phase ?]: 05-04: reconciled poll-create surface to board 3a/3a-m — sm:-only card frame (desktop) + full-bleed mobile so the Create poll action pins as a sticky border-top footer (D-09); createPoll action + serialized dates + timezone-safe date-only handling unchanged
 
 ### Pending Todos
 
@@ -128,7 +130,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-02T21:44:09.417Z
+Last session: 2026-07-02T21:53:13.536Z
 Stopped at: Completed 05-02-PLAN.md
 Resume file: None
 
