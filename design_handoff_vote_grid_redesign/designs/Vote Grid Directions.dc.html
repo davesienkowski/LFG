@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<meta name="design_doc_mode" content="canvas">
+<style>
+  body { margin: 0; background: oklch(0.985 0 0); }
+  * { box-sizing: border-box; }
+</style>
+</helmet>
+
+<div style="font-family: Inter, system-ui, -apple-system, sans-serif; color: oklch(0.145 0 0); padding: 56px 64px; display: flex; flex-direction: column; gap: 40px; width: max-content;">
+
+  <!-- Intro panel -->
+  <div style="max-width: 760px; display: flex; flex-direction: column; gap: 16px;">
+    <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: oklch(0.556 0 0);">LFG · Step 1 · Vote grid directions</div>
+    <h1 style="font-size: 30px; font-weight: 600; line-height: 1.1; margin: 0;">Three ways to redesign the vote grid</h1>
+    <p style="font-size: 16px; font-weight: 400; line-height: 1.5; margin: 0; color: oklch(0.32 0 0);">All three keep the shipped system verbatim — Inter, the 30/24/16/14/12 scale, 8-pt spacing, the neutral 60/30/10 base, and the exact three states <strong>Available / If-need-be / Not available</strong> with icon + text (never color alone). What changes is only the grid's <em>mechanic</em> and its personality dial. The participant vote screen (<code style="font-family: ui-monospace, monospace; font-size: 14px;">/p/[link]</code>) is the hero; this board shows one open-poll row set rendered each way.</p>
+    <div style="display: flex; gap: 8px; align-items: center; font-size: 14px; color: oklch(0.556 0 0);">
+      <span style="display:inline-flex; align-items:center; gap:6px; background: oklch(0.97 0 0); border: 1px solid oklch(0.922 0 0); border-radius: 999px; padding: 4px 12px; font-weight: 600; color: oklch(0.205 0 0);">Reference the options in chat as 1a · 1b · 1c</span>
+    </div>
+  </div>
+
+  <!-- Turn 1: three options side by side -->
+  <section style="display: flex; gap: 28px; align-items: flex-start;">
+
+    <!-- ===================== 1a — Segmented (recommended) ===================== -->
+    <div id="1a" style="width: 460px; background: oklch(1 0 0); border: 2px solid oklch(0.205 0 0); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column;">
+      <div style="padding: 20px 24px; border-bottom: 1px solid oklch(0.922 0 0); display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 12px; font-weight: 600; background: oklch(0.205 0 0); color: oklch(0.985 0 0); border-radius: 999px; padding: 3px 10px;">1a</span>
+          <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: oklch(0.205 0 0); display:inline-flex; align-items:center; gap:6px;">★ Recommended</span>
+        </div>
+        <h2 style="font-size: 24px; font-weight: 600; line-height: 1.2; margin: 0;">Segmented — Calm</h2>
+        <p style="font-size: 14px; font-weight: 400; line-height: 1.5; margin: 0; color: oklch(0.556 0 0);">All three states shown as directly-tappable segments. Tap the one you mean — no hidden cycling.</p>
+      </div>
+      <div style="padding: 24px; display: flex; flex-direction: column; gap: 16px;">
+
+        <!-- Row: Available selected -->
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 16px; font-weight: 400;">Saturday, July 12</span>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+            <div style="min-height: 48px; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 10px; border: 1.5px solid #6ee7b7; background: #ecfdf5; color: #047857; font-size: 14px; font-weight: 600; box-shadow: 0 0 0 1.5px #6ee7b7;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Available
+            </div>
+            <div style="min-height: 48px; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 10px; border: 1.5px solid oklch(0.922 0 0); background: oklch(1 0 0); color: oklch(0.556 0 0); font-size: 14px; font-weight: 600;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>If-need-be
+            </div>
+            <div style="min-height: 48px; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 10px; border: 1.5px solid oklch(0.922 0 0); background: oklch(1 0 0); color: oklch(0.556 0 0); font-size: 14px; font-weight: 600;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>Not
+            </div>
+          </div>
+        </div>
+
+        <!-- Row: If-need-be selected -->
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 16px; font-weight: 400;">Saturday, July 19 · 2:00 PM</span>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+            <div style="min-height: 48px; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 10px; border: 1.5px solid oklch(0.922 0 0); background: oklch(1 0 0); color: oklch(0.556 0 0); font-size: 14px; font-weight: 600;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Available
+            </div>
+            <div style="min-height: 48px; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 10px; border: 1.5px solid #fcd34d; background: #fffbeb; color: #b45309; font-size: 14px; font-weight: 600; box-shadow: 0 0 0 1.5px #fcd34d;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>If-need-be
+            </div>
+            <div style="min-height: 48px; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 10px; border: 1.5px solid oklch(0.922 0 0); background: oklch(1 0 0); color: oklch(0.556 0 0); font-size: 14px; font-weight: 600;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>Not
+            </div>
+          </div>
+        </div>
+
+        <!-- Row: default = Not available selected -->
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 16px; font-weight: 400;">Sunday, July 20</span>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+            <div style="min-height: 48px; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 10px; border: 1.5px solid oklch(0.922 0 0); background: oklch(1 0 0); color: oklch(0.556 0 0); font-size: 14px; font-weight: 600;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Available
+            </div>
+            <div style="min-height: 48px; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 10px; border: 1.5px solid oklch(0.922 0 0); background: oklch(1 0 0); color: oklch(0.556 0 0); font-size: 14px; font-weight: 600;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>If-need-be
+            </div>
+            <div style="min-height: 48px; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 10px; border: 1.5px solid oklch(0.78 0 0); background: oklch(0.97 0 0); color: oklch(0.35 0 0); font-size: 14px; font-weight: 600; box-shadow: 0 0 0 1.5px oklch(0.78 0 0);">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>Not
+            </div>
+          </div>
+        </div>
+
+        <p style="font-size: 12px; line-height: 1.5; margin: 4px 0 0; color: oklch(0.556 0 0);">Untouched dates still read a clear selected <strong>Not available</strong> (never blank). On mobile the three segments stack full-width, each ≥48px. Bulk row (Set all Available / Not available / Clear) sits above, unchanged.</p>
+      </div>
+      <div style="padding: 14px 24px; background: oklch(0.97 0 0); border-top: 1px solid oklch(0.922 0 0); font-size: 12px; line-height: 1.5; color: oklch(0.42 0 0);"><strong style="color: oklch(0.205 0 0);">Merge cost:</strong> rewrites <code style="font-family: ui-monospace, monospace;">AvailabilityGrid</code> internals + its test (click-to-cycle → 3 radio-like buttons). Breaking change, flagged.</div>
+    </div>
+
+    <!-- ===================== 1b — Tabletop (warm) ===================== -->
+    <div id="1b" style="width: 460px; background: oklch(0.985 0.006 85); border: 1.5px solid oklch(0.9 0.01 85); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column;">
+      <div style="padding: 20px 24px; border-bottom: 1px solid oklch(0.9 0.01 85); display: flex; flex-direction: column; gap: 8px;">
+        <span style="align-self: flex-start; font-size: 12px; font-weight: 600; background: oklch(0.205 0.01 85); color: oklch(0.985 0 0); border-radius: 999px; padding: 3px 10px;">1b</span>
+        <h2 style="font-size: 24px; font-weight: 600; line-height: 1.2; margin: 0;">Tabletop — Warm</h2>
+        <p style="font-size: 14px; font-weight: 400; line-height: 1.5; margin: 0; color: oklch(0.5 0.02 85);">Same segmented mechanic as 1a, but the D&amp;D origin gets a measured dose: a warm paper-neutral surface and flavor microcopy. No new font.</p>
+      </div>
+      <div style="padding: 24px; display: flex; flex-direction: column; gap: 16px;">
+        <p style="font-size: 12px; line-height: 1.5; margin: 0; color: oklch(0.5 0.02 85); font-weight: 600; letter-spacing: 0.02em;">⚔ Mark the nights you can make the session</p>
+
+        <!-- Row: Available selected -->
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 16px; font-weight: 400;">Saturday, July 12</span>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+            <div style="min-height: 48px; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 999px; border: 1.5px solid #6ee7b7; background: #ecfdf5; color: #047857; font-size: 14px; font-weight: 600; box-shadow: 0 0 0 1.5px #6ee7b7;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Available
+            </div>
+            <div style="min-height: 48px; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 999px; border: 1.5px solid oklch(0.9 0.01 85); background: oklch(1 0 0); color: oklch(0.5 0.02 85); font-size: 14px; font-weight: 600;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>If-need-be
+            </div>
+            <div style="min-height: 48px; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 999px; border: 1.5px solid oklch(0.9 0.01 85); background: oklch(1 0 0); color: oklch(0.5 0.02 85); font-size: 14px; font-weight: 600;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>Not
+            </div>
+          </div>
+        </div>
+
+        <!-- Row: If-need-be selected -->
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 16px; font-weight: 400;">Saturday, July 19 · 2:00 PM</span>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+            <div style="min-height: 48px; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 999px; border: 1.5px solid oklch(0.9 0.01 85); background: oklch(1 0 0); color: oklch(0.5 0.02 85); font-size: 14px; font-weight: 600;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Available
+            </div>
+            <div style="min-height: 48px; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 999px; border: 1.5px solid #fcd34d; background: #fffbeb; color: #b45309; font-size: 14px; font-weight: 600; box-shadow: 0 0 0 1.5px #fcd34d;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>If-need-be
+            </div>
+            <div style="min-height: 48px; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 999px; border: 1.5px solid oklch(0.9 0.01 85); background: oklch(1 0 0); color: oklch(0.5 0.02 85); font-size: 14px; font-weight: 600;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>Not
+            </div>
+          </div>
+        </div>
+
+        <!-- Row: Not available selected -->
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 16px; font-weight: 400;">Sunday, July 20</span>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+            <div style="min-height: 48px; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 999px; border: 1.5px solid oklch(0.9 0.01 85); background: oklch(1 0 0); color: oklch(0.5 0.02 85); font-size: 14px; font-weight: 600;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Available
+            </div>
+            <div style="min-height: 48px; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 999px; border: 1.5px solid oklch(0.9 0.01 85); background: oklch(1 0 0); color: oklch(0.5 0.02 85); font-size: 14px; font-weight: 600;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>If-need-be
+            </div>
+            <div style="min-height: 48px; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 999px; border: 1.5px solid oklch(0.72 0.01 85); background: oklch(0.94 0.008 85); color: oklch(0.38 0.01 85); font-size: 14px; font-weight: 600; box-shadow: 0 0 0 1.5px oklch(0.72 0.01 85);">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>Not
+            </div>
+          </div>
+        </div>
+
+        <p style="font-size: 12px; line-height: 1.5; margin: 4px 0 0; color: oklch(0.5 0.02 85);">Personality lives in copy + one warm-neutral swap only. Emerald/amber state palette unchanged so a11y contrast is untouched.</p>
+      </div>
+      <div style="padding: 14px 24px; background: oklch(0.96 0.008 85); border-top: 1px solid oklch(0.9 0.01 85); font-size: 12px; line-height: 1.5; color: oklch(0.42 0.01 85);"><strong style="color: oklch(0.25 0.01 85);">Merge cost:</strong> same as 1a, plus retuning <code style="font-family: ui-monospace, monospace;">--background</code>/<code style="font-family: ui-monospace, monospace;">--muted</code> to warm neutrals — a system-wide token migration (affects every screen). Flagged.</div>
+    </div>
+
+    <!-- ===================== 1c — Matrix (grid-first) ===================== -->
+    <div id="1c" style="width: 500px; background: oklch(1 0 0); border: 1.5px solid oklch(0.922 0 0); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column;">
+      <div style="padding: 20px 24px; border-bottom: 1px solid oklch(0.922 0 0); display: flex; flex-direction: column; gap: 8px;">
+        <span style="align-self: flex-start; font-size: 12px; font-weight: 600; background: oklch(0.205 0 0); color: oklch(0.985 0 0); border-radius: 999px; padding: 3px 10px;">1c</span>
+        <h2 style="font-size: 24px; font-weight: 600; line-height: 1.2; margin: 0;">Matrix — Grid-first</h2>
+        <p style="font-size: 14px; font-weight: 400; line-height: 1.5; margin: 0; color: oklch(0.556 0 0);">Persistent column headers, radio-style cells. Participant view mirrors the admin results grid — one mental model across both surfaces.</p>
+      </div>
+      <div style="padding: 24px 20px; display: flex; flex-direction: column; gap: 0;">
+        <!-- header row -->
+        <div style="display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; align-items: end; gap: 6px; padding-bottom: 10px; border-bottom: 1px solid oklch(0.922 0 0);">
+          <span></span>
+          <span style="display:flex; flex-direction:column; align-items:center; gap:4px; font-size: 12px; font-weight: 600; color: #047857;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Available</span>
+          <span style="display:flex; flex-direction:column; align-items:center; gap:4px; font-size: 12px; font-weight: 600; color: #b45309;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>If-need-be</span>
+          <span style="display:flex; flex-direction:column; align-items:center; gap:4px; font-size: 12px; font-weight: 600; color: oklch(0.5 0 0);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>Not avail.</span>
+        </div>
+
+        <!-- date row 1 -->
+        <div style="display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; align-items: center; gap: 6px; padding: 8px 0; border-bottom: 1px solid oklch(0.95 0 0);">
+          <span style="font-size: 14px; font-weight: 600;">Sat Jul 12</span>
+          <div style="display:flex; justify-content:center;"><span style="width: 44px; height: 44px; border-radius: 10px; background: #ecfdf5; border: 1.5px solid #6ee7b7; display:flex; align-items:center; justify-content:center; color:#047857;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></div>
+          <div style="display:flex; justify-content:center;"><span style="width: 44px; height: 44px; border-radius: 10px; background: oklch(1 0 0); border: 1.5px solid oklch(0.922 0 0);"></span></div>
+          <div style="display:flex; justify-content:center;"><span style="width: 44px; height: 44px; border-radius: 10px; background: oklch(1 0 0); border: 1.5px solid oklch(0.922 0 0);"></span></div>
+        </div>
+
+        <!-- date row 2 -->
+        <div style="display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; align-items: center; gap: 6px; padding: 8px 0; border-bottom: 1px solid oklch(0.95 0 0);">
+          <span style="font-size: 14px; font-weight: 600;">Sat Jul 19 · 2pm</span>
+          <div style="display:flex; justify-content:center;"><span style="width: 44px; height: 44px; border-radius: 10px; background: oklch(1 0 0); border: 1.5px solid oklch(0.922 0 0);"></span></div>
+          <div style="display:flex; justify-content:center;"><span style="width: 44px; height: 44px; border-radius: 10px; background: #fffbeb; border: 1.5px solid #fcd34d; display:flex; align-items:center; justify-content:center; color:#b45309;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg></span></div>
+          <div style="display:flex; justify-content:center;"><span style="width: 44px; height: 44px; border-radius: 10px; background: oklch(1 0 0); border: 1.5px solid oklch(0.922 0 0);"></span></div>
+        </div>
+
+        <!-- date row 3 (default: Not) -->
+        <div style="display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; align-items: center; gap: 6px; padding: 8px 0;">
+          <span style="font-size: 14px; font-weight: 600;">Sun Jul 20</span>
+          <div style="display:flex; justify-content:center;"><span style="width: 44px; height: 44px; border-radius: 10px; background: oklch(1 0 0); border: 1.5px solid oklch(0.922 0 0);"></span></div>
+          <div style="display:flex; justify-content:center;"><span style="width: 44px; height: 44px; border-radius: 10px; background: oklch(1 0 0); border: 1.5px solid oklch(0.922 0 0);"></span></div>
+          <div style="display:flex; justify-content:center;"><span style="width: 44px; height: 44px; border-radius: 10px; background: oklch(0.97 0 0); border: 1.5px solid oklch(0.78 0 0); display:flex; align-items:center; justify-content:center; color:oklch(0.4 0 0);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span></div>
+        </div>
+
+        <p style="font-size: 12px; line-height: 1.5; margin: 14px 0 0; color: oklch(0.556 0 0);">Icon-only cells save width, so the column header carries the icon + text label (a11y satisfied at the column level). On mobile this collapses back to 1a's stacked segments below a breakpoint.</p>
+      </div>
+      <div style="padding: 14px 24px; background: oklch(0.97 0 0); border-top: 1px solid oklch(0.922 0 0); font-size: 12px; line-height: 1.5; color: oklch(0.42 0 0);"><strong style="color: oklch(0.205 0 0);">Merge cost:</strong> highest — new grid component + a responsive fallback + heavier a11y review (icon-only cells). Two layouts to test.</div>
+    </div>
+
+  </section>
+</div>
+
+</x-dc>
+</body>
+</html>

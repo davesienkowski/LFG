@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<style>
+  body { margin: 0; background: oklch(0.985 0 0); }
+  * { box-sizing: border-box; }
+  .lfg { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+</style>
+</helmet>
+
+<div class="lfg" style="color: #171717; padding: 56px 64px; display: flex; flex-direction: column; gap: 40px; width: max-content;">
+
+  <!-- Intro -->
+  <div style="max-width: 760px; display: flex; flex-direction: column; gap: 16px;">
+    <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #737373;">LFG · Step 3 · Email templates</div>
+    <h1 style="font-size: 30px; font-weight: 600; line-height: 1.1; margin: 0;">Three transactional emails</h1>
+    <p style="font-size: 16px; line-height: 1.55; margin: 0; color: #404040;">Rendered exactly as the shipped <code style="font-family: ui-monospace, monospace; font-size: 14px;">email/templates.ts</code> emits them: one shared shell, a single 600px <code style="font-family: ui-monospace, monospace; font-size: 14px;">&lt;table&gt;</code> for Outlook-safe centering, inline styles only, the system font stack, and <strong>hex approximations of the OKLCH tokens</strong> (email clients can&#39;t render <code style="font-family: ui-monospace, monospace; font-size: 14px;">oklch()</code> or webfonts). No images, no <code style="font-family: ui-monospace, monospace; font-size: 14px;">&lt;link&gt;</code>, no <code style="font-family: ui-monospace, monospace; font-size: 14px;">&lt;script&gt;</code>. Every mail always carries a plain-text fallback link, never a bare button. Admin URLs never appear in any template.</p>
+    <div style="display: flex; gap: 8px; align-items: center; font-size: 14px;">
+      <span style="display:inline-flex; align-items:center; gap:6px; background: #f5f5f5; border: 1px solid #e5e5e5; border-radius: 999px; padding: 4px 12px; font-weight: 600; color: #171717;">Emails: 3f · 3g · 3h</span>
+      <span style="color: #737373;">invite · confirmation (edit link) · finalization</span>
+    </div>
+  </div>
+
+  <section style="display: flex; gap: 40px; align-items: flex-start;">
+
+    <!-- ---------- 3f · Invite ---------- -->
+    <div id="3f" style="display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 12px; font-weight: 600; background: #171717; color: #ffffff; border-radius: 999px; padding: 3px 10px;">3f</span>
+        <span style="font-size: 14px; font-weight: 600;">Invite</span>
+        <span style="font-size: 12px; color: #737373;">MAIL-01 · CTA = participant link</span>
+      </div>
+
+      <div style="width: 640px; background: #f3f4f6; border: 1px solid #e5e5e5; border-radius: 14px; overflow: hidden;">
+        <!-- client chrome -->
+        <div style="padding: 14px 20px; background: #ffffff; border-bottom: 1px solid #e5e5e5; display: flex; flex-direction: column; gap: 2px;">
+          <span style="font-size: 15px; font-weight: 600;">You&#39;re invited: Session Zero — pick our night</span>
+          <span style="font-size: 13px; color: #737373;">Looking For Group &lt;no-reply@lfg.app&gt; · to you</span>
+        </div>
+        <!-- email body (600 max, centered) -->
+        <div style="padding: 24px 16px; display: flex; justify-content: center;">
+          <div style="max-width: 600px; width: 100%;">
+            <p style="font-size: 24px; font-weight: 600; line-height: 1.2; margin: 0 0 16px 0;">You&#39;re invited: Session Zero — pick our night</p>
+            <p style="font-size: 16px; font-weight: 400; line-height: 1.5; margin: 0 0 24px 0; color: #171717;">You&#39;ve been invited to help pick a date. Tap below to mark your availability.</p>
+            <a href="#" style="display: inline-block; background-color: #171717; color: #ffffff; font-size: 16px; font-weight: 600; text-decoration: none; padding: 12px 20px; border-radius: 8px; margin: 0 0 16px 0;">View the poll &amp; vote</a>
+            <p style="font-size: 14px; font-weight: 400; line-height: 1.5; color: #737373; margin: 0;">Or copy this link: <a href="#" style="color: #171717;">https://lfg.app/p/rX7kQ2m9</a></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------- 3g · Confirmation / edit link ---------- -->
+    <div id="3g" style="display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 12px; font-weight: 600; background: #171717; color: #ffffff; border-radius: 999px; padding: 3px 10px;">3g</span>
+        <span style="font-size: 14px; font-weight: 600;">Confirmation</span>
+        <span style="font-size: 12px; color: #737373;">VOTE-04 · CTA = edit link</span>
+      </div>
+
+      <div style="width: 640px; background: #f3f4f6; border: 1px solid #e5e5e5; border-radius: 14px; overflow: hidden;">
+        <div style="padding: 14px 20px; background: #ffffff; border-bottom: 1px solid #e5e5e5; display: flex; flex-direction: column; gap: 2px;">
+          <span style="font-size: 15px; font-weight: 600;">Your response to Session Zero — pick our night is saved</span>
+          <span style="font-size: 13px; color: #737373;">Looking For Group &lt;no-reply@lfg.app&gt; · to you</span>
+        </div>
+        <div style="padding: 24px 16px; display: flex; justify-content: center;">
+          <div style="max-width: 600px; width: 100%;">
+            <p style="font-size: 24px; font-weight: 600; line-height: 1.2; margin: 0 0 16px 0;">Your response to Session Zero — pick our night is saved</p>
+            <p style="font-size: 16px; font-weight: 400; line-height: 1.5; margin: 0 0 24px 0; color: #171717;">Thanks for responding! Use the link below any time to review or change your answer while the poll is open.</p>
+            <a href="#" style="display: inline-block; background-color: #171717; color: #ffffff; font-size: 16px; font-weight: 600; text-decoration: none; padding: 12px 20px; border-radius: 8px; margin: 0 0 16px 0;">View or edit my response</a>
+            <p style="font-size: 14px; font-weight: 400; line-height: 1.5; color: #737373; margin: 0;">Or copy this link: <a href="#" style="color: #171717;">https://lfg.app/p/rX7kQ2m9/edit/9f2a7c…</a></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: flex; gap: 40px; align-items: flex-start;">
+    <!-- ---------- 3h · Finalization ---------- -->
+    <div id="3h" style="display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 12px; font-weight: 600; background: #171717; color: #ffffff; border-radius: 999px; padding: 3px 10px;">3h</span>
+        <span style="font-size: 14px; font-weight: 600;">Finalization</span>
+        <span style="font-size: 12px; color: #737373;">FNL-03 · event details + add to calendar</span>
+      </div>
+
+      <div style="width: 640px; background: #f3f4f6; border: 1px solid #e5e5e5; border-radius: 14px; overflow: hidden;">
+        <div style="padding: 14px 20px; background: #ffffff; border-bottom: 1px solid #e5e5e5; display: flex; flex-direction: column; gap: 2px;">
+          <span style="font-size: 15px; font-weight: 600;">The date is set!</span>
+          <span style="font-size: 13px; color: #737373;">Looking For Group &lt;no-reply@lfg.app&gt; · to you</span>
+        </div>
+        <div style="padding: 24px 16px; display: flex; justify-content: center;">
+          <div style="max-width: 600px; width: 100%;">
+            <p style="font-size: 24px; font-weight: 600; line-height: 1.2; margin: 0 0 16px 0;">The date is set!</p>
+            <p style="font-size: 16px; font-weight: 400; line-height: 1.5; margin: 0 0 24px 0; color: #171717;">Session Zero — pick our night is booked. Here are the details:</p>
+            <div style="border: 1px solid #e5e5e5; background-color: #fafafa; border-radius: 8px; padding: 16px; margin: 0 0 24px 0;">
+              <p style="font-size: 14px; font-weight: 600; margin: 0 0 4px 0;">Session Zero — pick our night</p>
+              <p style="font-size: 16px; font-weight: 400; margin: 0 0 4px 0;">Saturday, July 12</p>
+              <p style="font-size: 14px; color: #737373; margin: 0;">Dave&#39;s place (the garage table)</p>
+            </div>
+            <div style="margin: 0 0 24px 0;">
+              <a href="#" style="display: inline-block; background-color: #1a73e8; color: #ffffff; font-size: 14px; font-weight: 600; text-decoration: none; padding: 10px 16px; border-radius: 8px; margin: 0 8px 12px 0;">Add to Google Calendar</a>
+              <a href="#" style="display: inline-block; background-color: #171717; color: #ffffff; font-size: 14px; font-weight: 600; text-decoration: none; padding: 10px 16px; border-radius: 8px; margin: 0 8px 12px 0;">Add to Apple / Outlook Calendar</a>
+            </div>
+            <p style="font-size: 14px; font-weight: 400; line-height: 1.5; color: #737373; margin: 0;">Or copy this link: <a href="#" style="color: #171717;">https://lfg.app/p/rX7kQ2m9</a></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- honest-mapping note -->
+    <div style="width: 420px; align-self: stretch; background: #ffffff; border: 1px solid #e5e5e5; border-radius: 14px; padding: 24px; display: flex; flex-direction: column; gap: 10px;">
+      <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #737373;">Ports 1:1 — already shipped</span>
+      <p style="font-size: 14px; line-height: 1.55; margin: 0; color: #404040;">These three mirror <code style="font-family: ui-monospace, monospace; font-size: 13px;">renderInviteEmail</code> / <code style="font-family: ui-monospace, monospace; font-size: 13px;">renderConfirmationEmail</code> / <code style="font-family: ui-monospace, monospace; font-size: 13px;">renderFinalizationEmail</code>. The only merge note: the app UI moved to the emerald/amber <strong>Matrix</strong> palette, but the emails deliberately stay <strong>neutral</strong> (hex-approximated tokens, no state colors) — correct, since a transactional mail has no vote cells to color. Keep them as-is.</p>
+      <p style="font-size: 14px; line-height: 1.55; margin: 0; color: #404040;">Finalization now carries two neutral <strong>add-to-calendar</strong> buttons above the fallback link — a <code style="font-family: ui-monospace, monospace; font-size: 13px;">calendar.google.com</code> render URL and the hosted <code style="font-family: ui-monospace, monospace; font-size: 13px;">/p/…/event.ics</code> (participant token only, never <code style="font-family: ui-monospace, monospace; font-size: 13px;">/a/</code>). Both are omitted cleanly if the calendar build fails.</p>
+      <p style="font-size: 14px; line-height: 1.55; margin: 0; color: #404040;"><strong>Proposed tweak (needs a small code change):</strong> the two buttons now differ by color — Google&#39;s blue <code style="font-family: ui-monospace, monospace; font-size: 13px;">#1a73e8</code> vs neutral <code style="font-family: ui-monospace, monospace; font-size: 13px;">#171717</code> for Apple / Outlook — so a reader can tell them apart at a glance. Real email can&#39;t use SVG/PNG icons (Gmail strips them; the template forbids images), so <strong>color is the only reliable signal</strong>. This asks <code style="font-family: ui-monospace, monospace; font-size: 13px;">calLink()</code> in <code style="font-family: ui-monospace, monospace; font-size: 13px;">templates.ts</code> to take a per-provider background arg.</p>
+    </div>
+  </section>
+</div>
+</x-dc>
+</body>
+</html>
