@@ -1,13 +1,27 @@
 // @vitest-environment jsdom
 //
-// AvailabilityGrid tests (UI-SPEC prohibitions):
-//  - color is never the only signal: every state renders a lucide icon AND a
-//    visible text label
-//  - the untouched/default cell shows the full "Not available" label, not blank
-//  - Set all Available -> all yes; a single-cell click then overrides ONLY that
-//    cell; Clear resets every cell to "no"
-//  - disabled (closed poll) renders non-interactive <span>s, NOT <button>s, and
-//    omits the bulk-action row
+// AvailabilityGrid tests — Matrix / 1c radio-grid semantics (D-01..D-08).
+//
+// The redesign replaced the single click-to-cycle <button> per date with a
+// role="radiogroup" of three role="radio" cells; these tests assert the radio
+// contract plus the two load-bearing a11y guarantees:
+//  - radio semantics (radiogroup / radio / aria-checked), NOT click-to-cycle.
+//  - never-blank default: every untouched row has its "Not available" radio
+//    aria-checked (D-04); re-selecting a checked radio stays checked, never
+//    blanks the row (EDGE-IDEMPOTENT).
+//  - bulk actions (Set all Available / Clear) + a single direct override.
+//  - read-only (disabled) renders non-interactive chips, no radios, no bulk row.
+//  - a11y-1 (desktop column-header association): icon-only desktop radio cells
+//    carry an aria-label whose state suffix equals one of the labelled column
+//    headers — the cell inherits its meaning from the labelled column (D-02/D-06).
+//  - a11y-2 (mobile segmented fallback): every mobile segment carries BOTH an
+//    icon AND visible text — no icon-only cell exists at mobile width (D-03/D-06).
+//
+// Both layouts render into the DOM at once (desktop matrix + mobile segments);
+// jsdom does not evaluate the `hidden sm:block` / `sm:hidden` media queries, so
+// every state renders twice. Layer-specific assertions are scoped with
+// `within(screen.getByTestId("matrix-desktop"))` /
+// `within(screen.getByTestId("segments-mobile"))` to avoid double-counting.
 import { describe, it, expect, afterEach, vi } from "vitest";
 import {
   render,
@@ -25,50 +39,98 @@ const OPTIONS: GridOption[] = [
   { id: "opt-2", date: "2026-07-19", startTime: "14:00:00" },
 ];
 
-function cellButtons(name: RegExp) {
-  return screen.getAllByRole("button", { name });
+// State-suffix matchers for the radio accessible names ("{date}: {state}").
+// "Available" (capital A) never matches "Not available" (lowercase a), so these
+// three regexes select exactly one radio per state within a scoped radiogroup.
+const AVAILABLE = /: Available$/;
+const IFNEEDBE = /: If-need-be$/;
+const NOT_AVAILABLE = /: Not available$/;
+
+function matrix() {
+  return within(screen.getByTestId("matrix-desktop"));
+}
+function segments() {
+  return within(screen.getByTestId("segments-mobile"));
+}
+function checked(el: HTMLElement): string | null {
+  return el.getAttribute("aria-checked");
 }
 
-describe("AvailabilityGrid", () => {
-  it("renders every untouched cell with the full 'Not available' icon + label", () => {
+describe("AvailabilityGrid (radio matrix)", () => {
+  it("defaults every untouched row to Not available (never-blank, D-04)", () => {
     render(<AvailabilityGrid options={OPTIONS} onChange={vi.fn()} />);
-    const cells = cellButtons(/currently Not available/);
-    expect(cells).toHaveLength(2);
-    for (const cell of cells) {
-      // icon AND text label are both present (color is never the only signal).
-      expect(cell.querySelector("svg")).not.toBeNull();
-      expect(within(cell).getByText("Not available")).toBeTruthy();
+
+    const rows = matrix().getAllByRole("radiogroup");
+    expect(rows).toHaveLength(2);
+    for (const row of rows) {
+      expect(
+        checked(within(row).getByRole("radio", { name: NOT_AVAILABLE })),
+      ).toBe("true");
+      expect(
+        checked(within(row).getByRole("radio", { name: AVAILABLE })),
+      ).toBe("false");
+      expect(
+        checked(within(row).getByRole("radio", { name: IFNEEDBE })),
+      ).toBe("false");
     }
   });
 
-  it("Set all Available makes every cell yes; a single click overrides only that cell", () => {
+  it("Set all Available checks every yes radio; a single direct override changes only that row", () => {
     render(<AvailabilityGrid options={OPTIONS} onChange={vi.fn()} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Set all Available" }));
-    const available = cellButtons(/currently Available/);
-    expect(available).toHaveLength(2);
-    for (const cell of available) {
-      expect(cell.querySelector("svg")).not.toBeNull();
-      expect(within(cell).getByText("Available")).toBeTruthy();
+    const rows = matrix().getAllByRole("radiogroup");
+    for (const row of rows) {
+      expect(
+        checked(within(row).getByRole("radio", { name: AVAILABLE })),
+      ).toBe("true");
     }
 
-    // One more click on the first cell cycles yes -> ifneedbe, overriding ONLY it.
-    fireEvent.click(available[0]);
-    const ifneedbe = cellButtons(/currently If-need-be/);
-    expect(ifneedbe).toHaveLength(1);
-    expect(ifneedbe[0].querySelector("svg")).not.toBeNull();
-    expect(within(ifneedbe[0]).getByText("If-need-be")).toBeTruthy();
-    // The other cell is untouched by the override.
-    expect(cellButtons(/currently Available/)).toHaveLength(1);
+    // Direct selection (NOT a cycle): click row 1's If-need-be radio.
+    fireEvent.click(within(rows[0]).getByRole("radio", { name: IFNEEDBE }));
+    // Row 1 flipped to If-need-be; its yes radio is now unchecked.
+    expect(
+      checked(within(rows[0]).getByRole("radio", { name: IFNEEDBE })),
+    ).toBe("true");
+    expect(
+      checked(within(rows[0]).getByRole("radio", { name: AVAILABLE })),
+    ).toBe("false");
+    // Row 2 is untouched by the override — still Available.
+    expect(
+      checked(within(rows[1]).getByRole("radio", { name: AVAILABLE })),
+    ).toBe("true");
   });
 
-  it("Clear resets every cell to Not available", () => {
+  it("re-selecting the already-checked state stays selected (never blanks, EDGE-IDEMPOTENT)", () => {
     render(<AvailabilityGrid options={OPTIONS} onChange={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", { name: "Set all Available" }));
-    expect(cellButtons(/currently Available/)).toHaveLength(2);
 
+    const row = matrix().getAllByRole("radiogroup")[0];
+    const noRadio = within(row).getByRole("radio", { name: NOT_AVAILABLE });
+    expect(checked(noRadio)).toBe("true");
+
+    // Click the already-checked "Not available" radio again — no-op, stays checked.
+    fireEvent.click(noRadio);
+    expect(checked(noRadio)).toBe("true");
+    // Exactly one radio checked in the row (the other two remain unchecked).
+    expect(
+      checked(within(row).getByRole("radio", { name: AVAILABLE })),
+    ).toBe("false");
+    expect(
+      checked(within(row).getByRole("radio", { name: IFNEEDBE })),
+    ).toBe("false");
+  });
+
+  it("Clear resets every row to Not available", () => {
+    render(<AvailabilityGrid options={OPTIONS} onChange={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Set all Available" }));
     fireEvent.click(screen.getByRole("button", { name: "Clear" }));
-    expect(cellButtons(/currently Not available/)).toHaveLength(2);
+
+    for (const row of matrix().getAllByRole("radiogroup")) {
+      expect(
+        checked(within(row).getByRole("radio", { name: NOT_AVAILABLE })),
+      ).toBe("true");
+    }
   });
 
   it("seeds cell state from the initial prop", () => {
@@ -79,8 +141,14 @@ describe("AvailabilityGrid", () => {
         onChange={vi.fn()}
       />,
     );
-    expect(cellButtons(/currently Available/)).toHaveLength(1);
-    expect(cellButtons(/currently If-need-be/)).toHaveLength(1);
+
+    const rows = matrix().getAllByRole("radiogroup");
+    expect(checked(within(rows[0]).getByRole("radio", { name: AVAILABLE }))).toBe(
+      "true",
+    );
+    expect(checked(within(rows[1]).getByRole("radio", { name: IFNEEDBE }))).toBe(
+      "true",
+    );
   });
 
   it("emits the serialized votes for every option via onChange", () => {
@@ -95,17 +163,56 @@ describe("AvailabilityGrid", () => {
     ]);
   });
 
-  it("renders read-only cells as non-interactive spans with no bulk actions", () => {
+  it("renders read-only chips with no radios and no bulk actions when disabled", () => {
     render(<AvailabilityGrid options={OPTIONS} disabled onChange={vi.fn()} />);
-    // No interactive grid cells and no bulk-action buttons.
-    expect(screen.queryAllByRole("button", { name: /currently/ })).toHaveLength(
-      0,
-    );
+    // No interactive radios and no bulk-action buttons.
+    expect(screen.queryAllByRole("radio")).toHaveLength(0);
     expect(
       screen.queryByRole("button", { name: "Set all Available" }),
     ).toBeNull();
-    // The recorded answer is still visible as icon + label.
-    const labels = screen.getAllByText("Not available");
-    expect(labels).toHaveLength(2);
+    // The recorded default answer is still visible as a chip (icon + label).
+    expect(screen.getAllByText("Not available")).toHaveLength(2);
+  });
+
+  // ---- a11y-1: desktop column-header association (D-02 / D-06) ----
+  it("associates each icon-only desktop radio with a labelled column header", () => {
+    render(<AvailabilityGrid options={OPTIONS} onChange={vi.fn()} />);
+    const desktop = matrix();
+
+    // The three state labels render as TEXT once each, in the header row only
+    // (the desktop radio cells themselves are icon-only, no visible text).
+    expect(desktop.getAllByText("Available")).toHaveLength(1);
+    expect(desktop.getAllByText("If-need-be")).toHaveLength(1);
+    expect(desktop.getAllByText("Not available")).toHaveLength(1);
+
+    // Every desktop radio's accessible name ends with one of those column
+    // labels — the icon-only cell inherits its meaning from the labelled column.
+    const columnLabels = ["Available", "If-need-be", "Not available"];
+    const radios = desktop.getAllByRole("radio");
+    expect(radios).toHaveLength(6); // 3 states × 2 rows
+    for (const radio of radios) {
+      const name = radio.getAttribute("aria-label") ?? "";
+      const suffix = name.split(": ").at(-1);
+      expect(columnLabels).toContain(suffix);
+    }
+  });
+
+  // ---- a11y-2: mobile segmented fallback (D-03 / D-06) ----
+  it("renders mobile segments with BOTH an icon and visible text (no icon-only cell)", () => {
+    render(<AvailabilityGrid options={OPTIONS} onChange={vi.fn()} />);
+
+    const row = segments().getAllByRole("radiogroup")[0];
+    const AVAIL = within(row).getByRole("radio", { name: AVAILABLE });
+    const IFNB = within(row).getByRole("radio", { name: IFNEEDBE });
+    const NOTAVL = within(row).getByRole("radio", { name: NOT_AVAILABLE });
+
+    // Each mobile segment carries its own icon (svg) AND its own visible text —
+    // the key contrast with the desktop cell, which has no visible text child.
+    expect(AVAIL.querySelector("svg")).not.toBeNull();
+    expect(within(AVAIL).getByText("Available")).toBeTruthy();
+    expect(IFNB.querySelector("svg")).not.toBeNull();
+    expect(within(IFNB).getByText("If-need-be")).toBeTruthy();
+    expect(NOTAVL.querySelector("svg")).not.toBeNull();
+    expect(within(NOTAVL).getByText("Not available")).toBeTruthy();
   });
 });
