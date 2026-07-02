@@ -23,6 +23,7 @@ import { computeResults } from "@/lib/results";
 import { PollSummary } from "@/components/poll-summary";
 import { CopyLinkButton } from "@/components/copy-link-button";
 import { ResultsGrid } from "@/components/results-grid";
+import { InviteByEmailForm } from "@/components/invite-by-email-form";
 import { Card } from "@/components/ui/card";
 
 export default async function AdminPage({
@@ -43,6 +44,17 @@ export default async function AdminPage({
   const base = resolveBaseUrl(h.get("host"), h.get("x-forwarded-proto"));
   const participantUrl = buildParticipantUrl(base, poll.participantUrlId);
   const adminLink = buildAdminUrl(base, poll.adminUrlId);
+
+  // Server-only email-configured check (MAIL-03): unset, "", and "none" are all
+  // treated identically as unconfigured. Never a client check — the flag never
+  // crosses to the browser.
+  const emailProvider = process.env.EMAIL_PROVIDER;
+  const emailConfigured =
+    emailProvider !== undefined &&
+    emailProvider !== "" &&
+    emailProvider !== "none";
+  // No inviting to a closed poll (anticipates 04-02's finalize; guard now).
+  const showInvite = poll.status !== "closed";
 
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-12 flex flex-col gap-8">
@@ -100,6 +112,25 @@ export default async function AdminPage({
             <CopyLinkButton url={adminLink} label="Copy admin link" />
           </div>
         </Card>
+
+        {/* Invite by email (MAIL-01/02/03). Hidden on a closed poll. When email
+            is configured, render the send-invites form; otherwise degrade to the
+            explanatory copy-link fallback — the actionable copy button already
+            lives in the Participant-link Card above (D-05 / MAIL-03). */}
+        {showInvite ? (
+          emailConfigured ? (
+            <InviteByEmailForm adminUrlId={poll.adminUrlId} />
+          ) : (
+            <Card className="flex flex-col gap-2 p-6">
+              <h3 className="text-2xl font-semibold leading-snug">
+                Email isn&apos;t set up
+              </h3>
+              <p className="text-base text-muted-foreground">
+                Copy the participant link above and share it manually.
+              </p>
+            </Card>
+          )
+        ) : null}
       </div>
 
       {/* Results (DASH-01..05) — appended as the last section, below Share. */}
