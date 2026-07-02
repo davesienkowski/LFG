@@ -151,8 +151,17 @@ export function VoteForm({
         onChange={setVotes}
       />
 
+      {/*
+        D-03: on mobile the primary action (submit when open, the closed banner
+        when readOnly) is a `position: sticky` pinned footer so a long date list
+        never buries it — the content scrolls, this block stays visible at the
+        bottom of the viewport. `-mx-4 px-4` bleeds the bar to the page edges
+        (the parent `main` has `px-4`); at `sm:` everything reverts to the
+        shipped static flow. The prototype's mobileScroll/mobileViewportH knobs
+        are demo-only and are NOT ported.
+      */}
       {readOnly ? (
-        <div className="rounded-lg border bg-muted p-6 text-center">
+        <div className="sticky bottom-0 z-10 -mx-4 border-t bg-muted p-6 text-center sm:static sm:mx-0 sm:rounded-lg sm:border">
           <h2 className="text-2xl font-semibold leading-snug">
             Voting is closed
           </h2>
@@ -162,7 +171,7 @@ export function VoteForm({
           </p>
         </div>
       ) : (
-        <div>
+        <div className="sticky bottom-0 z-10 -mx-4 border-t bg-background px-4 py-4 sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
           <Button
             type="submit"
             disabled={isPending}
