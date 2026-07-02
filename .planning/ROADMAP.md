@@ -126,6 +126,7 @@ Plans:
 **Wave 3** *(blocked on Wave 2; production ship)*
 
 - [ ] 04-03-PLAN.md — Prod Neon migrate + Vercel deploy + prod happy-path smoke (graceful email fallback), then a human-action checkpoint to enable real Gmail SMTP sending and verify a live invite delivery (MAIL-02 in production)
+  - Task 1 ✅ done (efab035): prod Neon migrated (`winning_option_id`), Vercel prod deploy live, `.env.example` documents email vars. Task 2 (human-action: enable Gmail SMTP) pending — OPTIONAL, prod runs on MAIL-03 fallback.
 
 ## Progress
 

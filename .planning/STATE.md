@@ -5,10 +5,10 @@ milestone_name: milestone
 current_phase: 04
 current_phase_name: email-finalization
 status: executing
-stopped_at: Phase 4 UI-SPEC approved
+stopped_at: 04-03 Task 1 complete — awaiting Task 2 human-action checkpoint (enable prod Gmail SMTP)
 last_updated: "2026-07-02T16:49:37.219Z"
 last_activity: 2026-07-02
-last_activity_desc: Phase 04 execution started
+last_activity_desc: 04-03 Wave 3 in progress — prod Neon migrate + Vercel deploy live; email env documented
 progress:
   total_phases: 4
   completed_phases: 3
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-06-30)
 ## Current Position
 
 Phase: 04 (email-finalization) — EXECUTING
-Plan: 3 of 3
-Status: Ready to execute
-Next: Phase 2 — Participant Voting (VOTE-01, 02, 03, 05, 06, 07) — VOTE-07 (per-row bulk vote actions) added by 01-04
-Last activity: 2026-07-02 — Phase 04 execution started
+Plan: 3 of 3 (Wave 3) — Task 1 complete, Task 2 (human-action checkpoint) pending
+Status: Awaiting Task 2 human-action — enable prod Gmail SMTP (OPTIONAL; prod runs on MAIL-03 fallback)
+Next: Owner replies "done" (set Vercel Production Gmail SMTP vars) to send a real prod invite, or "skip" to defer real prod email and close the phase on local Mailpit + prod-fallback evidence
+Last activity: 2026-07-02 — 04-03 Task 1: prod Neon migrate + Vercel deploy live; .env.example documents email vars
 
 Progress: [██░░░░░░░░] 25% (1 of 4 phases)
 
@@ -98,7 +98,7 @@ None yet.
 [Issues that affect future work]
 
 - [Phase 4]: Email options researched → **SEED-001** (`.planning/seeds/SEED-001-phase4-free-email-no-domain.md`). Key finding: a domain is NOT required — Gmail SMTP + App Password is a genuinely-free, no-domain path with good deliverability (send *as* your gmail; SPF/DKIM/DMARC align), with SMTP2GO single-sender as fallback and Resend+domain as an optional deliverability upgrade. Watch the gmail-From-via-relay DMARC trap. Re-verify free-tier numbers at build time. (Original concern — ~48h DNS / ~$10-12/yr domain — only applies if we choose the Resend+domain path.)
-- 04-03 Task 1 BLOCKED: prod Neon DATABASE_URL flagged Sensitive in Vercel (env pull returns empty for prod+dev). Cannot self-serve db:migrate (0002_superb_skaar) — no connection string retrievable, no neon CLI. Need human to supply the Neon prod pooled connection string OR temporarily un-flag DATABASE_URL as Sensitive. Deploy intentionally NOT run (must migrate-first; new code reads winning_option_id). Prod alias: looking-for-group-eight.vercel.app
+- 04-03 Task 1 BLOCKER — **RESOLVED (2026-07-02):** the Neon prod DATABASE_URL was obtained via `npx vercel env pull .env.vercel.local --environment=production`; `npm run db:migrate` applied `drizzle/0002_superb_skaar.sql` to prod Neon (`polls.winning_option_id` verified) and `npx vercel@latest deploy --prod --yes` shipped the Phase 4 code (dpl_2eW7gorAzFRQE45zYmKcsAen8Aew READY on looking-for-group-eight.vercel.app). `.env.vercel.local` stays gitignored/untracked.
 
 ### Quick Tasks Completed
 
