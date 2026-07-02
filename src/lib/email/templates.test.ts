@@ -83,6 +83,10 @@ describe("renderFinalizationEmail", () => {
     expect(html).toContain("https://calendar.google.com/calendar/render?action=TEMPLATE");
     expect(html).toContain("Add to Apple / Outlook Calendar");
     expect(html).toContain(`${PARTICIPANT_URL}/event.ics`);
+    // D-10: the two buttons are color-distinguished per provider — Google's
+    // brand blue vs the neutral FG for Apple/Outlook.
+    expect(html).toContain("background-color:#1a73e8");
+    expect(html).toContain("background-color:#171717");
   });
 
   it("renders neither calendar link when both URLs are omitted (clean degrade)", () => {

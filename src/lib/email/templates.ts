@@ -25,6 +25,10 @@ const BG = "#ffffff"; // ≈ --background
 const MUTED = "#737373"; // ≈ --muted-foreground
 const CARD_BORDER = "#e5e5e5";
 const CARD_BG = "#fafafa";
+// D-10: Google Calendar brand blue for the finalization email's Google button;
+// the Apple/Outlook button reuses the neutral FG. Color is the only reliable
+// per-provider signal in email (clients strip images).
+const GOOGLE_BLUE = "#1a73e8";
 
 const FONT_STACK =
   "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
@@ -159,11 +163,15 @@ export function renderFinalizationEmail({
   // Outlook-safe inline-styled links, one per present URL. Reuses the FG/BG
   // button palette from renderShell. When BOTH are absent, calendarBlock is ""
   // so the email degrades cleanly (MAIL-03 unconfigured path unaffected).
-  const calLink = (href: string, label: string) =>
-    `<a href="${href}" style="display:inline-block; background-color:${FG}; color:${BG}; font-size:14px; font-weight:600; text-decoration:none; padding:10px 16px; border-radius:8px; margin:0 8px 12px 0;">${label}</a>`;
+  // D-10: per-provider background so the two buttons are distinguishable by
+  // color alone — email clients strip images, so color is the only reliable
+  // per-provider signal. Google gets its brand blue; Apple/Outlook reuses the
+  // neutral FG (no second neutral constant).
+  const calLink = (href: string, label: string, background: string) =>
+    `<a href="${href}" style="display:inline-block; background-color:${background}; color:${BG}; font-size:14px; font-weight:600; text-decoration:none; padding:10px 16px; border-radius:8px; margin:0 8px 12px 0;">${label}</a>`;
   const calendarLinks = [
-    googleCalendarUrl ? calLink(googleCalendarUrl, "Add to Google Calendar") : "",
-    icsUrl ? calLink(icsUrl, "Add to Apple / Outlook Calendar") : "",
+    googleCalendarUrl ? calLink(googleCalendarUrl, "Add to Google Calendar", GOOGLE_BLUE) : "",
+    icsUrl ? calLink(icsUrl, "Add to Apple / Outlook Calendar", FG) : "",
   ].join("");
   const calendarBlock = calendarLinks
     ? `<div style="margin:0 0 24px 0;">${calendarLinks}</div>`
