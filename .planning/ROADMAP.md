@@ -147,7 +147,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 **Design contract:** `design_handoff_vote_grid_redesign/` (README.md + DESIGN.md + designs/*.dc.html) — high-fidelity Claude Design handoff; the participant vote screen `/p/[participantUrlId]` is the hero (states 2a–2e).
 **Requirements**: TBD — no new backend/requirements; visual/UX redesign of shipped VOTE features (no dark mode; out of scope).
 **Depends on:** Phase 4
-**Plans:** 4/5 plans executed
+**Plans:** 5/5 plans complete
 
 Plans:
 **Wave 1**
@@ -156,4 +156,4 @@ Plans:
 - [x] 05-02-PLAN.md — Admin/results pixel reconciliation: ResultsGrid, InviteByEmailForm, BookItControl, admin page (boards 3d/3e; D-09)
 - [x] 05-03-PLAN.md — Participant surfaces: vote-form sticky mobile submit + closed banner, vote/thanks/edit pages (boards 2a–2e/3b/3c; D-03/D-09)
 - [x] 05-04-PLAN.md — Create surface: PollCreateForm, CalendarDatePicker, root page (board 3a; D-09)
-- [ ] 05-05-PLAN.md — Email templates 3f–3h reconciliation + per-provider calendar-button color (D-09/D-10)
+- [x] 05-05-PLAN.md — Email templates 3f–3h reconciliation + per-provider calendar-button color (D-09/D-10)
