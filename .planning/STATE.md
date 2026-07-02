@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 current_phase: 05
-current_phase_name: vote-grid-redesign-matrix-1c
-status: ready-to-execute
+current_phase_name: vote-grid-redesign-matrix-1c-rewrite-availabilitygrid-to-a-r
+status: executing
 stopped_at: 05 planned — 5 plans (Wave 1, all parallel; disjoint files); plan-checker PASSED, decision-coverage 10/10. Auto-chaining to execute (--chain --auto). NOTE Phase 04 verification still outstanding (real prod invite lands in inbox not spam [MAIL-02]; full prod happy-path smoke).
-last_updated: "2026-07-02T21:15:25Z"
+last_updated: "2026-07-02T21:27:47.277Z"
 last_activity: 2026-07-02
-last_activity_desc: 05 planning complete — planner (opus) produced 5 disjoint-file plans, plan-checker PASSED first pass, decision-coverage gate 10/10 (D-01..D-10). Chaining to execute-phase 05.
+last_activity_desc: Phase 05 execution started
 progress:
   total_phases: 5
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 16
   completed_plans: 11
 ---
@@ -23,15 +23,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-30)
 
 **Core value:** A poll creator can propose candidate dates, get participants to mark their availability via an emailed link, and instantly see which day(s) work for the whole group — no participant login, no cost.
-**Current focus:** Phase 04 — email-finalization
+**Current focus:** Phase 05 — vote-grid-redesign-matrix-1c-rewrite-availabilitygrid-to-a-r
 
 ## Current Position
 
-Phase: 04 (email-finalization) — EXECUTION COMPLETE, ready for verification
-Plan: 3 of 3 (Wave 3) — COMPLETE (Task 1 + Task 2 done)
-Status: Phase 04 execution complete — Gmail SMTP enabled in prod (owner set 2FA + App Password + 7 vars); prod redeployed, build selects the Gmail transport
+Phase: 05 (vote-grid-redesign-matrix-1c-rewrite-availabilitygrid-to-a-r) — EXECUTING
+Plan: 2 of 5
+Status: Ready to execute
 Next: Phase 04 verification — two end-of-phase human checks remain: (1) a real prod invite arrives in the owner's inbox (not spam) with a working link (MAIL-02, executor has no inbox access); (2) full prod happy-path smoke (create → vote → results/best-day → Book it → closed/read-only). SMTP2GO single-sender is the recorded fallback if Gmail spam-folders/DMARC-fails or hits the 100/day cap (T-04-13).
-Last activity: 2026-07-02 — quick 260702-k1u complete: Add-to-Calendar links (Google + .ics) in finalization email
+Last activity: 2026-07-02 — Phase 05 execution started
 
 Progress: [███████░░░] 75% (3 of 4 phases complete; Phase 04 execution done, pending verification)
 
@@ -63,6 +63,7 @@ Progress: [███████░░░] 75% (3 of 4 phases complete; Phase 04
 | Phase 04 P01 | 13min | 3 tasks | 14 files |
 | Phase 04 P02 | 9min | 3 tasks | 12 files |
 | Phase 04 P03 | checkpoint-gated | 2 tasks | 2 files |
+| Phase 05 P01 | 15m | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -89,6 +90,7 @@ Recent decisions affecting current work:
 - [Phase ?]: 04-01: VOTE-04 confirmation fires best-effort via after() only from submitResponse (first-submit-only); update-response.ts untouched
 - [Phase 4]: 04-03: prod Neon migrated (0002 winning_option_id) + Vercel prod deploy live; .env.example documents Mailpit + Gmail SMTP shapes (!.env.example un-ignore, Rule 3)
 - [Phase 4]: 04-03: Gmail SMTP enabled in prod (D-03 EMAIL_FROM=SMTP_USER on smtp.gmail.com self-aligns SPF/DKIM/DMARC); secrets held only in Vercel env; SMTP2GO single-sender is the pre-wired fallback behind the same D-01 seam (T-04-13)
+- [Phase ?]: 05-01: AvailabilityGrid rewritten to role=radiogroup/radio matrix (D-01); desktop icon-only cells + labelled column headers, mobile stacked icon+text segments; both layers in DOM with display:none a11y isolation
 
 ### Pending Todos
 
@@ -121,7 +123,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-02T16:44:37.160Z
+Last session: 2026-07-02T21:25:10.094Z
 Stopped at: Phase 4 UI-SPEC approved
 Resume file: .planning/phases/04-email-finalization/04-UI-SPEC.md
 
