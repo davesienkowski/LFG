@@ -110,7 +110,7 @@ Plans:
   4. The organizer can finalize the poll by selecting the winning date ("Book it"), which closes voting so the response form becomes read-only.
   5. On finalization, every participant who voted receives a confirmation email with the chosen date and event details.
 
-**Plans**: 1/3 plans executed
+**Plans**: 2/3 plans executed
 **Research**: Required — Resend custom-domain DNS/deliverability (DKIM/SPF/DMARC, up to ~48h propagation; verify before sending real invites) and the local SMTP/Mailpit dev path; handle the 100/day cap (429) visibly. (Resolved to SEED-001: Gmail SMTP + App Password for $0 no-domain prod sending, Mailpit for local capture.)
 **UI hint**: yes
 
@@ -121,7 +121,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 email seam)*
 
-- [ ] 04-02-PLAN.md — `[BLOCKING]` additive `winning_option_id` local schema gate + `closePoll` "Book it" finalize action (single UPDATE, admin-gated, in-poll option guard) + finalization emails to voters (deduped, best-effort via `after()`) + Book-it picker/confirm UI, finalized card & Booked badge (FNL-01/02/03)
+- [x] 04-02-PLAN.md — `[BLOCKING]` additive `winning_option_id` local schema gate + `closePoll` "Book it" finalize action (single UPDATE, admin-gated, in-poll option guard) + finalization emails to voters (deduped, best-effort via `after()`) + Book-it picker/confirm UI, finalized card & Booked badge (FNL-01/02/03)
 
 **Wave 3** *(blocked on Wave 2; production ship)*
 
@@ -137,4 +137,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Foundation & Poll Creation | 3/3 | Complete   | 2026-06-30 |
 | 2. Participant Voting | 2/2 | Complete    | 2026-07-01 |
 | 3. Results Dashboard | 2/2 | Complete    | 2026-07-01 |
-| 4. Email & Finalization | 1/3 | In Progress|  |
+| 4. Email & Finalization | 2/3 | In Progress|  |

@@ -57,9 +57,9 @@ Requirements for initial release. Each maps to a roadmap phase.
 
 ### Finalization
 
-- [ ] **FNL-01**: The organizer can finalize the poll by selecting the winning date ("Book it")
-- [ ] **FNL-02**: Finalizing closes the poll to further voting (vote form becomes read-only)
-- [ ] **FNL-03**: On finalization, every participant who voted receives a confirmation email with the chosen date and event details
+- [x] **FNL-01**: The organizer can finalize the poll by selecting the winning date ("Book it")
+- [x] **FNL-02**: Finalizing closes the poll to further voting (vote form becomes read-only)
+- [x] **FNL-03**: On finalization, every participant who voted receives a confirmation email with the chosen date and event details
 
 ### Platform & Deployment
 
@@ -135,9 +135,9 @@ Which phases cover which requirements. **Populated by the roadmapper.**
 | MAIL-01 | Phase 4 | Complete |
 | MAIL-02 | Phase 4 | Complete |
 | MAIL-03 | Phase 4 | Complete |
-| FNL-01 | Phase 4 | Pending |
-| FNL-02 | Phase 4 | Pending |
-| FNL-03 | Phase 4 | Pending |
+| FNL-01 | Phase 4 | Complete |
+| FNL-02 | Phase 4 | Complete |
+| FNL-03 | Phase 4 | Complete |
 | PLAT-01 | Phase 1 | Complete |
 | PLAT-02 | Phase 1 | Complete |
 | PLAT-03 | Phase 1 | Complete |
