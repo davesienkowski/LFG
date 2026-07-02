@@ -31,7 +31,7 @@ Phase: 04 (email-finalization) — EXECUTION COMPLETE, ready for verification
 Plan: 3 of 3 (Wave 3) — COMPLETE (Task 1 + Task 2 done)
 Status: Phase 04 execution complete — Gmail SMTP enabled in prod (owner set 2FA + App Password + 7 vars); prod redeployed, build selects the Gmail transport
 Next: Phase 04 verification — two end-of-phase human checks remain: (1) a real prod invite arrives in the owner's inbox (not spam) with a working link (MAIL-02, executor has no inbox access); (2) full prod happy-path smoke (create → vote → results/best-day → Book it → closed/read-only). SMTP2GO single-sender is the recorded fallback if Gmail spam-folders/DMARC-fails or hits the 100/day cap (T-04-13).
-Last activity: 2026-07-02 — 04-03 complete: prod Neon migrate + Vercel deploy live; Gmail SMTP enabled; SUMMARY written
+Last activity: 2026-07-02 — quick 260702-k1u complete: Add-to-Calendar links (Google + .ics) in finalization email
 
 Progress: [███████░░░] 75% (3 of 4 phases complete; Phase 04 execution done, pending verification)
 
@@ -109,6 +109,7 @@ None yet.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260701-il0 | Phase 2 code-review follow-ups #1 (activate env validation via instrumentation register hook) + #2 (pure setState updater in AvailabilityGrid) + remove stale checkpoint | 2026-07-01 | 1570165 | [260701-il0-apply-phase-2-code-review-follow-ups-1-w](./quick/260701-il0-apply-phase-2-code-review-follow-ups-1-w/) |
+| 260702-k1u | Add "Add to Calendar" links (Google Calendar link + hosted/attached `.ics`) for the booked date to the finalization email — timezone-safe floating/all-day event, closed-poll-only route, best-effort | 2026-07-02 | 41467c0 | [260702-k1u-add-add-to-calendar-links-google-calenda](./quick/260702-k1u-add-add-to-calendar-links-google-calenda/) |
 
 ## Deferred Items
 
