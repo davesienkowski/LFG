@@ -139,3 +139,16 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 2. Participant Voting | 2/2 | Complete    | 2026-07-01 |
 | 3. Results Dashboard | 2/2 | Complete    | 2026-07-01 |
 | 4. Email & Finalization | 3/3 | Complete   | 2026-07-02 |
+
+### Phase 5: Vote-Grid Redesign (Matrix / 1c)
+
+**Goal:** Redesign the participant vote experience to the "Matrix" direction (1c) from the Claude Design handoff: rewrite `src/components/availability-grid.tsx` from a click-to-cycle button-per-date into a radio-style matrix (rows = dates × three columns Available / If-need-be / Not available; icon-only desktop cells with icon+text persistent column headers; stacked full-width icon+text segments <640px; sticky mobile submit), and reconcile every supporting screen and the three emails to the high-fidelity mocks as pixel targets. Preserve all shipped invariants — default/untouched row reads "Not available" (never blank), bulk actions (VOTE-07), closed read-only chips, unchanged state labels (Doodle parity), icon-or-color-never-alone (WCAG AA), and the existing OKLCH tokens + vote-state palette verbatim. Includes rewriting `availability-grid.test.tsx` plus new a11y tests (desktop column-header association + mobile segmented fallback), and one optional `templates.ts` per-provider calendar-button color change.
+
+**Design contract:** `design_handoff_vote_grid_redesign/` (README.md + DESIGN.md + designs/*.dc.html) — high-fidelity Claude Design handoff; the participant vote screen `/p/[participantUrlId]` is the hero (states 2a–2e).
+**Requirements**: TBD — no new backend/requirements; visual/UX redesign of shipped VOTE features (no dark mode; out of scope).
+**Depends on:** Phase 4
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 5 to break down)
