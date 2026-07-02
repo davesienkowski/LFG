@@ -85,7 +85,7 @@ export function CalendarDatePicker({
   }
 
   return (
-    <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
+    <div className="flex flex-col gap-6 lg:flex-row lg:gap-6">
       {/* Left pane — calendar */}
       <div className="shrink-0">
         <Calendar
@@ -145,7 +145,7 @@ export function CalendarDatePicker({
                     <Input
                       id={timeId}
                       type="time"
-                      className="h-10 w-32"
+                      className="h-10 w-28"
                       value={times[entry.date] ?? ""}
                       disabled={disabled}
                       onChange={(e) => setDateTime(entry.date, e.target.value)}
