@@ -110,14 +110,22 @@ Plans:
   4. The organizer can finalize the poll by selecting the winning date ("Book it"), which closes voting so the response form becomes read-only.
   5. On finalization, every participant who voted receives a confirmation email with the chosen date and event details.
 
-**Plans**: 2 plans
-**Research**: Required — Resend custom-domain DNS/deliverability (DKIM/SPF/DMARC, up to ~48h propagation; verify before sending real invites) and the local SMTP/MailHog dev path; handle the 100/day cap (429) visibly.
+**Plans**: 3 plans
+**Research**: Required — Resend custom-domain DNS/deliverability (DKIM/SPF/DMARC, up to ~48h propagation; verify before sending real invites) and the local SMTP/Mailpit dev path; handle the 100/day cap (429) visibly. (Resolved to SEED-001: Gmail SMTP + App Password for $0 no-domain prod sending, Mailpit for local capture.)
 **UI hint**: yes
 
 Plans:
+**Wave 1**
 
-- [ ] 04-01: Env-switched email service (Resend / Nodemailer+MailHog) + invite template; `sendInvites` action + admin email UI + copy-link fallback; participant confirmation email carrying the edit link (VOTE-04)
-- [ ] 04-02: `closePoll` / "Book it" finalize action (select winning date, set status=closed, read-only participant form) + finalization confirmation emails to all voters
+- [ ] 04-01-PLAN.md — Env-switched `sendEmail()` seam (Nodemailer SMTP: Mailpit local / Gmail-SMTP prod) + three plain-HTML templates + `sendInvites` action & Invite-by-email card (individual sends, dedupe, copy-link fallback) + best-effort VOTE-04 confirmation via `after()` (MAIL-01/02/03, VOTE-04)
+
+**Wave 2** *(blocked on Wave 1 email seam)*
+
+- [ ] 04-02-PLAN.md — `[BLOCKING]` additive `winning_option_id` local schema gate + `closePoll` "Book it" finalize action (single UPDATE, admin-gated, in-poll option guard) + finalization emails to voters (deduped, best-effort via `after()`) + Book-it picker/confirm UI, finalized card & Booked badge (FNL-01/02/03)
+
+**Wave 3** *(blocked on Wave 2; production ship)*
+
+- [ ] 04-03-PLAN.md — Prod Neon migrate + Vercel deploy + prod happy-path smoke (graceful email fallback), then a human-action checkpoint to enable real Gmail SMTP sending and verify a live invite delivery (MAIL-02 in production)
 
 ## Progress
 
@@ -129,4 +137,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Foundation & Poll Creation | 3/3 | Complete   | 2026-06-30 |
 | 2. Participant Voting | 2/2 | Complete    | 2026-07-01 |
 | 3. Results Dashboard | 2/2 | Complete    | 2026-07-01 |
-| 4. Email & Finalization | 0/2 | Not started | - |
+| 4. Email & Finalization | 0/3 | Not started | - |
