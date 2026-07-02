@@ -9,7 +9,7 @@
 //    'YYYY-MM-DD' strings end-to-end — never a JS Date (D-11 / P3).
 import { db } from "@/lib/db";
 import { polls, options, participants, votes } from "@/lib/db/schema";
-import { eq, asc, sql, and } from "drizzle-orm";
+import { eq, asc, sql, and, isNotNull } from "drizzle-orm";
 
 /** Full poll row by admin token (admin route is the management surface). */
 export async function getPollByAdminUrlId(adminUrlId: string) {
@@ -159,4 +159,57 @@ export async function getResultsForPoll(pollId: string) {
   }
   // Map preserves insertion order = the SQL createdAt-asc order.
   return [...byParticipant.values()];
+}
+
+/**
+ * The finalization-notify target (FNL-03 / T-04-08). Returns `{ name, email }`
+ * for EVERY participant of this poll that has a stored email — voters without an
+ * email are excluded by the `email IS NOT NULL` predicate, so closePoll simply
+ * never notifies them (they still count for the close). The `email` column is
+ * nullable, but the filter guarantees a non-null value at runtime.
+ *
+ * Selects ONLY `name`/`email`. It DELIBERATELY OMITS `edit_token` and
+ * `admin_url_id` (T-04-08): a finalization notice must carry neither the
+ * participant's private edit credential nor the poll's admin token — the same
+ * three-token discipline getResultsForPoll and getParticipantByEditToken keep.
+ * No throw / empty-array on miss, matching the other read helpers here.
+ */
+export async function getVoterEmailsForPoll(pollId: string) {
+  return db
+    .select({ name: participants.name, email: participants.email })
+    .from(participants)
+    .where(
+      and(eq(participants.pollId, pollId), isNotNull(participants.email)),
+    );
+}
+
+/**
+ * The finalized-poll read for the admin page's "Poll finalized" Card and the
+ * finalization email body. Returns the full poll row PLUS the winning option's
+ * `date`/`startTime`, resolved via a LEFT JOIN on `winning_option_id`. The join
+ * is a LEFT JOIN so an OPEN poll (winning_option_id NULL) still returns its row
+ * with `winningDate`/`winningStartTime` = null — the caller branches on
+ * `poll.status`. A single-statement read (no interactive transaction, neon-http
+ * safe). Returns null when no poll matches the admin token.
+ */
+export async function getPollWithWinningOption(adminUrlId: string) {
+  const [row] = await db
+    .select({
+      id: polls.id,
+      participantUrlId: polls.participantUrlId,
+      adminUrlId: polls.adminUrlId,
+      title: polls.title,
+      description: polls.description,
+      location: polls.location,
+      status: polls.status,
+      winningOptionId: polls.winningOptionId,
+      createdAt: polls.createdAt,
+      winningDate: options.date,
+      winningStartTime: options.startTime,
+    })
+    .from(polls)
+    .leftJoin(options, eq(options.id, polls.winningOptionId))
+    .where(eq(polls.adminUrlId, adminUrlId))
+    .limit(1);
+  return row ?? null;
 }

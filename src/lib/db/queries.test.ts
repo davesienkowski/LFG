@@ -13,7 +13,10 @@
 //     vacuously if email were NULL; the canary makes the assertion real.
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { inArray } from "drizzle-orm";
-import { getResultsForPoll } from "@/lib/db/queries";
+import {
+  getResultsForPoll,
+  getVoterEmailsForPoll,
+} from "@/lib/db/queries";
 import { db } from "@/lib/db";
 import { polls, options, participants, votes } from "@/lib/db/schema";
 import { generateToken } from "@/lib/tokens";
@@ -183,5 +186,47 @@ describe("getResultsForPoll", () => {
     createdPollIds.push(poll.id);
     const result = await getResultsForPoll(poll.id);
     expect(result).toEqual([]);
+  });
+});
+
+describe("getVoterEmailsForPoll", () => {
+  it("returns ONLY emailed voters (a null-email voter is excluded), name/email only (T-04-08)", async () => {
+    // The shared seed has three voters: Alice (canary email), Bob (null email),
+    // Carol (null email). Only Alice should come back.
+    const seed = await seedPollWithResults();
+    const voters = await getVoterEmailsForPoll(seed.pollId);
+
+    expect(voters).toHaveLength(1);
+    expect(voters[0]).toEqual({ name: "Alice First", email: CANARY_EMAIL });
+
+    // Structural: own keys are EXACTLY name/email — never a token/admin column.
+    for (const v of voters) {
+      expect(Object.keys(v).sort()).toEqual(["email", "name"]);
+    }
+    const serialized = JSON.stringify(voters);
+    expect(serialized).not.toContain("editToken");
+    expect(serialized).not.toContain("edit_token");
+    expect(serialized).not.toContain("adminUrlId");
+    expect(serialized).not.toContain("admin_url_id");
+  });
+
+  it("returns an empty array for a poll whose voters all lack an email", async () => {
+    const [poll] = await db
+      .insert(polls)
+      .values({
+        title: "No-Email Poll",
+        participantUrlId: generateToken(),
+        adminUrlId: generateToken(),
+      })
+      .returning({ id: polls.id });
+    createdPollIds.push(poll.id);
+    await db.insert(participants).values({
+      pollId: poll.id,
+      name: "Anon",
+      email: null,
+      editToken: generateToken(),
+    });
+    const voters = await getVoterEmailsForPoll(poll.id);
+    expect(voters).toEqual([]);
   });
 });
