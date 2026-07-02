@@ -200,6 +200,14 @@ describe("closePoll — valid finalize (FNL-02/FNL-03)", () => {
     );
     // Subject is the fixed booked-for template + the chosen date.
     expect(sendEmailMock.mock.calls[0][0].subject).toContain("is booked for");
+
+    // The finalization email carries the Google Calendar link and the event.ics
+    // attachment (04-k1u). winningOptionId is the timed option[1].
+    const sent = sendEmailMock.mock.calls[0][0];
+    expect(sent.html).toContain("calendar.google.com");
+    expect(Array.isArray(sent.attachments)).toBe(true);
+    expect(sent.attachments).toHaveLength(1);
+    expect(sent.attachments[0].filename).toBe("event.ics");
   });
 });
 

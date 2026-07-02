@@ -192,6 +192,37 @@ export async function getVoterEmailsForPoll(pollId: string) {
  * `poll.status`. A single-statement read (no interactive transaction, neon-http
  * safe). Returns null when no poll matches the admin token.
  */
+/**
+ * The finalized-poll read for the hosted `.ics` route (`/p/{participantUrlId}/
+ * event.ics`). Keyed by the PARTICIPANT token — the finalization-email recipient
+ * already holds it, and the winning date is not secret, so no admin token is
+ * required. LEFT JOIN options on winning_option_id, exactly like
+ * getPollWithWinningOption, but keyed by participant_url_id and selecting ONLY
+ * participant-safe columns: it DELIBERATELY OMITS admin_url_id and every token
+ * (the same no-leak discipline getPollByParticipantUrlId keeps). The route
+ * branches on `status`/`winningOptionId`/`winningDate` to 404 an open/undecided/
+ * unknown poll with an IDENTICAL 404 (no oracle). Returns the row or null.
+ */
+export async function getFinalizedPollByParticipantUrlId(
+  participantUrlId: string,
+) {
+  const [row] = await db
+    .select({
+      id: polls.id,
+      title: polls.title,
+      description: polls.description,
+      status: polls.status,
+      winningOptionId: polls.winningOptionId,
+      winningDate: options.date,
+      winningStartTime: options.startTime,
+    })
+    .from(polls)
+    .leftJoin(options, eq(options.id, polls.winningOptionId))
+    .where(eq(polls.participantUrlId, participantUrlId))
+    .limit(1);
+  return row ?? null;
+}
+
 export async function getPollWithWinningOption(adminUrlId: string) {
   const [row] = await db
     .select({

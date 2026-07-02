@@ -47,6 +47,7 @@ import { resolveBaseUrl, buildParticipantUrl } from "@/lib/urls";
 import { formatDateWithTime } from "@/lib/format-date";
 import { sendEmail } from "@/lib/email/send";
 import { renderFinalizationEmail } from "@/lib/email/templates";
+import { buildGoogleCalendarUrl, buildIcs } from "@/lib/calendar/links";
 
 // uuid-shaped, non-empty. A malformed/absent value surfaces the same _form
 // message as a foreign option id (both mean "that's not a candidate date").
@@ -113,13 +114,56 @@ export async function closePoll(
     chosenDate,
     chosenTime,
   )}`;
+
+  // Best-effort calendar artifacts (CAL-06). This SINGLE try/catch runs BEFORE
+  // after() and BEFORE the redirect — its placement is load-bearing: a
+  // synchronous builder throw here must NOT block the redirect nor prevent the
+  // after() sends from being scheduled. On ANY throw we degrade to no calendar
+  // block / no attachment; the finalization email still sends and the committed
+  // close stands. The .ics content is built ONCE and reused across every
+  // recipient (immutable — no per-recipient rebuild).
+  let googleCalendarUrl: string | undefined;
+  let icsUrl: string | undefined;
+  let icsAttachment:
+    | { filename: string; content: string; contentType: string }
+    | undefined;
+  try {
+    googleCalendarUrl = buildGoogleCalendarUrl({
+      title: poll.title,
+      description: poll.description,
+      date: chosenDate,
+      startTime: chosenTime,
+    });
+    icsUrl = `${participantUrl}/event.ics`;
+    icsAttachment = {
+      filename: "event.ics",
+      content: buildIcs({
+        title: poll.title,
+        description: poll.description,
+        date: chosenDate,
+        startTime: chosenTime,
+        uid: `${poll.id}-${winningOptionId}@lfg`,
+      }),
+      contentType: "text/calendar",
+    };
+  } catch {
+    // Degrade to no calendar block/attachment (best-effort) — never fail the
+    // send nor revert the close.
+    googleCalendarUrl = undefined;
+    icsUrl = undefined;
+    icsAttachment = undefined;
+  }
+
   const html = renderFinalizationEmail({
     title: poll.title,
     location: poll.location,
     chosenDate,
     chosenTime,
     participantUrl,
+    googleCalendarUrl,
+    icsUrl,
   });
+  const attachments = icsAttachment ? [icsAttachment] : undefined;
   const pollId = poll.id;
 
   // (6) Best-effort finalization notices (D-09 / FNL-03 / T-04-10). Scheduled
@@ -143,7 +187,7 @@ export async function closePoll(
         // sendEmail never throws (returns a SendResult); the try/catch is a
         // belt-and-suspenders guarantee that even an unexpected throw NEVER
         // reverts the committed close nor aborts the remaining recipients (D-09).
-        await sendEmail({ to: voter.email, subject, html });
+        await sendEmail({ to: voter.email, subject, html, attachments });
       } catch {
         // Swallowed by design (D-09/T-04-10) — best-effort per recipient.
       }
