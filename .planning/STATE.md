@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 05
 current_phase_name: vote-grid-redesign-matrix-1c-rewrite-availabilitygrid-to-a-r
 status: executing
-stopped_at: 05 planned — 5 plans (Wave 1, all parallel; disjoint files); plan-checker PASSED, decision-coverage 10/10. Auto-chaining to execute (--chain --auto). NOTE Phase 04 verification still outstanding (real prod invite lands in inbox not spam [MAIL-02]; full prod happy-path smoke).
-last_updated: "2026-07-02T21:27:47.277Z"
+stopped_at: Completed 05-02-PLAN.md
+last_updated: "2026-07-02T21:37:01.189Z"
 last_activity: 2026-07-02
 last_activity_desc: Phase 05 execution started
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 16
-  completed_plans: 11
+  completed_plans: 13
 ---
 
 # Project State
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-06-30)
 ## Current Position
 
 Phase: 05 (vote-grid-redesign-matrix-1c-rewrite-availabilitygrid-to-a-r) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Next: Phase 04 verification — two end-of-phase human checks remain: (1) a real prod invite arrives in the owner's inbox (not spam) with a working link (MAIL-02, executor has no inbox access); (2) full prod happy-path smoke (create → vote → results/best-day → Book it → closed/read-only). SMTP2GO single-sender is the recorded fallback if Gmail spam-folders/DMARC-fails or hits the 100/day cap (T-04-13).
 Last activity: 2026-07-02 — Phase 05 execution started
@@ -64,6 +64,7 @@ Progress: [███████░░░] 75% (3 of 4 phases complete; Phase 04
 | Phase 04 P02 | 9min | 3 tasks | 12 files |
 | Phase 04 P03 | checkpoint-gated | 2 tasks | 2 files |
 | Phase 05 P01 | 15m | 2 tasks | 2 files |
+| Phase 05 P02 | 12min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -91,6 +92,8 @@ Recent decisions affecting current work:
 - [Phase 4]: 04-03: prod Neon migrated (0002 winning_option_id) + Vercel prod deploy live; .env.example documents Mailpit + Gmail SMTP shapes (!.env.example un-ignore, Rule 3)
 - [Phase 4]: 04-03: Gmail SMTP enabled in prod (D-03 EMAIL_FROM=SMTP_USER on smtp.gmail.com self-aligns SPF/DKIM/DMARC); secrets held only in Vercel env; SMTP2GO single-sender is the pre-wired fallback behind the same D-01 seam (T-04-13)
 - [Phase ?]: 05-01: AvailabilityGrid rewritten to role=radiogroup/radio matrix (D-01); desktop icon-only cells + labelled column headers, mobile stacked icon+text segments; both layers in DOM with display:none a11y isolation
+- [Phase 05]: 05-02: kept shipped semantic ResultsGrid <table> + scroll-fade (no CSS-grid port); added only the mock's bordered-card wrapper + filter select widths — D-09 forbids structural rewrites
+- [Phase 05]: 05-02: admin shell, InviteByEmailForm, BookItControl verified no-drift vs boards 3d/3e — two-step finalize + closed-poll hiding preserved
 
 ### Pending Todos
 
@@ -123,9 +126,9 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-02T21:25:10.094Z
-Stopped at: Phase 4 UI-SPEC approved
-Resume file: .planning/phases/04-email-finalization/04-UI-SPEC.md
+Last session: 2026-07-02T21:37:01.183Z
+Stopped at: Completed 05-02-PLAN.md
+Resume file: None
 
 **Planning gate note — RESOLVED (2026-07-01):** During Phase 2 and Phase 3 planning, the
 `decision-coverage-plan` gate returned `could-not-parse` (total:0) because those phases'
