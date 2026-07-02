@@ -110,14 +110,14 @@ Plans:
   4. The organizer can finalize the poll by selecting the winning date ("Book it"), which closes voting so the response form becomes read-only.
   5. On finalization, every participant who voted receives a confirmation email with the chosen date and event details.
 
-**Plans**: 3 plans
+**Plans**: 1/3 plans executed
 **Research**: Required — Resend custom-domain DNS/deliverability (DKIM/SPF/DMARC, up to ~48h propagation; verify before sending real invites) and the local SMTP/Mailpit dev path; handle the 100/day cap (429) visibly. (Resolved to SEED-001: Gmail SMTP + App Password for $0 no-domain prod sending, Mailpit for local capture.)
 **UI hint**: yes
 
 Plans:
 **Wave 1**
 
-- [ ] 04-01-PLAN.md — Env-switched `sendEmail()` seam (Nodemailer SMTP: Mailpit local / Gmail-SMTP prod) + three plain-HTML templates + `sendInvites` action & Invite-by-email card (individual sends, dedupe, copy-link fallback) + best-effort VOTE-04 confirmation via `after()` (MAIL-01/02/03, VOTE-04)
+- [x] 04-01-PLAN.md — Env-switched `sendEmail()` seam (Nodemailer SMTP: Mailpit local / Gmail-SMTP prod) + three plain-HTML templates + `sendInvites` action & Invite-by-email card (individual sends, dedupe, copy-link fallback) + best-effort VOTE-04 confirmation via `after()` (MAIL-01/02/03, VOTE-04)
 
 **Wave 2** *(blocked on Wave 1 email seam)*
 
@@ -137,4 +137,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Foundation & Poll Creation | 3/3 | Complete   | 2026-06-30 |
 | 2. Participant Voting | 2/2 | Complete    | 2026-07-01 |
 | 3. Results Dashboard | 2/2 | Complete    | 2026-07-01 |
-| 4. Email & Finalization | 0/3 | Not started | - |
+| 4. Email & Finalization | 1/3 | In Progress|  |

@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 4
-current_phase_name: Email & Finalization
+current_phase: 04
+current_phase_name: email-finalization
 status: executing
 stopped_at: Phase 4 UI-SPEC approved
-last_updated: "2026-07-02T16:16:25.173Z"
-last_activity: 2026-07-01
-last_activity_desc: Phase 3 complete, transitioned to Phase 4
+last_updated: "2026-07-02T16:31:48.089Z"
+last_activity: 2026-07-02
+last_activity_desc: Phase 04 execution started
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 8
-  completed_plans: 8
+  total_plans: 11
+  completed_plans: 9
 ---
 
 # Project State
@@ -23,15 +23,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-30)
 
 **Core value:** A poll creator can propose candidate dates, get participants to mark their availability via an emailed link, and instantly see which day(s) work for the whole group — no participant login, no cost.
-**Current focus:** Phase 3 — Results Dashboard
+**Current focus:** Phase 04 — email-finalization
 
 ## Current Position
 
-Phase: 4 — Email & Finalization
-Plan: Not started
+Phase: 04 (email-finalization) — EXECUTING
+Plan: 2 of 3
 Status: Ready to execute
 Next: Phase 2 — Participant Voting (VOTE-01, 02, 03, 05, 06, 07) — VOTE-07 (per-row bulk vote actions) added by 01-04
-Last activity: 2026-07-01 — Phase 3 complete, transitioned to Phase 4
+Last activity: 2026-07-02 — Phase 04 execution started
 
 Progress: [██░░░░░░░░] 25% (1 of 4 phases)
 
@@ -60,6 +60,7 @@ Progress: [██░░░░░░░░] 25% (1 of 4 phases)
 | Phase 01 P02 | 14min | 3 tasks | 18 files |
 | Phase 02 P01 | 35min | 3 tasks | 11 files |
 | Phase 02 P02 | 35min | 3 tasks | 9 files |
+| Phase 04 P01 | 13min | 3 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -81,6 +82,9 @@ Recent decisions affecting current work:
 - [Phase ?]: VoteForm gained an optional heading prop so 02-02's edit route reuses it verbatim
 - [Phase ?]: 02-02: Fixed missing Secure flag on lfg_edit cookie (secure: NODE_ENV==='production'), found by the production smoke test rather than unit tests
 - [Phase ?]: 02-02: updateResponse re-derives the participant strictly from the server-validated editToken, never a client-supplied participantId (VOTE-06 IDOR defense)
+- [Phase ?]: 04-01: sendEmail() is the single env-switched outbound-email seam (none|smtp|resend); 04-02 finalization reuses it
+- [Phase ?]: 04-01: email fully optional (D-02) — Mailpit local capture, zero email config still builds/tests green; EMAIL_FROM DMARC discipline (D-03) documented
+- [Phase ?]: 04-01: VOTE-04 confirmation fires best-effort via after() only from submitResponse (first-submit-only); update-response.ts untouched
 
 ### Pending Todos
 
@@ -110,7 +114,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-01T21:26:22.966Z
+Last session: 2026-07-02T16:31:15.048Z
 Stopped at: Phase 4 UI-SPEC approved
 Resume file: .planning/phases/04-email-finalization/04-UI-SPEC.md
 

@@ -36,7 +36,7 @@ Requirements for initial release. Each maps to a roadmap phase.
 - [x] **VOTE-01**: A participant can open a poll via the participant link and respond without creating an account
 - [x] **VOTE-02**: A participant can mark each candidate date as exactly one of three states — Available (yes), If-need-be (tentative), Not available (no)
 - [x] **VOTE-03**: A participant enters their name (and email for the edit link) and submits their response
-- [ ] **VOTE-04**: A participant receives a confirmation email containing a unique link to review/edit their response
+- [x] **VOTE-04**: A participant receives a confirmation email containing a unique link to review/edit their response
 - [x] **VOTE-05**: A participant can edit their own response while the poll is open
 - [x] **VOTE-06**: The edit action verifies a per-participant token before allowing changes (no name-only edits; no editing another participant's row)
 - [x] **VOTE-07**: A participant can set availability for multiple dates at once via per-row quick actions (set all available / set all unavailable / clear), in addition to per-date selection
@@ -51,9 +51,9 @@ Requirements for initial release. Each maps to a roadmap phase.
 
 ### Email
 
-- [ ] **MAIL-01**: The organizer can enter one or more email addresses and send each an invitation email containing the participant link
-- [ ] **MAIL-02**: Email delivery works on a free-tier provider (Resend) or SMTP, configured via environment variables
-- [ ] **MAIL-03**: If email is not configured, the app degrades gracefully by surfacing the participant link to copy/share manually
+- [x] **MAIL-01**: The organizer can enter one or more email addresses and send each an invitation email containing the participant link
+- [x] **MAIL-02**: Email delivery works on a free-tier provider (Resend) or SMTP, configured via environment variables
+- [x] **MAIL-03**: If email is not configured, the app degrades gracefully by surfacing the participant link to copy/share manually
 
 ### Finalization
 
@@ -123,7 +123,7 @@ Which phases cover which requirements. **Populated by the roadmapper.**
 | VOTE-01 | Phase 2 | Complete |
 | VOTE-02 | Phase 2 | Complete |
 | VOTE-03 | Phase 2 | Complete |
-| VOTE-04 | Phase 4 | Pending |
+| VOTE-04 | Phase 4 | Complete |
 | VOTE-05 | Phase 2 | Complete |
 | VOTE-06 | Phase 2 | Complete |
 | VOTE-07 | Phase 2 | Complete |
@@ -132,9 +132,9 @@ Which phases cover which requirements. **Populated by the roadmapper.**
 | DASH-03 | Phase 3 | Complete |
 | DASH-04 | Phase 3 | Complete |
 | DASH-05 | Phase 3 | Complete |
-| MAIL-01 | Phase 4 | Pending |
-| MAIL-02 | Phase 4 | Pending |
-| MAIL-03 | Phase 4 | Pending |
+| MAIL-01 | Phase 4 | Complete |
+| MAIL-02 | Phase 4 | Complete |
+| MAIL-03 | Phase 4 | Complete |
 | FNL-01 | Phase 4 | Pending |
 | FNL-02 | Phase 4 | Pending |
 | FNL-03 | Phase 4 | Pending |
