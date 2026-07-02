@@ -18,6 +18,7 @@ import {
   timestamp,
   unique,
   index,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 
 export const polls = pgTable("polls", {
@@ -28,6 +29,24 @@ export const polls = pgTable("polls", {
   description: text("description"),
   location: text("location"),
   status: text("status").notNull().default("open"),
+  // Additive, NULLABLE finalize FK (04-02 / FNL-01 / D-04). A poll has no winner
+  // until the organizer "Book it"s — NULL is the legitimate "open, undecided"
+  // state, not accidental debt. References the chosen date option; ON DELETE SET
+  // NULL so deleting the winning option (never wired in v1) degrades cleanly
+  // rather than cascade-deleting the poll. The `() => options.id` forward-thunk
+  // is required because `options` is declared AFTER `polls` (same pattern Drizzle
+  // uses for options.pollId -> () => polls.id). Reuses the existing `status`
+  // text column for the open->closed transition — no new status vocabulary.
+  // The `(): AnyPgColumn` return annotation is REQUIRED (not stylistic): because
+  // `options` also references `polls` (options.pollId), the two tables form a
+  // mutual/circular type reference. Without an explicit annotation TypeScript
+  // reports "'polls' implicitly has type 'any' ... referenced directly or
+  // indirectly in its own initializer" and the build fails. AnyPgColumn breaks
+  // the inference cycle — the Drizzle-documented fix for circular FKs.
+  winningOptionId: uuid("winning_option_id").references(
+    (): AnyPgColumn => options.id,
+    { onDelete: "set null" },
+  ),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

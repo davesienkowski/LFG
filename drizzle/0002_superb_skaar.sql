@@ -1,0 +1,2 @@
+ALTER TABLE "polls" ADD COLUMN "winning_option_id" uuid;--> statement-breakpoint
+ALTER TABLE "polls" ADD CONSTRAINT "polls_winning_option_id_options_id_fk" FOREIGN KEY ("winning_option_id") REFERENCES "public"."options"("id") ON DELETE set null ON UPDATE no action;

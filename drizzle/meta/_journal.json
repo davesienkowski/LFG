@@ -15,6 +15,13 @@
       "when": 1782886223918,
       "tag": "0001_lazy_odin",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783010038739,
+      "tag": "0002_superb_skaar",
+      "breakpoints": true
     }
   ]
 }
