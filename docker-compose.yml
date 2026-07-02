@@ -19,6 +19,17 @@ services:
       timeout: 5s
       retries: 5
 
+  # Local mail capture (D-01). Mailpit is a fake SMTP server that CAPTURES every
+  # message and never delivers it — open http://localhost:8025 to inspect sent
+  # invites/confirmations. It accepts unauthenticated connections on :1025, so
+  # the web service needs no SMTP_USER/SMTP_PASS locally. No healthcheck: nothing
+  # depends_on it (a dropped send is a best-effort no-op, never a boot blocker).
+  mailpit:
+    image: axllent/mailpit:v1.30
+    ports:
+      - "1025:1025" # SMTP — the web service connects here as SMTP_HOST=mailpit
+      - "8025:8025" # Web UI — inspect captured mail at http://localhost:8025
+
   web:
     build:
       context: .
@@ -31,6 +42,12 @@ services:
       DATABASE_URL: postgres://postgres:password@db:5432/lfg
       NEXT_PUBLIC_BASE_URL: http://localhost:3000
       NODE_ENV: development
+      # Email → Mailpit capture (SMTP :1025). Unauthenticated, so no
+      # SMTP_USER/SMTP_PASS. EMAIL_FROM is a throwaway local sender.
+      EMAIL_PROVIDER: smtp
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      EMAIL_FROM: dev@localhost
     ports:
       - "3000:3000"
     volumes:
