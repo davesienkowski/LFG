@@ -125,7 +125,16 @@ export function PollCreateForm() {
         <FieldError id={datesErrorId} messages={errors.dates} />
       </div>
 
-      <div>
+      {/*
+        Board 3a-m: on mobile the `Create poll` action is a `position: sticky`
+        pinned footer (border-top bar) so a long candidate-date list never
+        buries it — content scrolls, this block stays visible at the viewport
+        bottom. `-mx-4` bleeds the bar to the page edges (the root `main` has
+        `px-4`; the desktop card wrapper adds padding only at `sm:`). At `sm:`
+        everything reverts to the shipped static inline flow (board 3a). Mirrors
+        the vote-screen submit footer (D-03 / 05-03).
+      */}
+      <div className="sticky bottom-0 z-10 -mx-4 border-t bg-background px-4 py-4 sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
         <Button
           type="submit"
           disabled={isPending}
