@@ -1,0 +1,250 @@
+// Pure calendar-builder tests (node env, no DB). Proves buildGoogleCalendarUrl
+// and buildIcs are timezone-safe (Date.UTC arithmetic, never new Date(string)),
+// produce all-day vs floating-timed output per the plan decisions, roll the day
+// forward correctly across midnight AND month/year boundaries, escape .ics text
+// before folding, omit DESCRIPTION/details when empty, and never emit LOCATION.
+import { describe, it, expect } from "vitest";
+import { buildGoogleCalendarUrl, buildIcs } from "./links";
+
+describe("buildGoogleCalendarUrl — all-day (startTime null)", () => {
+  it("uses dates=YYYYMMDD/YYYYMMDD+1 (end-exclusive next day) and action=TEMPLATE", () => {
+    const url = buildGoogleCalendarUrl({
+      title: "D&D Session",
+      date: "2026-07-19",
+      startTime: null,
+    });
+    expect(url).toContain("action=TEMPLATE");
+    expect(url).toContain("dates=20260719%2F20260720");
+    // Title URL-encoded (ampersand -> %26).
+    expect(url).toContain("text=D%26D%20Session");
+  });
+
+  it("rolls the all-day end date across the year boundary (2026-12-31 -> 20270101)", () => {
+    const url = buildGoogleCalendarUrl({
+      title: "New Year game",
+      date: "2026-12-31",
+      startTime: null,
+    });
+    expect(url).toContain("dates=20261231%2F20270101");
+  });
+});
+
+describe("buildGoogleCalendarUrl — timed (startTime HH:MM)", () => {
+  it("ends 180 min after start, same day", () => {
+    const url = buildGoogleCalendarUrl({
+      title: "Session",
+      date: "2026-07-19",
+      startTime: "14:00",
+    });
+    expect(url).toContain("dates=20260719T140000%2F20260719T170000");
+  });
+
+  it("rolls past midnight (22:00 + 3h -> next-day 01:00:00)", () => {
+    const url = buildGoogleCalendarUrl({
+      title: "Late session",
+      date: "2026-07-19",
+      startTime: "22:00",
+    });
+    expect(url).toContain("dates=20260719T220000%2F20260720T010000");
+  });
+
+  it("rolls exactly to next-day midnight (21:00 + 3h -> next-day 00:00:00)", () => {
+    const url = buildGoogleCalendarUrl({
+      title: "Session",
+      date: "2026-07-19",
+      startTime: "21:00",
+    });
+    expect(url).toContain("dates=20260719T210000%2F20260720T000000");
+  });
+});
+
+describe("buildGoogleCalendarUrl — details / title fallback", () => {
+  it("includes details= only when description is non-empty", () => {
+    const withDesc = buildGoogleCalendarUrl({
+      title: "Session",
+      description: "Bring dice",
+      date: "2026-07-19",
+      startTime: null,
+    });
+    expect(withDesc).toContain("details=Bring%20dice");
+
+    const noDesc = buildGoogleCalendarUrl({
+      title: "Session",
+      date: "2026-07-19",
+      startTime: null,
+    });
+    expect(noDesc).not.toContain("details=");
+  });
+
+  it("falls back to description then 'LFG event' for empty/whitespace title", () => {
+    const toDesc = buildGoogleCalendarUrl({
+      title: "   ",
+      description: "Campaign night",
+      date: "2026-07-19",
+      startTime: null,
+    });
+    expect(toDesc).toContain("text=Campaign%20night");
+
+    const toDefault = buildGoogleCalendarUrl({
+      title: "",
+      date: "2026-07-19",
+      startTime: null,
+    });
+    expect(toDefault).toContain("text=LFG%20event");
+  });
+});
+
+describe("buildIcs — structure", () => {
+  it("emits a valid VCALENDAR/VEVENT with VERSION, PRODID, UID, DTSTAMP, SUMMARY", () => {
+    const ics = buildIcs({
+      title: "D&D Session",
+      date: "2026-07-19",
+      startTime: "14:00",
+      uid: "poll-1-opt-1@lfg",
+    });
+    expect(ics).toContain("BEGIN:VCALENDAR");
+    expect(ics).toContain("VERSION:2.0");
+    expect(ics).toContain("PRODID:");
+    expect(ics).toContain("BEGIN:VEVENT");
+    expect(ics).toContain("END:VEVENT");
+    expect(ics).toContain("END:VCALENDAR");
+    expect(ics).toContain("UID:poll-1-opt-1@lfg");
+    expect(ics).toMatch(/DTSTAMP:\d{8}T\d{6}Z/);
+    expect(ics).toContain("SUMMARY:D&D Session");
+  });
+
+  it("uses CRLF line endings", () => {
+    const ics = buildIcs({
+      title: "S",
+      date: "2026-07-19",
+      startTime: null,
+      uid: "u@lfg",
+    });
+    expect(ics).toContain("\r\n");
+  });
+});
+
+describe("buildIcs — all-day", () => {
+  it("emits DTSTART;VALUE=DATE and DTEND;VALUE=DATE with DTEND = next day (!= DTSTART)", () => {
+    const ics = buildIcs({
+      title: "S",
+      date: "2026-07-19",
+      startTime: null,
+      uid: "u@lfg",
+    });
+    expect(ics).toContain("DTSTART;VALUE=DATE:20260719");
+    expect(ics).toContain("DTEND;VALUE=DATE:20260720");
+  });
+
+  it("rolls DTEND across the year boundary (2026-12-31 -> 20270101, != DTSTART)", () => {
+    const ics = buildIcs({
+      title: "S",
+      date: "2026-12-31",
+      startTime: null,
+      uid: "u@lfg",
+    });
+    expect(ics).toContain("DTSTART;VALUE=DATE:20261231");
+    expect(ics).toContain("DTEND;VALUE=DATE:20270101");
+  });
+});
+
+describe("buildIcs — timed (floating, no zone)", () => {
+  it("emits floating DTSTART/DTEND with NO trailing Z and NO TZID, end = start + 180min", () => {
+    const ics = buildIcs({
+      title: "S",
+      date: "2026-07-19",
+      startTime: "14:00",
+      uid: "u@lfg",
+    });
+    expect(ics).toContain("DTSTART:20260719T140000");
+    expect(ics).toContain("DTEND:20260719T170000");
+    // Floating: the DTSTART value line has no trailing Z.
+    expect(ics).not.toMatch(/DTSTART:20260719T140000Z/);
+    expect(ics).not.toContain("TZID");
+  });
+
+  it("rolls timed DTEND past midnight (22:00 + 3h -> next-day 01:00:00)", () => {
+    const ics = buildIcs({
+      title: "S",
+      date: "2026-07-19",
+      startTime: "22:00",
+      uid: "u@lfg",
+    });
+    expect(ics).toContain("DTSTART:20260719T220000");
+    expect(ics).toContain("DTEND:20260720T010000");
+  });
+
+  it("rolls timed DTEND to exact next-day midnight (21:00 + 3h -> 00:00:00)", () => {
+    const ics = buildIcs({
+      title: "S",
+      date: "2026-07-19",
+      startTime: "21:00",
+      uid: "u@lfg",
+    });
+    expect(ics).toContain("DTEND:20260720T000000");
+  });
+});
+
+describe("buildIcs — description / title fallback / no LOCATION", () => {
+  it("emits DESCRIPTION only when description is non-empty", () => {
+    const withDesc = buildIcs({
+      title: "S",
+      description: "Bring dice",
+      date: "2026-07-19",
+      startTime: null,
+      uid: "u@lfg",
+    });
+    expect(withDesc).toContain("DESCRIPTION:Bring dice");
+
+    const noDesc = buildIcs({
+      title: "S",
+      date: "2026-07-19",
+      startTime: null,
+      uid: "u@lfg",
+    });
+    expect(noDesc).not.toContain("DESCRIPTION:");
+  });
+
+  it("never emits a LOCATION property", () => {
+    const ics = buildIcs({
+      title: "S",
+      description: "d",
+      date: "2026-07-19",
+      startTime: "14:00",
+      uid: "u@lfg",
+    });
+    expect(ics).not.toContain("LOCATION");
+  });
+
+  it("falls back title -> description -> 'LFG event' for whitespace/empty title", () => {
+    const toDesc = buildIcs({
+      title: "   ",
+      description: "Campaign night",
+      date: "2026-07-19",
+      startTime: null,
+      uid: "u@lfg",
+    });
+    expect(toDesc).toContain("SUMMARY:Campaign night");
+
+    const toDefault = buildIcs({
+      title: "",
+      date: "2026-07-19",
+      startTime: null,
+      uid: "u@lfg",
+    });
+    expect(toDefault).toContain("SUMMARY:LFG event");
+  });
+});
+
+describe("buildIcs — RFC5545 text escaping", () => {
+  it("escapes backslash, semicolon, comma and newline in SUMMARY", () => {
+    const ics = buildIcs({
+      title: "a\\b;c,d\ne",
+      date: "2026-07-19",
+      startTime: null,
+      uid: "u@lfg",
+    });
+    // Backslash escaped first, then ; , and newline -> \n.
+    expect(ics).toContain("SUMMARY:a\\\\b\\;c\\,d\\ne");
+  });
+});
