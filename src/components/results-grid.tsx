@@ -142,7 +142,7 @@ export function ResultsGrid({
             </label>
             <select
               id="results-filter-date"
-              className="h-11 rounded-lg border border-input bg-background px-3 text-base"
+              className="h-11 min-w-[180px] rounded-lg border border-input bg-background px-3 text-base"
               value={dateId ?? ""}
               onChange={(e) => {
                 const nextDateId = e.target.value || null;
@@ -168,7 +168,7 @@ export function ResultsGrid({
             </label>
             <select
               id="results-filter-status"
-              className="h-11 rounded-lg border border-input bg-background px-3 text-base"
+              className="h-11 min-w-[140px] rounded-lg border border-input bg-background px-3 text-base"
               value={status}
               onChange={(e) => {
                 const nextStatus = e.target.value as VoteState;
@@ -211,8 +211,12 @@ export function ResultsGrid({
         </div>
       </div>
 
-      {/* overflow-x-auto wrapper carrying the scroll-edge fade affordance. */}
-      <div className="overflow-x-auto" style={SCROLL_FADE_STYLE}>
+      {/* overflow-x-auto wrapper carrying the scroll-edge fade affordance,
+          inside the bordered/rounded results card container (board 3d). */}
+      <div
+        className="overflow-x-auto rounded-xl border"
+        style={SCROLL_FADE_STYLE}
+      >
         <table className="w-full border-collapse text-left">
           <caption className="sr-only">
             Availability results by candidate date
