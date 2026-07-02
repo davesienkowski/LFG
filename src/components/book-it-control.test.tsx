@@ -1,0 +1,110 @@
+// @vitest-environment jsdom
+//
+// BookItControl tests — the UI-SPEC two-step-confirm prohibition (a single click
+// must NEVER fire closePoll) and the D-08 best-day pre-selection. closePoll is
+// mocked so the client island renders without pulling in the server-action graph.
+import { describe, it, expect, afterEach, vi } from "vitest";
+import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+
+vi.mock("@/lib/actions/close-poll", () => ({
+  closePoll: vi.fn(async () => null),
+}));
+
+import { BookItControl } from "./book-it-control";
+
+afterEach(() => cleanup());
+
+const options = [
+  { id: "opt-a", date: "2026-09-01", startTime: null },
+  { id: "opt-b", date: "2026-09-02", startTime: "18:00:00" },
+];
+
+describe("BookItControl — two-step confirm (UI-SPEC prohibition)", () => {
+  it("shows no submit/confirm control until 'Book this date' is clicked; the trigger is type=button", () => {
+    render(
+      <BookItControl
+        adminUrlId="admin-1"
+        options={options}
+        results={[
+          { optionId: "opt-a", isBest: false },
+          { optionId: "opt-b", isBest: true },
+        ]}
+      />,
+    );
+    const trigger = screen.getByRole("button", { name: "Book this date" });
+    // The trigger is type=button — clicking it can never submit the form.
+    expect(trigger.getAttribute("type")).toBe("button");
+    // Before the disclosure: NO confirm/submit control exists in the DOM.
+    expect(
+      screen.queryByRole("button", { name: /Confirm and close poll/ }),
+    ).toBeNull();
+
+    fireEvent.click(trigger);
+
+    // After the disclosure: the submit control appears (type=submit) + cancel.
+    const confirm = screen.getByRole("button", {
+      name: /Confirm and close poll/,
+    });
+    expect(confirm.getAttribute("type")).toBe("submit");
+    expect(
+      screen.getByRole("button", { name: "Keep poll open" }),
+    ).toBeTruthy();
+  });
+
+  it("'Keep poll open' collapses the confirm panel with no side effects", () => {
+    render(
+      <BookItControl
+        adminUrlId="admin-1"
+        options={options}
+        results={[{ optionId: "opt-b", isBest: true }]}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Book this date" }));
+    fireEvent.click(screen.getByRole("button", { name: "Keep poll open" }));
+    // Back to the plain picker: the confirm control is gone, the trigger returns.
+    expect(
+      screen.queryByRole("button", { name: /Confirm and close poll/ }),
+    ).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Book this date" }),
+    ).toBeTruthy();
+  });
+});
+
+describe("BookItControl — pre-selection (D-08)", () => {
+  it("pre-checks the best option and badges it 'Suggested'", () => {
+    render(
+      <BookItControl
+        adminUrlId="admin-1"
+        options={options}
+        results={[
+          { optionId: "opt-a", isBest: false },
+          { optionId: "opt-b", isBest: true },
+        ]}
+      />,
+    );
+    const radios = screen.getAllByRole("radio") as HTMLInputElement[];
+    expect(radios[0].value).toBe("opt-a");
+    expect(radios[0].checked).toBe(false);
+    expect(radios[1].value).toBe("opt-b");
+    expect(radios[1].checked).toBe(true);
+    expect(screen.getByText("Suggested")).toBeTruthy();
+  });
+
+  it("falls back to pre-checking the first candidate when no option is best (zero votes)", () => {
+    render(
+      <BookItControl
+        adminUrlId="admin-1"
+        options={options}
+        results={[
+          { optionId: "opt-a", isBest: false },
+          { optionId: "opt-b", isBest: false },
+        ]}
+      />,
+    );
+    const radios = screen.getAllByRole("radio") as HTMLInputElement[];
+    expect(radios[0].checked).toBe(true);
+    expect(radios[1].checked).toBe(false);
+    expect(screen.queryByText("Suggested")).toBeNull();
+  });
+});

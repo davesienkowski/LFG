@@ -31,6 +31,10 @@ type VoteState = "yes" | "ifneedbe" | "no";
 async function seedPoll(overrides?: {
   description?: string | null;
   location?: string | null;
+  status?: string;
+  // Index (0 = 2026-07-12, 1 = 2026-07-19) of the winning option to record +
+  // flip the poll to closed. Used to render the finalized state.
+  winningOptionIndex?: number;
   // Participants to seed, each with votes keyed by OPTION INDEX (0 = 2026-07-12,
   // 1 = 2026-07-19). `email` seeds a leak canary (SPEC Prohibition #1).
   participants?: {
@@ -49,6 +53,7 @@ async function seedPoll(overrides?: {
       location: overrides?.location ?? "Tavern on Main St",
       participantUrlId,
       adminUrlId,
+      status: overrides?.status ?? "open",
     })
     .returning({ id: polls.id });
   const insertedOptions = await db
@@ -80,6 +85,13 @@ async function seedPoll(overrides?: {
       state: state as VoteState,
     }));
     if (voteRows.length) await db.insert(votes).values(voteRows);
+  }
+
+  if (overrides?.winningOptionIndex !== undefined) {
+    await db
+      .update(polls)
+      .set({ winningOptionId: optionIdByIndex[overrides.winningOptionIndex] })
+      .where(eq(polls.id, poll.id));
   }
 
   createdAdminIds.push(adminUrlId);
@@ -171,6 +183,42 @@ describe("AdminPage", () => {
     const html = await renderAdmin(adminUrlId);
     expect(html).toContain("No responses yet");
     expect(html).not.toContain("<table");
+  });
+
+  it("renders the Book-it picker (not the finalized card) for an open poll, with no Booked badge (FNL-01)", async () => {
+    const { adminUrlId } = await seedPoll({
+      participants: [{ name: "Alex", votes: { 0: "yes", 1: "no" } }],
+    });
+    const html = await renderAdmin(adminUrlId);
+
+    // Picker state renders; finalized state and Booked badge do not.
+    expect(html).toContain("Book it");
+    expect(html).toContain("Candidate dates");
+    expect(html).toContain("Book this date");
+    expect(html).not.toContain("Poll finalized");
+    expect(html).not.toContain("Booked");
+    // The best day (opt-0, the strict yes-leader) is pre-selected + Suggested.
+    expect(html).toContain("Suggested");
+  });
+
+  it("renders the finalized card + Booked badge (not the picker) for a closed poll (FNL-02)", async () => {
+    const { adminUrlId } = await seedPoll({
+      status: "closed",
+      winningOptionIndex: 1, // 2026-07-19 at 14:00
+      participants: [{ name: "Alex", votes: { 0: "no", 1: "yes" } }],
+    });
+    const html = await renderAdmin(adminUrlId);
+
+    // Finalized state renders; picker does not.
+    expect(html).toContain("Poll finalized");
+    expect(html).toContain("Booked");
+    expect(html).toContain("Sunday, July 19 at 2:00 PM is booked.");
+    // Best-effort framing — "should get", never "was notified" (D-09 / UI-SPEC).
+    expect(html).toContain("should get a confirmation");
+    expect(html).not.toContain("was notified");
+    // The picker + its confirm control are gone once closed.
+    expect(html).not.toContain("Book this date");
+    expect(html).not.toContain("Candidate dates");
   });
 
   it("calls notFound() (404) for an unknown admin token", async () => {

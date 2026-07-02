@@ -9,7 +9,7 @@
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import {
-  getPollByAdminUrlId,
+  getPollWithWinningOption,
   getOptionsForPoll,
   getResultsForPoll,
 } from "@/lib/db/queries";
@@ -24,6 +24,7 @@ import { PollSummary } from "@/components/poll-summary";
 import { CopyLinkButton } from "@/components/copy-link-button";
 import { ResultsGrid } from "@/components/results-grid";
 import { InviteByEmailForm } from "@/components/invite-by-email-form";
+import { BookItControl } from "@/components/book-it-control";
 import { Card } from "@/components/ui/card";
 
 export default async function AdminPage({
@@ -33,8 +34,10 @@ export default async function AdminPage({
 }) {
   const { adminUrlId } = await params;
 
-  const poll = await getPollByAdminUrlId(adminUrlId);
+  const poll = await getPollWithWinningOption(adminUrlId);
   if (!poll) notFound();
+
+  const isClosed = poll.status === "closed";
 
   const options = await getOptionsForPoll(poll.id);
   const participants = await getResultsForPoll(poll.id);
@@ -53,13 +56,21 @@ export default async function AdminPage({
     emailProvider !== undefined &&
     emailProvider !== "" &&
     emailProvider !== "none";
-  // No inviting to a closed poll (anticipates 04-02's finalize; guard now).
-  const showInvite = poll.status !== "closed";
+  // No inviting to a closed poll (04-02 finalize closes the poll).
+  const showInvite = !isClosed;
 
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-12 flex flex-col gap-8">
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-semibold leading-tight">{poll.title}</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-semibold leading-tight">{poll.title}</h1>
+          {/* "Booked" emerald pill — only once the poll is finalized (closed). */}
+          {isClosed ? (
+            <span className="inline-flex items-center rounded-full border border-emerald-300 bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">
+              Booked
+            </span>
+          ) : null}
+        </div>
         <PollSummary
           description={poll.description}
           location={poll.location}
@@ -133,7 +144,7 @@ export default async function AdminPage({
         ) : null}
       </div>
 
-      {/* Results (DASH-01..05) — appended as the last section, below Share. */}
+      {/* Results (DASH-01..05) — below Share, above Book it. */}
       <div className="flex flex-col gap-4">
         <h2 className="text-2xl font-semibold leading-snug">Results</h2>
         <ResultsGrid
@@ -142,6 +153,36 @@ export default async function AdminPage({
           results={results}
         />
       </div>
+
+      {/* Book it (FNL-01/02/03). Renders EXACTLY ONE of {picker, finalized card}
+          based on poll.status — never both, never neither. */}
+      {isClosed ? (
+        <Card className="flex flex-col gap-2 p-6 border-emerald-200 bg-emerald-50/40">
+          <h2 className="text-2xl font-semibold leading-snug">Poll finalized</h2>
+          <p className="text-base text-muted-foreground">
+            {poll.winningDate
+              ? `${formatDateWithTime(
+                  poll.winningDate,
+                  poll.winningStartTime ? poll.winningStartTime.slice(0, 5) : null,
+                )} is booked. `
+              : ""}
+            {/* Best-effort framing: "should get", NOT "was notified" (D-09). */}
+            Everyone who voted and gave an email should get a confirmation.
+          </p>
+        </Card>
+      ) : (
+        <div className="flex flex-col gap-4">
+          <h2 className="text-2xl font-semibold leading-snug">Book it</h2>
+          <p className="text-base text-muted-foreground">
+            Pick the date you&apos;re going with. This closes voting for everyone.
+          </p>
+          <BookItControl
+            adminUrlId={poll.adminUrlId}
+            options={options}
+            results={results}
+          />
+        </div>
+      )}
     </main>
   );
 }
