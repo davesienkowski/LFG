@@ -6,9 +6,9 @@ current_phase: 05
 current_phase_name: vote-grid-redesign-matrix-1c-rewrite-availabilitygrid-to-a-r
 status: ready-for-verification
 stopped_at: 05 execution COMPLETE — all 5 plans shipped (13 commits) on master. Post-merge gate green (176/176 tests + build). Verifier 10/10 must_haves (D-01..D-10 hold in real code); status human_needed → 9 pixel/AT-fidelity checks in 05-UAT.md await sign-off via /gsd-verify-work 5. Code review: no blockers (WR-01 roving-tabindex tradeoff, IN-01 bg-white token — optional follow-ups). ALSO STILL OPEN: Phase 04 verification (real prod invite lands in inbox not spam [MAIL-02] + full prod happy-path smoke).
-last_updated: "2026-07-02T22:10:07Z"
-last_activity: 2026-07-02
-last_activity_desc: Phase 05 execution complete — 5/5 plans shipped, verified 10/10 (human_needed on 9 visual/AT checks)
+last_updated: "2026-07-03T22:25:00Z"
+last_activity: 2026-07-03
+last_activity_desc: "Quick task 260703-pdt — show current poll results on participant thanks page (176/176 tests + build green, deployed to prod)"
 progress:
   total_phases: 5
   completed_phases: 4
@@ -105,10 +105,10 @@ Recent decisions affecting current work:
 
 [From .planning/todos/pending/ — ideas captured during sessions]
 
-6 pending. Live-site UX review (2026-07-03) captured 5 results/admin/participant polish items → likely a **Phase 06**:
+5 pending. Live-site UX review (2026-07-03) captured 5 results/admin/participant polish items → likely a **Phase 06**:
 - Redesign admin results display for readability (too small/cramped)
 - Fix admin results filters (best-slot ranking + standalone status filter)
-- Show current results on participant page
+- ~~Show current results on participant page~~ ✓ DONE 2026-07-03 (quick task 260703-pdt)
 - Make candidate date lists horizontal/compact ("Book it" + poll description)
 - Email admin link to creator on poll creation
 
@@ -130,6 +130,7 @@ Review with `/gsd-capture --list`.
 |---|-------------|------|--------|-----------|
 | 260701-il0 | Phase 2 code-review follow-ups #1 (activate env validation via instrumentation register hook) + #2 (pure setState updater in AvailabilityGrid) + remove stale checkpoint | 2026-07-01 | 1570165 | [260701-il0-apply-phase-2-code-review-follow-ups-1-w](./quick/260701-il0-apply-phase-2-code-review-follow-ups-1-w/) |
 | 260702-k1u | Add "Add to Calendar" links (Google Calendar link + hosted/attached `.ics`) for the booked date to the finalization email — timezone-safe floating/all-day event, closed-poll-only route, best-effort | 2026-07-02 | 41467c0 | [260702-k1u-add-add-to-calendar-links-google-calenda](./quick/260702-k1u-add-add-to-calendar-links-google-calenda/) |
+| 260703-pdt | Show current poll results on participant post-submit (thanks) page — read-only "Current results" section reusing ResultsGrid via participant-safe queries (no email/token/admin leak, no migration) | 2026-07-03 | 418dfa8 | [260703-pdt-show-current-poll-results-on-participant](./quick/260703-pdt-show-current-poll-results-on-participant/) |
 
 ## Deferred Items
 
