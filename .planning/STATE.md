@@ -105,7 +105,16 @@ Recent decisions affecting current work:
 
 [From .planning/todos/pending/ — ideas captured during sessions]
 
-None yet.
+6 pending. Live-site UX review (2026-07-03) captured 5 results/admin/participant polish items → likely a **Phase 06**:
+- Redesign admin results display for readability (too small/cramped)
+- Fix admin results filters (best-slot ranking + standalone status filter)
+- Show current results on participant page
+- Make candidate date lists horizontal/compact ("Book it" + poll description)
+- Email admin link to creator on poll creation
+
+Plus: Shared subscribable calendar feed of finalized poll dates (2026-07-02).
+
+Review with `/gsd-capture --list`.
 
 ### Blockers/Concerns
 
