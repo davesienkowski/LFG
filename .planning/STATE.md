@@ -106,14 +106,14 @@ Recent decisions affecting current work:
 [From .planning/todos/pending/ — ideas captured during sessions]
 
 Live-site UX review (2026-07-03) captured 5 results/admin/participant polish items, being cleared via quick tasks:
-- Redesign admin results display for readability (too small/cramped) — pending (folded into results-grid rework)
-- Fix admin results filters (best-slot ranking + standalone status filter) — pending (folded into results-grid rework)
+- ~~Redesign admin results display for readability (too small/cramped)~~ ✓ DONE 2026-07-03 (folded into results-grid rework 260703-r8r)
+- ~~Fix admin results filters (best-slot ranking + standalone status filter)~~ ✓ DONE 2026-07-03 (folded into results-grid rework 260703-r8r)
 - ~~Show current results on participant page~~ ✓ DONE 2026-07-03 (quick task 260703-pdt)
 - ~~Make candidate date lists horizontal/compact ("Book it" + poll description)~~ ✓ DONE 2026-07-03 (quick task 260703-ppz)
-- Email admin link to creator on poll creation — pending
+- Email admin link to creator on poll creation — pending (next)
 - Shared subscribable calendar feed of finalized poll dates — pending (needs scoping decision; no organizer entity in schema)
 
-**Live design refinement (2026-07-03, user):** results grid on BOTH admin + participant should (a) surface the "best" slot first/most-prominent, and (b) possibly transpose so participants are columns (top) and dates are rows (left). NOTE: transpose reverses Phase 05 D-09 (which forbade a ResultsGrid structural rewrite) — confirm layout with user before building.
+**Live design refinement (2026-07-03, user) — RESOLVED:** results grid on BOTH admin + participant should surface the "best" slot first/most-prominent. User chose: KEEP orientation (people=rows, dates=columns), move best day column(s) leftmost (NOT a transpose — Phase 05 D-09 preserved), and fix filters in same task. Shipped in 260703-r8r.
 
 Plus: Shared subscribable calendar feed of finalized poll dates (2026-07-02).
 
@@ -135,6 +135,7 @@ Review with `/gsd-capture --list`.
 | 260702-k1u | Add "Add to Calendar" links (Google Calendar link + hosted/attached `.ics`) for the booked date to the finalization email — timezone-safe floating/all-day event, closed-poll-only route, best-effort | 2026-07-02 | 41467c0 | [260702-k1u-add-add-to-calendar-links-google-calenda](./quick/260702-k1u-add-add-to-calendar-links-google-calenda/) |
 | 260703-pdt | Show current poll results on participant post-submit (thanks) page — read-only "Current results" section reusing ResultsGrid via participant-safe queries (no email/token/admin leak, no migration) | 2026-07-03 | 418dfa8 | [260703-pdt-show-current-poll-results-on-participant](./quick/260703-pdt-show-current-poll-results-on-participant/) |
 | 260703-ppz | Compact horizontal wrapping candidate-date chips on admin echo + Book-it picker (layout only; radio/two-step-confirm semantics intact; 44px tap targets) | 2026-07-03 | 32669ce | [260703-ppz-compact-horizontal-candidate-date-lists-](./quick/260703-ppz-compact-horizontal-candidate-date-lists-/) |
+| 260703-r8r | ResultsGrid rework (admin + participant): best-day column(s) moved leftmost via single displayOptions array, best-day summary line, readability polish, and decoupled always-active filter (Best day / specific / All-dates modes; status works standalone). Covers 2 todos: redesign-results-display + fix-admin-filters | 2026-07-03 | 11cd350 | [260703-r8r-results-grid-rework-best-day-column-firs](./quick/260703-r8r-results-grid-rework-best-day-column-firs/) |
 
 ## Deferred Items
 
