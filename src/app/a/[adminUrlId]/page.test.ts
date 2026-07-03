@@ -164,17 +164,20 @@ describe("AdminPage", () => {
     });
     const html = await renderAdmin(adminUrlId);
 
-    // (a) heading + every participant name render.
+    // (a) heading + the DEFAULT-visible participants render. The results grid
+    // now defaults to "Best day + Available" (260703-r8r rework), so only
+    // participants available on the best day appear in the initial SSR; Jordan
+    // (if-need-be on the best day) is filtered out of the default view.
     expect(html).toContain("Results");
     expect(html).toContain("Alex Canary");
     expect(html).toContain("Sam Ryder");
-    expect(html).toContain("Jordan Vale");
-    // (b) exact tally caption for the known date column.
+    expect(html).not.toContain("Jordan Vale"); // if-need-be on best -> default-filtered
+    // (b) exact tally caption for the known date column (headers are unfiltered).
     expect(html).toContain("2 yes · 1 if-need-be");
     // (c) the strict yes-leader renders the Best badge.
     expect(html).toContain("Best");
-    // (d) NEGATIVE, non-vacuous: the seeded participant IS rendered (name above),
-    // yet the canary email never appears in the admin HTML (SPEC Prohibition #1).
+    // (d) NEGATIVE, non-vacuous: Alex Canary IS rendered (name above), yet the
+    // canary email never appears in the admin HTML (SPEC Prohibition #1).
     expect(html).not.toContain("alex-canary@example.com");
   });
 
