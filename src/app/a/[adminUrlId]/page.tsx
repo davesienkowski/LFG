@@ -77,9 +77,12 @@ export default async function AdminPage({
         />
       </div>
 
-      <ul className="flex flex-col gap-1">
+      <ul className="flex flex-wrap gap-2">
         {options.map((opt) => (
-          <li key={opt.id} className="text-base">
+          <li
+            key={opt.id}
+            className="inline-flex items-center rounded-full border bg-muted px-3 py-1 text-sm"
+          >
             {formatDateWithTime(
               opt.date,
               opt.startTime ? opt.startTime.slice(0, 5) : null,
