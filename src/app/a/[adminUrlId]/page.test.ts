@@ -233,9 +233,12 @@ describe("AdminPage", () => {
     // Best-effort framing — "should get", never "was notified" (D-09 / UI-SPEC).
     expect(html).toContain("should get a confirmation");
     expect(html).not.toContain("was notified");
-    // The picker + its confirm control are gone once closed.
+    // The picker + its confirm control are gone once closed. (The candidate-date
+    // ECHO — a <details><summary>Candidate dates (N)</summary> — still renders on
+    // every poll, so target the picker's <legend> to prove the picker is absent
+    // without colliding with the echo summary text.)
     expect(html).not.toContain("Book this date");
-    expect(html).not.toContain("Candidate dates");
+    expect(html).not.toContain("<legend");
   });
 
   it("renders the neutral subscribe card for a poll WITH an organizerId (no second Keep-private badge) (LD-6)", async () => {
