@@ -399,17 +399,19 @@ describe("ResultsGrid client-only filter (D3-06)", () => {
 });
 
 describe("ResultsGrid mobile date-cards (260703-wfm)", () => {
-  it("renders a best-first date-card per option with the best card badged", () => {
+  it("renders only VOTED date-cards by default, best-first, badged (opt-3 zero-vote hidden)", () => {
     renderMain();
     const mobile = screen.getByTestId("results-cards-mobile");
-    const cards = mobile.querySelectorAll(":scope > li");
-    expect(cards).toHaveLength(3); // one card per candidate date
+    const cards = within(mobile).getAllByTestId("result-date-card");
+    expect(cards).toHaveLength(2); // opt-1 + opt-2 (opt-3 zero-vote hidden)
     // opt-1 (July 12) is the strict best -> leftmost/first card, badged.
     expect(cards[0].textContent).toContain("Best");
     expect(cards[0].textContent).toMatch(/Jul 12/);
     expect(within(mobile).getAllByText("Best")).toHaveLength(1);
     // Tally uses the word "available" (distinct from the desktop "yes" header).
     expect(within(mobile).getByText("2 available · 1 if-need-be")).toBeTruthy();
+    // opt-3 (July 20, zero-vote) is hidden behind the toggle by default.
+    expect(within(mobile).queryByText(/Jul 20/)).toBeNull();
   });
 
   it("lists EVERY participant (unfiltered) with an icon+label state chip", () => {
@@ -433,10 +435,91 @@ describe("ResultsGrid mobile date-cards (260703-wfm)", () => {
     renderMain();
     const mobile = screen.getByTestId("results-cards-mobile");
     const details = mobile.querySelectorAll("details");
-    expect(details).toHaveLength(3);
+    // Default renders only the 2 voted cards (opt-3 zero-vote is hidden).
+    expect(details).toHaveLength(2);
     expect((details[0] as HTMLDetailsElement).open).toBe(true); // best (opt-1)
     expect((details[1] as HTMLDetailsElement).open).toBe(false);
-    expect((details[2] as HTMLDetailsElement).open).toBe(false);
+  });
+
+  it("hides zero-vote dates behind a 'Show all dates' toggle (XBO-04)", () => {
+    renderMain();
+    const mobile = screen.getByTestId("results-cards-mobile");
+    const toggle = within(mobile).getByRole("button", {
+      name: /Show all dates \(\+1\)/,
+    });
+    expect(toggle.getAttribute("type")).toBe("button");
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(toggle.classList.contains("min-h-11")).toBe(true);
+    // Collapsed: opt-3 hidden, only the 2 voted cards render.
+    expect(within(mobile).getAllByTestId("result-date-card")).toHaveLength(2);
+    expect(within(mobile).queryByText(/Jul 20/)).toBeNull();
+
+    fireEvent.click(toggle);
+
+    // Expanded: opt-3 revealed below the voted cards.
+    expect(within(mobile).getAllByTestId("result-date-card")).toHaveLength(3);
+    expect(within(mobile).getByText(/Jul 20/)).toBeTruthy();
+    expect(within(mobile).getByText("0 available · 0 if-need-be")).toBeTruthy();
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(toggle.textContent).toMatch(/Show fewer/);
+
+    fireEvent.click(toggle);
+
+    // Idempotent round-trip: back to the 2 voted cards.
+    expect(within(mobile).getAllByTestId("result-date-card")).toHaveLength(2);
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(toggle.textContent).toMatch(/Show all dates/);
+  });
+
+  it("renders NO toggle when every date has votes", () => {
+    const opts: GridOption[] = [
+      { id: "a", date: "2026-07-12", startTime: null },
+      { id: "b", date: "2026-07-19", startTime: null },
+    ];
+    const participants: ResultsParticipant[] = [
+      { id: "p1", name: "P1", votes: { a: "yes", b: "yes" } },
+      { id: "p2", name: "P2", votes: { a: "yes", b: "yes" } },
+    ];
+    render(
+      <ResultsGrid
+        options={opts}
+        participants={participants}
+        results={computeResults(participants, opts)}
+      />,
+    );
+    const mobile = screen.getByTestId("results-cards-mobile");
+    expect(
+      within(mobile).queryByRole("button", { name: /Show all dates/ }),
+    ).toBeNull();
+    expect(within(mobile).getAllByTestId("result-date-card")).toHaveLength(
+      opts.length,
+    );
+  });
+
+  it("renders ALL cards and NO toggle when no date has any vote (edge XBO-04-empty)", () => {
+    const opts: GridOption[] = [
+      { id: "a", date: "2026-07-12", startTime: null },
+      { id: "b", date: "2026-07-19", startTime: null },
+    ];
+    const participants: ResultsParticipant[] = [
+      { id: "p1", name: "P1", votes: { a: "no", b: "no" } },
+      { id: "p2", name: "P2", votes: { a: "no", b: "no" } },
+    ];
+    render(
+      <ResultsGrid
+        options={opts}
+        participants={participants}
+        results={computeResults(participants, opts)}
+      />,
+    );
+    const mobile = screen.getByTestId("results-cards-mobile");
+    // All zero-vote -> render ALL cards, NO lone toggle over an empty list.
+    expect(within(mobile).getAllByTestId("result-date-card")).toHaveLength(
+      opts.length,
+    );
+    expect(
+      within(mobile).queryByRole("button", { name: /Show all dates/ }),
+    ).toBeNull();
   });
 
   it("EDGE WFM-03: under a co-best TIE badges both but opens only the FIRST", () => {

@@ -147,6 +147,10 @@ export function ResultsGrid({
     status: VoteState;
   }>({ dateSel: BEST_DAY_VALUE, status: "yes" });
   const [announcement, setAnnouncement] = useState("");
+  // Mobile-only display toggle: zero-vote dates are hidden behind a "Show all
+  // dates (+N)" button by default. Pure in-memory boolean (no I/O, no derived-
+  // state mirror) — idempotent round-trip, D3-06 preserved.
+  const [showZeroVote, setShowZeroVote] = useState(false);
 
   // Empty state (SPEC AC-1/AC-7): no responses -> banner only, NO table, NO
   // filter control. Rendered instead of a broken/empty grid, then return early.
@@ -175,6 +179,21 @@ export function ResultsGrid({
   const bestOptions = options.filter((o) => resultByOption.get(o.id)?.isBest);
   const restOptions = options.filter((o) => !resultByOption.get(o.id)?.isBest);
   const displayOptions: GridOption[] = [...bestOptions, ...restOptions];
+
+  // MOBILE partition (best-first order preserved within each group): split
+  // displayOptions into dates that received ANY vote vs zero-vote dates. The two
+  // predicates are exact De Morgan complements, so every date lands in exactly
+  // one group. The best day always has yes>0, so it is ALWAYS in votedOptions
+  // (never hidden behind the toggle). Reuses resultByOption verbatim — no
+  // re-computation, no re-rank.
+  const votedOptions = displayOptions.filter((o) => {
+    const r = resultByOption.get(o.id);
+    return (r?.yes ?? 0) > 0 || (r?.ifneedbe ?? 0) > 0;
+  });
+  const zeroVoteOptions = displayOptions.filter((o) => {
+    const r = resultByOption.get(o.id);
+    return (r?.yes ?? 0) === 0 && (r?.ifneedbe ?? 0) === 0;
+  });
 
   // DERIVED purely during render — never copied into a second useState that
   // could desync under React 19 Strict/concurrent double-invocation
@@ -230,6 +249,71 @@ export function ResultsGrid({
   }
 
   const isAtDefault = dateSel === BEST_DAY_VALUE && status === "yes";
+
+  // Single per-date mobile card renderer — voted and zero-vote cards render
+  // IDENTICALLY. Default-open is gated on the partition-independent
+  // `isBest && opt.id === displayOptions[0]?.id` (displayOptions[0] is always
+  // the single leftmost/first-best card; zero-vote cards are never best -> never
+  // open), preserving EDGE WFM-03 (co-best tie -> only first best opens) and
+  // WFM-01/02 (no best -> none open).
+  function renderDateCard(opt: GridOption) {
+    const r = resultByOption.get(opt.id);
+    const isBest = r?.isBest ?? false;
+    return (
+      <li
+        key={opt.id}
+        data-testid="result-date-card"
+        className={cn("rounded-xl border p-4", isBest && "bg-emerald-50")}
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          {isBest ? <BestDayBadge /> : null}
+          <span className="text-base font-semibold">
+            {optionLabelShort(opt)}
+          </span>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          {r?.yes ?? 0} available · {r?.ifneedbe ?? 0} if-need-be
+        </p>
+        <details open={isBest && opt.id === displayOptions[0]?.id}>
+          <summary className="inline-flex min-h-11 cursor-pointer items-center text-sm font-semibold">
+            Who&apos;s available
+          </summary>
+          <ul className="mt-2 flex flex-col gap-2">
+            {participants.map((p) => {
+              const state = normalizeVoteState(p.votes[opt.id]);
+              const meta = STATE_META[state];
+              const Icon = meta.Icon;
+              return (
+                <li
+                  key={p.id}
+                  className="flex flex-wrap items-center justify-between gap-2"
+                >
+                  <span className="text-sm">{p.name}</span>
+                  <span
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-sm font-semibold whitespace-nowrap",
+                      meta.className,
+                    )}
+                  >
+                    <Icon aria-hidden className="size-4" />
+                    {meta.label}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </details>
+      </li>
+    );
+  }
+
+  // MOBILE render policy (edge XBO-04-empty handled — the list is NEVER an empty
+  // list with only a toggle): when NO date has any vote, show ALL cards and NO
+  // toggle; otherwise show voted cards + a "Show all dates (+N)" toggle that
+  // reveals the zero-vote cards below.
+  const hasVoted = votedOptions.length > 0;
+  const showToggle = hasVoted && zeroVoteOptions.length > 0;
+  const defaultCards = hasVoted ? votedOptions : displayOptions;
 
   return (
     <div className="flex flex-col gap-4">
@@ -475,57 +559,28 @@ export function ResultsGrid({
         data-testid="results-cards-mobile"
         className="flex flex-col gap-3 sm:hidden"
       >
-        {displayOptions.map((opt, index) => {
-          const r = resultByOption.get(opt.id);
-          const isBest = r?.isBest ?? false;
-          return (
-            <li
-              key={opt.id}
-              className={cn("rounded-xl border p-4", isBest && "bg-emerald-50")}
+        {defaultCards.map((opt) => renderDateCard(opt))}
+        {/* Zero-vote toggle — rendered ONLY when there ARE voted dates AND there
+            ARE zero-vote dates to reveal (never a lone toggle over an empty
+            list). <button aria-expanded> over the pure showZeroVote boolean;
+            ≥44px tap target (min-h-11). */}
+        {showToggle ? (
+          <li>
+            <button
+              type="button"
+              aria-expanded={showZeroVote}
+              onClick={() => setShowZeroVote((v) => !v)}
+              className="min-h-11 w-full rounded-lg border px-4 py-2 text-sm font-semibold hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2"
             >
-              <div className="flex flex-wrap items-center gap-2">
-                {isBest ? <BestDayBadge /> : null}
-                <span className="text-base font-semibold">
-                  {optionLabelShort(opt)}
-                </span>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                {r?.yes ?? 0} available · {r?.ifneedbe ?? 0} if-need-be
-              </p>
-              {/* EDGE WFM-03: open gated on `isBest && index === 0` so under a
-                  co-best TIE only the FIRST best card opens; no best -> none. */}
-              <details open={isBest && index === 0}>
-                <summary className="inline-flex min-h-11 cursor-pointer items-center text-sm font-semibold">
-                  Who&apos;s available
-                </summary>
-                <ul className="mt-2 flex flex-col gap-2">
-                  {participants.map((p) => {
-                    const state = normalizeVoteState(p.votes[opt.id]);
-                    const meta = STATE_META[state];
-                    const Icon = meta.Icon;
-                    return (
-                      <li
-                        key={p.id}
-                        className="flex flex-wrap items-center justify-between gap-2"
-                      >
-                        <span className="text-sm">{p.name}</span>
-                        <span
-                          className={cn(
-                            "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-sm font-semibold whitespace-nowrap",
-                            meta.className,
-                          )}
-                        >
-                          <Icon aria-hidden className="size-4" />
-                          {meta.label}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </details>
-            </li>
-          );
-        })}
+              {showZeroVote
+                ? "Show fewer"
+                : `Show all dates (+${zeroVoteOptions.length})`}
+            </button>
+          </li>
+        ) : null}
+        {showToggle && showZeroVote
+          ? zeroVoteOptions.map((opt) => renderDateCard(opt))
+          : null}
       </ul>
     </div>
   );
