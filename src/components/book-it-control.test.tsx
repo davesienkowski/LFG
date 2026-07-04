@@ -161,4 +161,37 @@ describe("BookItControl — mobile collapse-to-suggested (260703-wfm)", () => {
       screen.getByRole("button", { name: "Book this date" }),
     ).toBeTruthy();
   });
+
+  it("collapses to the suggested date on ALL breakpoints (XBO-03) — grid is hidden with NO sm: auto-reveal", () => {
+    render(
+      <BookItControl
+        adminUrlId="admin-1"
+        options={options}
+        results={[
+          { optionId: "opt-a", isBest: false },
+          { optionId: "opt-b", isBest: true },
+        ]}
+      />,
+    );
+    // radio -> <label> -> grid wrapper <div>. TOKEN checks only: `sm:grid-cols-2`
+    // CONTAINS the substring "sm:grid", so exact-token classList.contains is the
+    // only reliable way to prove the grid never auto-reveals at sm:.
+    const radios = screen.getAllByRole("radio") as HTMLInputElement[];
+    const wrapper = radios[0].closest("label")?.parentElement as HTMLElement;
+    // Collapsed by default: hidden on ALL breakpoints (no `sm:grid` token).
+    expect(wrapper.classList.contains("hidden")).toBe(true);
+    expect(wrapper.classList.contains("sm:grid")).toBe(false);
+    // The suggested-date summary shows on desktop too (no `sm:hidden` token).
+    const summary = screen.getByText("Change date").closest("div") as HTMLElement;
+    expect(summary.classList.contains("sm:hidden")).toBe(false);
+
+    fireEvent.click(screen.getByRole("button", { name: "Change date" }));
+
+    // Reveal drops `hidden` (appends `grid`); radios never remounted; the best
+    // preselection survives the toggle.
+    expect(wrapper.classList.contains("hidden")).toBe(false);
+    const after = screen.getAllByRole("radio") as HTMLInputElement[];
+    expect(after).toHaveLength(2);
+    expect(after[1].checked).toBe(true);
+  });
 });

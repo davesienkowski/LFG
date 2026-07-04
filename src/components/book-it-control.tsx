@@ -47,10 +47,11 @@ export function BookItControl({
     FormData
   >(closePoll, null);
   const [showConfirm, setShowConfirm] = useState(false);
-  // Mobile-only collapse: the radio list starts hidden behind a suggested-date
-  // summary + "Change date" toggle. One-way reveal (no re-collapse control) — a
-  // display toggle only, the radios NEVER unmount (winningOptionId keeps
-  // submitting collapsed; re-expand never resets the uncontrolled preselection).
+  // Collapse-to-suggested on ALL breakpoints: the radio list starts hidden
+  // behind a suggested-date summary + "Change date" toggle on desktop AND
+  // mobile. One-way reveal (no re-collapse control) — a display toggle only, the
+  // radios NEVER unmount (winningOptionId keeps submitting collapsed; re-expand
+  // never resets the uncontrolled preselection).
   const [showAllDates, setShowAllDates] = useState(false);
 
   const bestIds = new Set(
@@ -75,15 +76,16 @@ export function BookItControl({
       <Card className="flex flex-col gap-3 p-6">
         <fieldset className="flex flex-col gap-2">
           <legend className="text-sm font-semibold">Candidate dates</legend>
-          {/* MOBILE-ONLY suggested-date summary (sm:hidden) — collapses the long
-              radio list to the pre-selected date + a "Change date" toggle.
-              Guarded on preselectedOption (empty-options edge, WFM-04). Hidden
-              once the list is expanded. The Suggested badge shows ONLY when the
-              preselection is genuinely best (parity with the radio list). */}
+          {/* Suggested-date summary — collapses the long radio list to the
+              pre-selected date + a "Change date" toggle on ALL breakpoints
+              (desktop + mobile). Guarded on preselectedOption (empty-options
+              edge, WFM-04). Hidden once the list is expanded. The Suggested
+              badge shows ONLY when the preselection is genuinely best (parity
+              with the radio list). */}
           {preselectedOption ? (
             <div
               className={cn(
-                "flex flex-wrap items-center gap-2 sm:hidden",
+                "flex flex-wrap items-center gap-2",
                 showAllDates && "hidden",
               )}
             >
@@ -115,11 +117,12 @@ export function BookItControl({
               order, so the chronologically-first-best preselection + Suggested
               badge stay correct (edge TV3-11). Short visible label; FULL date in
               title + aria-label for AT + hover. Radios ALWAYS render (display
-              toggle only) so winningOptionId submits while collapsed on mobile. */}
+              toggle only) so winningOptionId submits while collapsed on ALL
+              breakpoints. */}
           <div
             className={cn(
               "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2.5",
-              showAllDates ? "grid" : "hidden sm:grid",
+              showAllDates ? "grid" : "hidden",
             )}
           >
             {options.map((opt) => {
