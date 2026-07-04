@@ -24,11 +24,20 @@
 //  - `sql\`excluded.state\`` is a FIXED literal referencing the Postgres excluded
 //    pseudo-table — never interpolated input (T-02-10); the actual SQLi defense
 //    is the parameterized .values() plus the Zod-enum-validated state.
+//  - The participant-CONFIRMATION hook stays deliberately ABSENT here (only
+//    submitResponse sends it — a first-submit-only channel). t7e adds ONLY the
+//    best-effort CREATOR notification: the creator wants to know about every
+//    edit, so each accepted edit notifies once (no dedup across events, F1). Same
+//    three-token discipline as submitResponse — the adminUrlId (from
+//    getPollAdminNotifyTargets) lives ONLY inside the after() closure and never
+//    reaches the participant's browser (T-t7e-01); participantName is the name
+//    only, never the participant email (F2).
 "use server";
 
 import { z } from "zod";
 import { redirect, notFound } from "next/navigation";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
+import { after } from "next/server";
 import { eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { participants, votes } from "@/lib/db/schema";
@@ -36,7 +45,11 @@ import {
   getPollByParticipantUrlId,
   getOptionsForPoll,
   getParticipantByEditToken,
+  getPollAdminNotifyTargets,
 } from "@/lib/db/queries";
+import { resolveBaseUrl, buildAdminUrl } from "@/lib/urls";
+import { sendEmail } from "@/lib/email/send";
+import { renderParticipantResponseNotification } from "@/lib/email/templates";
 
 // Identical validation to submitResponse (D2-10): trim-before-min on name,
 // optional email with max()-before-email() ordering, votes enum array.
@@ -140,6 +153,37 @@ export async function updateResponse(
     .update(participants)
     .set({ name, email: email ?? null })
     .where(eq(participants.id, participant.id));
+
+  // Best-effort CREATOR notification on edit (t7e / F1 / D-02). Sits AFTER the
+  // status guard and the durable upsert, so a closed-poll/rejected edit never
+  // notifies; each accepted edit notifies exactly once (no dedup across events).
+  // getPollAdminNotifyTargets(poll.id) is the ONLY path resolving admin_url_id
+  // here; the adminUrlId lives ONLY inside the after() closure to build the
+  // CREATOR's email — it never returns to the page/RSC props/participant browser
+  // (T-t7e-01). participantName is `name` ONLY, never the participant email (F2 /
+  // T-t7e-06). Base URL captured in-request BEFORE after(); the send result is
+  // intentionally ignored so a failure (or EMAIL_PROVIDER=none) never affects the
+  // redirect (D-02). No participant-confirmation is sent here (deliberately
+  // absent — that channel is submitResponse's alone).
+  const notifyTargets = await getPollAdminNotifyTargets(poll.id);
+  if (notifyTargets?.creatorEmail) {
+    const h = await headers();
+    const base = resolveBaseUrl(h.get("host"), h.get("x-forwarded-proto"));
+    const creatorEmail = notifyTargets.creatorEmail;
+    const adminUrlId = notifyTargets.adminUrlId;
+    after(async () => {
+      const adminUrl = buildAdminUrl(base, adminUrlId);
+      await sendEmail({
+        to: creatorEmail,
+        subject: `New response to ${poll.title}`,
+        html: renderParticipantResponseNotification({
+          title: poll.title,
+          participantName: name,
+          adminUrl,
+        }),
+      });
+    });
+  }
 
   // Re-set the same httpOnly edit cookie (Pitfall 4) so the same-device
   // auto-load keeps working after an edit.

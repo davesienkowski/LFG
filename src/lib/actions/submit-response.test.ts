@@ -7,7 +7,7 @@
 //
 // next/navigation (redirect + notFound) and next/headers (cookies) are mocked so
 // the action runs deterministically without a Next request context.
-import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, afterAll, vi } from "vitest";
 import { eq, inArray } from "drizzle-orm";
 
 vi.mock("next/navigation", () => ({
@@ -39,16 +39,23 @@ vi.mock("next/headers", () => ({
   }),
 }));
 
-// after() schedules the best-effort confirmation send. Run the callback as a
-// swallowed microtask so a send failure can never surface into the test (mirrors
-// the platform's fire-and-never-throw-past-after() contract, D-07).
+// after() schedules the best-effort confirmation + creator-notify sends. Run the
+// callback as a swallowed microtask so a send failure can never surface into the
+// test (mirrors the platform's fire-and-never-throw-past-after() contract, D-07).
 vi.mock("next/server", () => ({
   after: (cb: () => Promise<void> | void) => {
     void Promise.resolve().then(cb).catch(() => {});
   },
 }));
 
+// The best-effort confirmation + creator-notify sends route through sendEmail;
+// mock it so no real transport is touched and calls can be asserted.
+vi.mock("@/lib/email/send", () => ({
+  sendEmail: vi.fn(async () => ({ ok: true })),
+}));
+
 import { submitResponse } from "./submit-response";
+import { sendEmail } from "@/lib/email/send";
 import { db } from "@/lib/db";
 import {
   polls,
@@ -57,6 +64,8 @@ import {
   votes,
 } from "@/lib/db/schema";
 import { generateToken } from "@/lib/tokens";
+
+const sendEmailMock = vi.mocked(sendEmail);
 
 const createdAdminIds: string[] = [];
 
@@ -75,6 +84,7 @@ function votesJson(rows: Array<{ optionId: string; state: string }>): string {
 async function seedPoll(opts?: {
   status?: string;
   dates?: Array<{ date: string; startTime?: string | null }>;
+  creatorEmail?: string | null;
 }): Promise<{
   pollId: string;
   participantUrlId: string;
@@ -90,6 +100,7 @@ async function seedPoll(opts?: {
       participantUrlId,
       adminUrlId,
       status: opts?.status ?? "open",
+      creatorEmail: opts?.creatorEmail ?? null,
     })
     .returning({ id: polls.id });
   const dates = opts?.dates ?? [
@@ -150,6 +161,13 @@ beforeAll(() => {
   if (!process.env.DATABASE_URL) {
     throw new Error("DATABASE_URL must be set (point at the Docker Postgres)");
   }
+});
+
+// Drain any pending after() send scheduled by the PRIOR test before clearing the
+// mock, so each test's sendEmail call count is its own.
+beforeEach(async () => {
+  await new Promise((r) => setTimeout(r, 0));
+  sendEmailMock.mockClear();
 });
 
 afterAll(async () => {
@@ -423,5 +441,50 @@ describe("submitResponse — best-effort confirmation hook (VOTE-04, D-07)", () 
     expect(ps[0].email).toBe("mailer@example.com");
     const vs = await votesFor(ps[0].id);
     expect(vs).toHaveLength(optionIds.length);
+  });
+});
+
+describe("submitResponse — creator-notify hook (t7e, F1/F2/D-02)", () => {
+  it("notifies the creator once (admin URL + participant name) when a creator_email is stored", async () => {
+    const { participantUrlId, adminUrlId, optionIds } = await seedPoll({
+      creatorEmail: "creator@example.com",
+    });
+    const { redirectUrl } = await run(
+      fd({
+        participantUrlId,
+        name: "Alex",
+        // NO participant email — the creator-notify is independent of the
+        // participant-confirmation channel.
+        votes: votesJson([{ optionId: optionIds[0], state: "yes" }]),
+      }),
+    );
+    // The vote still lands + the redirect is unchanged.
+    expect(redirectUrl).toBe(`/p/${participantUrlId}/thanks`);
+    // Flush the scheduled after() send.
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(sendEmailMock).toHaveBeenCalledTimes(1);
+    const arg = sendEmailMock.mock.calls[0][0];
+    expect(arg.to).toBe("creator@example.com");
+    expect(arg.subject).toContain("Vote Poll");
+    expect(arg.html).toContain(`/a/${adminUrlId}`);
+    expect(arg.html).toContain("Alex");
+    // F2: the participant email is never even collected here, and the notify
+    // carries only the name — no participant email/token appears.
+    expect(arg.html).not.toContain("edit/");
+  });
+
+  it("schedules NO creator-notify when the poll has no stored creator_email (D-02)", async () => {
+    const { participantUrlId, optionIds } = await seedPoll();
+    await run(
+      fd({
+        participantUrlId,
+        name: "NoNotify",
+        votes: votesJson([{ optionId: optionIds[0], state: "yes" }]),
+      }),
+    );
+    // Flush any accidental scheduled send FIRST, then assert nothing was sent.
+    await new Promise((r) => setTimeout(r, 0));
+    expect(sendEmailMock).not.toHaveBeenCalled();
   });
 });

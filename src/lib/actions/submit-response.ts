@@ -31,11 +31,15 @@ import { participants, votes } from "@/lib/db/schema";
 import {
   getPollByParticipantUrlId,
   getOptionsForPoll,
+  getPollAdminNotifyTargets,
 } from "@/lib/db/queries";
 import { generateToken } from "@/lib/tokens";
-import { resolveBaseUrl, buildEditUrl } from "@/lib/urls";
+import { resolveBaseUrl, buildEditUrl, buildAdminUrl } from "@/lib/urls";
 import { sendEmail } from "@/lib/email/send";
-import { renderConfirmationEmail } from "@/lib/email/templates";
+import {
+  renderConfirmationEmail,
+  renderParticipantResponseNotification,
+} from "@/lib/email/templates";
 
 const SubmitResponseSchema = z.object({
   // trim() BEFORE min(1) so a whitespace-only name is rejected (UI-SPEC).
@@ -185,6 +189,42 @@ export async function submitResponse(
         to: confirmationEmail,
         subject: `Your response to ${poll.title}`,
         html: renderConfirmationEmail({ title: poll.title, editUrl }),
+      });
+    });
+  }
+
+  // Best-effort CREATOR notification (t7e / F1 / D-02). A SEPARATE hook from the
+  // participant-confirmation above: on EVERY accepted first submit, notify the
+  // poll's stored creator (if any) that this participant responded, linking the
+  // /a/ admin results view. Fetched server-side by poll.id via
+  // getPollAdminNotifyTargets — the ONLY path resolving admin_url_id here. This
+  // block sits AFTER the status guard and the durable votes write, so a
+  // closed-poll/rejected submit never notifies (F1); each accepted event
+  // notifies exactly once (no dedup across events).
+  //
+  // The adminUrlId lives ONLY inside the after() closure to build the CREATOR's
+  // email — it must NEVER be returned to the page, placed in RSC props, or reach
+  // the participant's browser (three-token discipline, T-t7e-01). participantName
+  // is `name` ONLY — never the participant email (F2 / T-t7e-06). The base URL is
+  // captured in-request BEFORE after(); the send result is intentionally ignored
+  // so a failure (or EMAIL_PROVIDER=none) never affects the already-issued
+  // redirect (D-02).
+  const notifyTargets = await getPollAdminNotifyTargets(poll.id);
+  if (notifyTargets?.creatorEmail) {
+    const h = await headers();
+    const base = resolveBaseUrl(h.get("host"), h.get("x-forwarded-proto"));
+    const creatorEmail = notifyTargets.creatorEmail;
+    const adminUrlId = notifyTargets.adminUrlId;
+    after(async () => {
+      const adminUrl = buildAdminUrl(base, adminUrlId);
+      await sendEmail({
+        to: creatorEmail,
+        subject: `New response to ${poll.title}`,
+        html: renderParticipantResponseNotification({
+          title: poll.title,
+          participantName: name,
+          adminUrl,
+        }),
       });
     });
   }

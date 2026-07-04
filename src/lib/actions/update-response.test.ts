@@ -6,7 +6,7 @@
 //
 // next/navigation (redirect + notFound) and next/headers (cookies) are mocked so
 // the action runs deterministically without a Next request context.
-import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, afterAll, vi } from "vitest";
 import { eq, inArray } from "drizzle-orm";
 
 vi.mock("next/navigation", () => ({
@@ -22,7 +22,9 @@ vi.mock("next/navigation", () => ({
   },
 }));
 
-// Capture cookies().set() calls without a request context.
+// Capture cookies().set() calls without a request context. headers() is also
+// stubbed because the t7e creator-notify hook resolves the base URL from request
+// headers before scheduling the send.
 const cookieSets: Array<Record<string, unknown>> = [];
 vi.mock("next/headers", () => ({
   cookies: async () => ({
@@ -30,12 +32,37 @@ vi.mock("next/headers", () => ({
       cookieSets.push(opts);
     },
   }),
+  headers: async () => ({
+    get: (name: string) =>
+      name === "host"
+        ? "localhost:3000"
+        : name === "x-forwarded-proto"
+          ? "http"
+          : null,
+  }),
+}));
+
+// after() schedules the best-effort creator-notify send. Run the callback as a
+// swallowed microtask so a send failure can never surface into the test.
+vi.mock("next/server", () => ({
+  after: (cb: () => Promise<void> | void) => {
+    void Promise.resolve().then(cb).catch(() => {});
+  },
+}));
+
+// The creator-notify send routes through sendEmail; mock it so no real transport
+// is touched and calls can be asserted.
+vi.mock("@/lib/email/send", () => ({
+  sendEmail: vi.fn(async () => ({ ok: true })),
 }));
 
 import { updateResponse } from "./update-response";
+import { sendEmail } from "@/lib/email/send";
 import { db } from "@/lib/db";
 import { polls, options, participants, votes } from "@/lib/db/schema";
 import { generateToken } from "@/lib/tokens";
+
+const sendEmailMock = vi.mocked(sendEmail);
 
 const createdAdminIds: string[] = [];
 
@@ -54,6 +81,7 @@ function votesJson(rows: Array<{ optionId: string; state: string }>): string {
 async function seedPoll(opts?: {
   status?: string;
   dates?: Array<{ date: string; startTime?: string | null }>;
+  creatorEmail?: string | null;
 }): Promise<{
   pollId: string;
   participantUrlId: string;
@@ -69,6 +97,7 @@ async function seedPoll(opts?: {
       participantUrlId,
       adminUrlId,
       status: opts?.status ?? "open",
+      creatorEmail: opts?.creatorEmail ?? null,
     })
     .returning({ id: polls.id });
   const dates = opts?.dates ?? [
@@ -162,6 +191,13 @@ beforeAll(() => {
   if (!process.env.DATABASE_URL) {
     throw new Error("DATABASE_URL must be set (point at the Docker Postgres)");
   }
+});
+
+// Drain any pending after() send scheduled by the PRIOR test before clearing the
+// mock, so each test's sendEmail call count is its own.
+beforeEach(async () => {
+  await new Promise((r) => setTimeout(r, 0));
+  sendEmailMock.mockClear();
 });
 
 afterAll(async () => {
@@ -371,6 +407,54 @@ describe("updateResponse — concurrency backstop (VOTE-05 race)", () => {
     // Exactly one winning state across ALL rows — never a mixed/partial blend.
     expect(distinct.size).toBe(1);
     expect(["yes", "no"]).toContain([...distinct][0]);
+  });
+});
+
+describe("updateResponse — creator-notify hook (t7e, F1/F2/D-02)", () => {
+  it("notifies the creator once (admin URL + participant name) on an edit when a creator_email is stored", async () => {
+    const { pollId, participantUrlId, adminUrlId, optionIds } = await seedPoll({
+      creatorEmail: "creator@example.com",
+    });
+    const { editToken } = await seedParticipant(pollId, optionIds, {
+      [optionIds[0]]: "no",
+    });
+
+    const { redirectUrl } = await run(
+      fd({
+        participantUrlId,
+        editToken,
+        name: "Alex",
+        votes: votesJson([{ optionId: optionIds[0], state: "yes" }]),
+      }),
+    );
+    expect(redirectUrl).toBe(`/p/${participantUrlId}/thanks`);
+    // Flush the scheduled after() send.
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(sendEmailMock).toHaveBeenCalledTimes(1);
+    const arg = sendEmailMock.mock.calls[0][0];
+    expect(arg.to).toBe("creator@example.com");
+    expect(arg.subject).toContain("Edit Poll");
+    expect(arg.html).toContain(`/a/${adminUrlId}`);
+    expect(arg.html).toContain("Alex");
+  });
+
+  it("schedules NO creator-notify on an edit when the poll has no stored creator_email (D-02)", async () => {
+    const { pollId, participantUrlId, optionIds } = await seedPoll();
+    const { editToken } = await seedParticipant(pollId, optionIds, {
+      [optionIds[0]]: "no",
+    });
+    await run(
+      fd({
+        participantUrlId,
+        editToken,
+        name: "NoNotify",
+        votes: votesJson([{ optionId: optionIds[0], state: "yes" }]),
+      }),
+    );
+    // Flush any accidental scheduled send FIRST, then assert nothing was sent.
+    await new Promise((r) => setTimeout(r, 0));
+    expect(sendEmailMock).not.toHaveBeenCalled();
   });
 });
 
