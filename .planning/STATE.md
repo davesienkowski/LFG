@@ -115,7 +115,7 @@ Live-site UX review (2026-07-03) captured 5 results/admin/participant polish ite
 
 **New feature request (2026-07-03, user) — ✓ DONE (quick task 260703-t7e).**
 **DB backup (2026-07-03, user request, pre-migration):** full pg_dump of PROD Neon saved to `/home/dave/lfg-db-backups/lfg-prod-neon-20260703-211115.sql` (7 polls/70 options/8 participants/122 votes + neon_auth + drizzle ledger). Taken before 0003/0004 hit prod. pg18 client required (Neon prod is PG 18.4; local pg_dump 17 mismatches — dump via `docker run --rm postgres:18`).
-**Prod deploy status:** commits through t7e (0c8bbab) on master. Prod Neon migrate (0003 organizer_id + 0004 creator_email) + single Vercel deploy = orchestrator's final step (in progress).
+**Prod deploy status — ✓ DONE 2026-07-03:** prod Neon migrated (0003 organizer_id + 0004 creator_email verified present; 5 migrations recorded) and Vercel prod redeployed (alias looking-for-group-eight.vercel.app; new /feed/[organizerId]/calendar.ics route live — smoke: home 200, thanks-no-cookie 404, unknown-organizer feed → 200 valid empty VCALENDAR). Session shipped 6 quick tasks: pdt, ppz, r8r, rqc, sn2, t7e.
 
 **Live design refinement (2026-07-03, user) — RESOLVED:** results grid on BOTH admin + participant should surface the "best" slot first/most-prominent. User chose: KEEP orientation (people=rows, dates=columns), move best day column(s) leftmost (NOT a transpose — Phase 05 D-09 preserved), and fix filters in same task. Shipped in 260703-r8r.
 
