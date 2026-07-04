@@ -177,7 +177,15 @@ describe("AdminPage", () => {
     expect(html).toContain("Results");
     expect(html).toContain("Alex Canary");
     expect(html).toContain("Sam Ryder");
-    expect(html).not.toContain("Jordan Vale"); // if-need-be on best -> default-filtered
+    // The DESKTOP table default-filters Jordan (if-need-be on the best day), but
+    // the UNFILTERED mobile date-cards list him (260703-wfm). Scope the negative
+    // to the table markup, and assert his positive presence in the full HTML.
+    const tableHtml = html.slice(
+      html.indexOf("<table"),
+      html.indexOf("</table>") + 8,
+    );
+    expect(tableHtml).not.toContain("Jordan Vale"); // desktop table default-filters him
+    expect(html).toContain("Jordan Vale"); // present in the unfiltered mobile card
     // (b) exact tally caption for the known date column (headers are unfiltered).
     expect(html).toContain("2 yes · 1 if-need-be");
     // (c) the strict yes-leader renders the Best badge.

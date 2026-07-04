@@ -130,7 +130,11 @@ describe("ResultsGrid column headers (tallies + best-day)", () => {
 
   it("renders the 'Best' badge only on the strict yes-leader column", () => {
     renderMain();
-    expect(screen.getAllByText("Best")).toHaveLength(1); // opt-1 only
+    // Scoped to the table: the mobile date-cards ALSO badge the best day, so an
+    // unscoped getAllByText would double-count (jsdom renders both branches).
+    expect(
+      within(screen.getByRole("table")).getAllByText("Best"),
+    ).toHaveLength(1); // opt-1 only
   });
 
   it("renders 'Best' on BOTH co-leading columns tied on (yes, ifneedbe)", () => {
@@ -149,7 +153,9 @@ describe("ResultsGrid column headers (tallies + best-day)", () => {
         results={computeResults(participants, opts)}
       />,
     );
-    expect(screen.getAllByText("Best")).toHaveLength(2); // both co-leaders
+    expect(
+      within(screen.getByRole("table")).getAllByText("Best"),
+    ).toHaveLength(2); // both co-leaders
   });
 
   it("renders NO 'Best' badge when no column has any yes vote", () => {
@@ -173,7 +179,7 @@ describe("ResultsGrid column headers (tallies + best-day)", () => {
 
   it("renders 'Best' AND its supporting tally together in the same column header (badge never alone)", () => {
     renderMain();
-    const badge = screen.getByText("Best");
+    const badge = within(screen.getByRole("table")).getByText("Best");
     const header = badge.closest("th");
     expect(header).not.toBeNull();
     // the SAME <th> carries the tally caption — the badge is never shown alone.
@@ -238,7 +244,9 @@ describe("ResultsGrid best-first column order (260703-r8r)", () => {
     expect(within(headers[2]).getByText("Best")).toBeTruthy();
     // non-best 7/15 pushed right (after the co-best group).
     expect(within(headers[3]).getByText(/July 15/)).toBeTruthy();
-    expect(screen.getAllByText("Best")).toHaveLength(2);
+    expect(
+      within(screen.getByRole("table")).getAllByText("Best"),
+    ).toHaveLength(2);
   });
 
   it("names the SAME best day in the summary as the header 'Best' badge (one source of truth)", () => {
@@ -269,8 +277,8 @@ describe("ResultsGrid empty vs zero-match states (distinct)", () => {
     expect(screen.getByRole("table")).toBeTruthy(); // table still present
     expect(screen.getByText("2 yes · 1 if-need-be")).toBeTruthy(); // headers intact
     expect(screen.getByText("0 of 3 participants")).toBeTruthy();
-    // no participant rows visible
-    expect(screen.queryByText("Alex")).toBeNull();
+    // no participant rows visible IN THE TABLE (mobile cards list all names).
+    expect(within(screen.getByRole("table")).queryByText("Alex")).toBeNull();
   });
 
   it("renders 'No clear best day yet' when no column has any yes vote, without throwing", () => {
@@ -303,10 +311,12 @@ describe("ResultsGrid client-only filter (D3-06)", () => {
     expect((screen.getByLabelText("Date") as HTMLSelectElement).value).toBe("__best__");
     expect((screen.getByLabelText("Status") as HTMLSelectElement).value).toBe("yes");
     // Best resolves to opt-1; Available -> Alex + Sam visible, Jordan hidden.
+    // Table-scoped: the mobile date-cards list ALL names unfiltered.
+    const table = screen.getByRole("table");
     expect(screen.getByText("2 of 3 participants")).toBeTruthy();
-    expect(screen.getByText("Alex")).toBeTruthy();
-    expect(screen.getByText("Sam")).toBeTruthy();
-    expect(screen.queryByText("Jordan")).toBeNull();
+    expect(within(table).getByText("Alex")).toBeTruthy();
+    expect(within(table).getByText("Sam")).toBeTruthy();
+    expect(within(table).queryByText("Jordan")).toBeNull();
     expect(
       (screen.getByRole("button", { name: /Clear filter/ }) as HTMLButtonElement)
         .disabled,
@@ -318,10 +328,11 @@ describe("ResultsGrid client-only filter (D3-06)", () => {
     // Default status "Available"; select opt-1 (Alex + Sam are yes).
     fireEvent.change(screen.getByLabelText("Date"), { target: { value: "opt-1" } });
 
+    const table = screen.getByRole("table");
     expect(screen.getByText("2 of 3 participants")).toBeTruthy();
-    expect(screen.getByText("Alex")).toBeTruthy();
-    expect(screen.getByText("Sam")).toBeTruthy();
-    expect(screen.queryByText("Jordan")).toBeNull(); // ifneedbe on opt-1 -> hidden
+    expect(within(table).getByText("Alex")).toBeTruthy();
+    expect(within(table).getByText("Sam")).toBeTruthy();
+    expect(within(table).queryByText("Jordan")).toBeNull(); // ifneedbe on opt-1 -> hidden
   });
 
   it("filters by status standalone with Date = All dates (across all dates)", () => {
@@ -332,10 +343,11 @@ describe("ResultsGrid client-only filter (D3-06)", () => {
     // Alex (opt-2 if-need-be) + Jordan (opt-1 if-need-be) hold the status on
     // SOME date; Sam holds it on none -> hidden. Proves status filters WITHOUT
     // a specific date selected.
+    const table = screen.getByRole("table");
     expect(screen.getByText("2 of 3 participants")).toBeTruthy();
-    expect(screen.getByText("Alex")).toBeTruthy();
-    expect(screen.getByText("Jordan")).toBeTruthy();
-    expect(screen.queryByText("Sam")).toBeNull();
+    expect(within(table).getByText("Alex")).toBeTruthy();
+    expect(within(table).getByText("Jordan")).toBeTruthy();
+    expect(within(table).queryByText("Sam")).toBeNull();
   });
 
   it("tracks the FINAL selection after a rapid date->status change (no stale desync)", () => {
@@ -345,10 +357,11 @@ describe("ResultsGrid client-only filter (D3-06)", () => {
     // status -> If-need-be (opt-1 ifneedbe: only Jordan)
     fireEvent.change(screen.getByLabelText("Status"), { target: { value: "ifneedbe" } });
 
+    const table = screen.getByRole("table");
     expect(screen.getByText("1 of 3 participants")).toBeTruthy();
-    expect(screen.getByText("Jordan")).toBeTruthy();
-    expect(screen.queryByText("Alex")).toBeNull();
-    expect(screen.queryByText("Sam")).toBeNull();
+    expect(within(table).getByText("Jordan")).toBeTruthy();
+    expect(within(table).queryByText("Alex")).toBeNull();
+    expect(within(table).queryByText("Sam")).toBeNull();
   });
 
   it("does NOT invoke fetch when the filter selection changes", () => {
@@ -371,15 +384,105 @@ describe("ResultsGrid client-only filter (D3-06)", () => {
     fireEvent.click(screen.getByRole("button", { name: /Clear filter/ }));
 
     // Back to the Best day + Available default.
+    const table = screen.getByRole("table");
     expect((screen.getByLabelText("Date") as HTMLSelectElement).value).toBe("__best__");
     expect((screen.getByLabelText("Status") as HTMLSelectElement).value).toBe("yes");
     expect(screen.getByText("2 of 3 participants")).toBeTruthy();
-    expect(screen.getByText("Alex")).toBeTruthy();
-    expect(screen.getByText("Sam")).toBeTruthy();
-    expect(screen.queryByText("Jordan")).toBeNull();
+    expect(within(table).getByText("Alex")).toBeTruthy();
+    expect(within(table).getByText("Sam")).toBeTruthy();
+    expect(within(table).queryByText("Jordan")).toBeNull();
     expect(
       (screen.getByRole("button", { name: /Clear filter/ }) as HTMLButtonElement)
         .disabled,
     ).toBe(true);
+  });
+});
+
+describe("ResultsGrid mobile date-cards (260703-wfm)", () => {
+  it("renders a best-first date-card per option with the best card badged", () => {
+    renderMain();
+    const mobile = screen.getByTestId("results-cards-mobile");
+    const cards = mobile.querySelectorAll(":scope > li");
+    expect(cards).toHaveLength(3); // one card per candidate date
+    // opt-1 (July 12) is the strict best -> leftmost/first card, badged.
+    expect(cards[0].textContent).toContain("Best");
+    expect(cards[0].textContent).toMatch(/Jul 12/);
+    expect(within(mobile).getAllByText("Best")).toHaveLength(1);
+    // Tally uses the word "available" (distinct from the desktop "yes" header).
+    expect(within(mobile).getByText("2 available · 1 if-need-be")).toBeTruthy();
+  });
+
+  it("lists EVERY participant (unfiltered) with an icon+label state chip", () => {
+    renderMain();
+    const mobile = screen.getByTestId("results-cards-mobile");
+    // All three names appear regardless of the desktop default filter.
+    expect(within(mobile).getAllByText("Alex").length).toBeGreaterThan(0);
+    expect(within(mobile).getAllByText("Sam").length).toBeGreaterThan(0);
+    expect(within(mobile).getAllByText("Jordan").length).toBeGreaterThan(0);
+    // Each state chip carries BOTH an icon and its text label (never color-only).
+    for (const label of ["Available", "If-need-be", "Not available"]) {
+      const chips = within(mobile).getAllByText(label);
+      expect(chips.length).toBeGreaterThan(0);
+      for (const chip of chips) {
+        expect(chip.querySelector("svg")).not.toBeNull();
+      }
+    }
+  });
+
+  it("opens ONLY the first best card by default (exactly one)", () => {
+    renderMain();
+    const mobile = screen.getByTestId("results-cards-mobile");
+    const details = mobile.querySelectorAll("details");
+    expect(details).toHaveLength(3);
+    expect((details[0] as HTMLDetailsElement).open).toBe(true); // best (opt-1)
+    expect((details[1] as HTMLDetailsElement).open).toBe(false);
+    expect((details[2] as HTMLDetailsElement).open).toBe(false);
+  });
+
+  it("EDGE WFM-03: under a co-best TIE badges both but opens only the FIRST", () => {
+    const opts: GridOption[] = [
+      { id: "c1", date: "2026-07-12", startTime: null },
+      { id: "mid", date: "2026-07-15", startTime: null },
+      { id: "c2", date: "2026-07-19", startTime: null },
+    ];
+    const participants: ResultsParticipant[] = [
+      { id: "p1", name: "P1", votes: { c1: "yes", mid: "no", c2: "yes" } },
+      { id: "p2", name: "P2", votes: { c1: "yes", mid: "no", c2: "yes" } },
+    ];
+    render(
+      <ResultsGrid
+        options={opts}
+        participants={participants}
+        results={computeResults(participants, opts)}
+      />,
+    );
+    const mobile = screen.getByTestId("results-cards-mobile");
+    expect(within(mobile).getAllByText("Best")).toHaveLength(2); // both badged
+    const details = mobile.querySelectorAll("details");
+    expect((details[0] as HTMLDetailsElement).open).toBe(true); // first best only
+    expect((details[1] as HTMLDetailsElement).open).toBe(false);
+  });
+
+  it("EDGE WFM-01/02: with no best day, NO mobile card is open", () => {
+    const opts: GridOption[] = [
+      { id: "a", date: "2026-07-12", startTime: null },
+      { id: "b", date: "2026-07-19", startTime: null },
+    ];
+    const participants: ResultsParticipant[] = [
+      { id: "p1", name: "P1", votes: { a: "ifneedbe", b: "no" } },
+      { id: "p2", name: "P2", votes: { a: "no", b: "ifneedbe" } },
+    ];
+    render(
+      <ResultsGrid
+        options={opts}
+        participants={participants}
+        results={computeResults(participants, opts)}
+      />,
+    );
+    const mobile = screen.getByTestId("results-cards-mobile");
+    const details = mobile.querySelectorAll("details");
+    for (const d of details) {
+      expect((d as HTMLDetailsElement).open).toBe(false);
+    }
   });
 });

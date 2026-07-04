@@ -41,7 +41,7 @@
 //    token anywhere (SPEC Prohibition #1).
 import { useState } from "react";
 import { X } from "lucide-react";
-import { formatDateWithTime } from "@/lib/format-date";
+import { formatDateWithTime, formatDateWithTimeShort } from "@/lib/format-date";
 import { STATE_META, normalizeVoteState, type VoteState } from "@/lib/vote-state";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -71,6 +71,15 @@ const SCROLL_FADE_STYLE: React.CSSProperties = {
 
 function optionLabel(opt: GridOption): string {
   return formatDateWithTime(
+    opt.date,
+    opt.startTime ? opt.startTime.slice(0, 5) : null,
+  );
+}
+
+// Condensed sibling of optionLabel for the mobile date-cards (e.g. "Sat, Jul 12
+// · 2:00 PM"). Same timezone-safe formatter family; never new Date().
+function optionLabelShort(opt: GridOption): string {
+  return formatDateWithTimeShort(
     opt.date,
     opt.startTime ? opt.startTime.slice(0, 5) : null,
   );
@@ -254,8 +263,12 @@ export function ResultsGrid({
         </div>
       )}
 
-      {/* Filter control (D3-06) — pure in-memory, no network round-trip. */}
-      <div className="flex flex-col gap-3">
+      {/* Filter control (D3-06) — pure in-memory, no network round-trip.
+          DESKTOP-ONLY (hidden sm:flex): the participant-row filter is a
+          desktop affordance; the mobile surface is the date-card list below
+          (locked design). At sm:+ this resolves to the ORIGINAL flex layout,
+          so desktop is byte-identical. */}
+      <div className="hidden sm:flex flex-col gap-3">
         <div className="flex flex-wrap items-end gap-3">
           <div className="flex flex-col gap-1">
             <label
@@ -346,7 +359,7 @@ export function ResultsGrid({
           vertical scrollbar and behave exactly as before; only a tall table
           scrolls internally with the header pinned. */}
       <div
-        className="max-h-[70vh] overflow-x-auto overflow-y-auto rounded-xl border"
+        className="hidden sm:block max-h-[70vh] overflow-x-auto overflow-y-auto rounded-xl border"
         style={SCROLL_FADE_STYLE}
       >
         <table className="w-full border-collapse text-left">
@@ -451,6 +464,69 @@ export function ResultsGrid({
           )}
         </table>
       </div>
+
+      {/* MOBILE date-cards (sm:hidden) — sibling to the desktop table above.
+          Best-first, reusing displayOptions (SAME ordering source) and
+          resultByOption tallies verbatim (no re-ranking, no computeResults).
+          Reads `participants` directly (unfiltered) because the row filter is
+          desktop-only by locked design. The zero-participants early return
+          fires before this is reached, so it never renders for empty input. */}
+      <ul
+        data-testid="results-cards-mobile"
+        className="flex flex-col gap-3 sm:hidden"
+      >
+        {displayOptions.map((opt, index) => {
+          const r = resultByOption.get(opt.id);
+          const isBest = r?.isBest ?? false;
+          return (
+            <li
+              key={opt.id}
+              className={cn("rounded-xl border p-4", isBest && "bg-emerald-50")}
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                {isBest ? <BestDayBadge /> : null}
+                <span className="text-base font-semibold">
+                  {optionLabelShort(opt)}
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {r?.yes ?? 0} available · {r?.ifneedbe ?? 0} if-need-be
+              </p>
+              {/* EDGE WFM-03: open gated on `isBest && index === 0` so under a
+                  co-best TIE only the FIRST best card opens; no best -> none. */}
+              <details open={isBest && index === 0}>
+                <summary className="inline-flex min-h-11 cursor-pointer items-center text-sm font-semibold">
+                  Who&apos;s available
+                </summary>
+                <ul className="mt-2 flex flex-col gap-2">
+                  {participants.map((p) => {
+                    const state = normalizeVoteState(p.votes[opt.id]);
+                    const meta = STATE_META[state];
+                    const Icon = meta.Icon;
+                    return (
+                      <li
+                        key={p.id}
+                        className="flex flex-wrap items-center justify-between gap-2"
+                      >
+                        <span className="text-sm">{p.name}</span>
+                        <span
+                          className={cn(
+                            "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-sm font-semibold whitespace-nowrap",
+                            meta.className,
+                          )}
+                        >
+                          <Icon aria-hidden className="size-4" />
+                          {meta.label}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </details>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
