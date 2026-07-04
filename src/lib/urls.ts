@@ -32,3 +32,26 @@ export function buildEditUrl(
 ): string {
   return `${base.replace(/\/+$/, "")}/p/${participantUrlId}/edit/${editToken}`;
 }
+
+// The organizer calendar-feed URL (LD-6). The https copy target the admin card
+// surfaces + the click-to-subscribe webcal variant. organizerId is an
+// unguessable bearer token — these helpers only format the URL (like the others
+// above); they never derive or transform it.
+export function buildOrganizerFeedUrl(
+  base: string,
+  organizerId: string,
+): string {
+  return `${base.replace(/\/+$/, "")}/feed/${organizerId}/calendar.ics`;
+}
+
+// webcal:// scheme triggers the OS calendar-subscribe. Built off the feed URL so
+// the path stays in lockstep; swaps http:// OR https:// for webcal://.
+export function buildOrganizerWebcalUrl(
+  base: string,
+  organizerId: string,
+): string {
+  return buildOrganizerFeedUrl(base, organizerId).replace(
+    /^https?:\/\//,
+    "webcal://",
+  );
+}

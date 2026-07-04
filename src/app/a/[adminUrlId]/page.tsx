@@ -17,6 +17,8 @@ import {
   resolveBaseUrl,
   buildParticipantUrl,
   buildAdminUrl,
+  buildOrganizerFeedUrl,
+  buildOrganizerWebcalUrl,
 } from "@/lib/urls";
 import { formatDateWithTime } from "@/lib/format-date";
 import { computeResults } from "@/lib/results";
@@ -126,6 +128,42 @@ export default async function AdminPage({
             <CopyLinkButton url={adminLink} label="Copy admin link" />
           </div>
         </Card>
+
+        {/* Subscribe to the booked-dates calendar feed (LD-6). Rendered ONLY when
+            the poll has an organizer token — legacy polls (organizerId null) hide
+            it entirely. NEUTRAL severity: it is an unguessable bearer link but
+            exposes only booked dates/titles (no participant data), so it carries
+            NO amber border and NO "Keep private" badge (LD-7 / T-sn2-04). */}
+        {poll.organizerId ? (
+          <Card className="flex flex-col gap-2 p-6">
+            <span className="text-sm font-semibold">
+              Subscribe to your booked-dates calendar
+            </span>
+            <span className="text-base text-muted-foreground">
+              Add this once to your phone/desktop calendar; every poll you
+              finalize appears automatically.
+            </span>
+            <span className="text-sm text-muted-foreground">
+              This is a group-shareable link — it shows only booked dates and
+              poll titles, never any participant data.
+            </span>
+            <span className="font-mono text-sm truncate">
+              {buildOrganizerFeedUrl(base, poll.organizerId)}
+            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <a
+                href={buildOrganizerWebcalUrl(base, poll.organizerId)}
+                className="inline-flex items-center rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted"
+              >
+                Subscribe in calendar
+              </a>
+              <CopyLinkButton
+                url={buildOrganizerFeedUrl(base, poll.organizerId)}
+                label="Copy calendar link"
+              />
+            </div>
+          </Card>
+        ) : null}
 
         {/* Invite by email (MAIL-01/02/03). Hidden on a closed poll. When email
             is configured, render the send-invites form; otherwise degrade to the

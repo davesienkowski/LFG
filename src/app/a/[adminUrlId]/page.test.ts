@@ -32,6 +32,9 @@ async function seedPoll(overrides?: {
   description?: string | null;
   location?: string | null;
   status?: string;
+  // Optional organizer token. Omitted => the column stays NULL, so the subscribe
+  // card is not rendered (keeps ALL pre-existing tests unaffected).
+  organizerId?: string;
   // Index (0 = 2026-07-12, 1 = 2026-07-19) of the winning option to record +
   // flip the poll to closed. Used to render the finalized state.
   winningOptionIndex?: number;
@@ -54,6 +57,9 @@ async function seedPoll(overrides?: {
       participantUrlId,
       adminUrlId,
       status: overrides?.status ?? "open",
+      ...(overrides?.organizerId
+        ? { organizerId: overrides.organizerId }
+        : {}),
     })
     .returning({ id: polls.id });
   const insertedOptions = await db
@@ -222,6 +228,26 @@ describe("AdminPage", () => {
     // The picker + its confirm control are gone once closed.
     expect(html).not.toContain("Book this date");
     expect(html).not.toContain("Candidate dates");
+  });
+
+  it("renders the neutral subscribe card for a poll WITH an organizerId (no second Keep-private badge) (LD-6)", async () => {
+    const organizerId = generateToken();
+    const { adminUrlId } = await seedPoll({ organizerId });
+    const html = await renderAdmin(adminUrlId);
+
+    expect(html).toContain(`/feed/${organizerId}/calendar.ics`);
+    expect(html).toContain("Subscribe to your booked-dates calendar");
+    // The subscribe card is NEUTRAL — it must not add a SECOND "Keep private"
+    // badge (only the admin-link card carries the single one).
+    expect(html.split("Keep private").length - 1).toBe(1);
+  });
+
+  it("renders NO subscribe card for a legacy poll WITHOUT an organizerId (null)", async () => {
+    const { adminUrlId } = await seedPoll();
+    const html = await renderAdmin(adminUrlId);
+
+    expect(html).not.toContain("/feed/");
+    expect(html).not.toContain("Subscribe to your booked-dates calendar");
   });
 
   it("calls notFound() (404) for an unknown admin token", async () => {
