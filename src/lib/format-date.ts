@@ -36,6 +36,63 @@ export function formatDateOnly(yyyymmdd: string): string {
 }
 
 /**
+ * Parses a 'YYYY-MM-DD' date-only string into a UTC-pinned Date, throwing on any
+ * non date-only input. Shared by the condensed/month formatters below. Never
+ * constructs a Date from the *string* (that would drift in negative-offset TZs);
+ * builds from explicit UTC components instead (D-11 / P3 / PLAT-04).
+ */
+function utcDateFromYyyymmdd(yyyymmdd: string): Date {
+  const match = DATE_RE.exec(yyyymmdd);
+  if (!match) {
+    throw new Error(`Invalid date-only string: ${yyyymmdd}`);
+  }
+  return new Date(
+    Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])),
+  );
+}
+
+/**
+ * Condensed variant of formatDateOnly: 'YYYY-MM-DD' -> "Sat, Jul 12".
+ * Timezone-immune (UTC-pinned); throws on invalid input.
+ */
+export function formatDateShort(yyyymmdd: string): string {
+  return utcDateFromYyyymmdd(yyyymmdd).toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+/**
+ * Condensed date-with-time. With a time: "Sat, Jul 12 · 2:00 PM" (the separator
+ * is exactly U+00B7 — a middot, never " at " and never a hyphen). Without a
+ * time: "Sat, Jul 12". Reuses formatTimeOnly for the clock half.
+ */
+export function formatDateWithTimeShort(
+  yyyymmdd: string,
+  hhmm: string | null,
+): string {
+  const datePart = formatDateShort(yyyymmdd);
+  if (!hhmm) {
+    return datePart;
+  }
+  return `${datePart} · ${formatTimeOnly(hhmm)}`;
+}
+
+/**
+ * Formats the month + year of a 'YYYY-MM-DD' date, e.g. "July 2025". Used for
+ * month-group subheadings. Timezone-immune (UTC-pinned); throws on invalid input.
+ */
+export function formatMonthYear(yyyymmdd: string): string {
+  return utcDateFromYyyymmdd(yyyymmdd).toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+/**
  * Formats a 'HH:MM' 24-hour time string as a 12-hour clock time, e.g.
  * "14:00" -> "2:00 PM". Pure string math — no Date construction.
  */
