@@ -4,7 +4,7 @@
 // forward correctly across midnight AND month/year boundaries, escape .ics text
 // before folding, omit DESCRIPTION/details when empty, and never emit LOCATION.
 import { describe, it, expect } from "vitest";
-import { buildGoogleCalendarUrl, buildIcs } from "./links";
+import { buildGoogleCalendarUrl, buildIcs, buildVcalendar } from "./links";
 
 describe("buildGoogleCalendarUrl — all-day (startTime null)", () => {
   it("uses dates=YYYYMMDD/YYYYMMDD+1 (end-exclusive next day) and action=TEMPLATE", () => {
@@ -246,5 +246,111 @@ describe("buildIcs — RFC5545 text escaping", () => {
     });
     // Backslash escaped first, then ; , and newline -> \n.
     expect(ics).toContain("SUMMARY:a\\\\b\\;c\\,d\\ne");
+  });
+});
+
+describe("buildIcs — byte-stability guard (refactor lock)", () => {
+  it("pins the FULL output string for a known all-day input (header order, no X-WR-CALNAME, trailing CRLF)", () => {
+    // DTSTAMP is the only non-deterministic line; substitute it out, then pin the
+    // rest EXACTLY. Any header reordering, a stray X-WR-CALNAME, a dropped line,
+    // or a changed trailing CRLF fails this guard — locking the LD-5 extraction.
+    const ics = buildIcs({
+      title: "D&D Session",
+      description: "Bring dice",
+      date: "2026-07-19",
+      startTime: null,
+      uid: "poll-1-opt-1@lfg",
+    });
+    const normalized = ics.replace(/DTSTAMP:\d{8}T\d{6}Z/, "DTSTAMP:PINNED");
+    expect(normalized).toBe(
+      "BEGIN:VCALENDAR\r\n" +
+        "VERSION:2.0\r\n" +
+        "PRODID:-//LFG//Looking For Group//EN\r\n" +
+        "CALSCALE:GREGORIAN\r\n" +
+        "METHOD:PUBLISH\r\n" +
+        "BEGIN:VEVENT\r\n" +
+        "UID:poll-1-opt-1@lfg\r\n" +
+        "DTSTAMP:PINNED\r\n" +
+        "DTSTART;VALUE=DATE:20260719\r\n" +
+        "DTEND;VALUE=DATE:20260720\r\n" +
+        "SUMMARY:D&D Session\r\n" +
+        "DESCRIPTION:Bring dice\r\n" +
+        "END:VEVENT\r\n" +
+        "END:VCALENDAR\r\n",
+    );
+    // buildIcs must NEVER carry the feed-only X-WR-CALNAME line.
+    expect(ics).not.toContain("X-WR-CALNAME");
+  });
+});
+
+describe("buildVcalendar — multi-event feed builder", () => {
+  const countOccurrences = (haystack: string, needle: string): number =>
+    haystack.split(needle).length - 1;
+
+  it("empty array yields a valid empty calendar (header + X-WR-CALNAME + END, NO VEVENT)", () => {
+    const cal = buildVcalendar([]);
+    expect(cal).toContain("BEGIN:VCALENDAR");
+    expect(cal).toContain("X-WR-CALNAME");
+    expect(cal).toContain("END:VCALENDAR");
+    expect(cal).not.toContain("BEGIN:VEVENT");
+  });
+
+  it("two events (all-day + timed) emit exactly two VEVENT blocks in input order, one wrapper, both UIDs, correct DTSTART", () => {
+    const cal = buildVcalendar([
+      {
+        title: "All Day",
+        date: "2026-07-19",
+        startTime: null,
+        uid: "poll-a-opt-a@lfg",
+      },
+      {
+        title: "Timed",
+        date: "2026-08-02",
+        startTime: "14:00",
+        uid: "poll-b-opt-b@lfg",
+      },
+    ]);
+
+    expect(countOccurrences(cal, "BEGIN:VCALENDAR")).toBe(1);
+    expect(countOccurrences(cal, "BEGIN:VEVENT")).toBe(2);
+    expect(countOccurrences(cal, "END:VEVENT")).toBe(2);
+    // Both UIDs present.
+    expect(cal).toContain("UID:poll-a-opt-a@lfg");
+    expect(cal).toContain("UID:poll-b-opt-b@lfg");
+    // Correct DTSTART per event.
+    expect(cal).toContain("DTSTART;VALUE=DATE:20260719");
+    expect(cal).toContain("DTSTART:20260802T140000");
+    // Input order preserved (no sort): first UID appears before the second.
+    expect(cal.indexOf("poll-a-opt-a@lfg")).toBeLessThan(
+      cal.indexOf("poll-b-opt-b@lfg"),
+    );
+  });
+
+  it("escapes backslash, semicolon, comma and newline in SUMMARY (ICS-injection defense)", () => {
+    const cal = buildVcalendar([
+      {
+        title: "a\\b;c,d\ne",
+        date: "2026-07-19",
+        startTime: null,
+        uid: "u@lfg",
+      },
+    ]);
+    expect(cal).toContain("SUMMARY:a\\\\b\\;c\\,d\\ne");
+  });
+
+  it("X-WR-CALNAME uses opts.calName when provided, else the default", () => {
+    const custom = buildVcalendar([], { calName: "Dave's D&D dates" });
+    expect(custom).toContain("X-WR-CALNAME:Dave's D&D dates");
+
+    const dflt = buildVcalendar([]);
+    expect(dflt).toContain("X-WR-CALNAME:My LFG booked dates");
+  });
+
+  it("uses CRLF line endings and terminates with a trailing CRLF", () => {
+    const cal = buildVcalendar([
+      { title: "S", date: "2026-07-19", startTime: null, uid: "u@lfg" },
+    ]);
+    expect(cal).toContain("\r\n");
+    expect(cal.endsWith("\r\n")).toBe(true);
   });
 });

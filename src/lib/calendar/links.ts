@@ -192,26 +192,35 @@ export function buildGoogleCalendarUrl({
   return `https://calendar.google.com/calendar/render?${query}`;
 }
 
+// Shared VCALENDAR header (LD-5). buildIcs and buildVcalendar emit this SAME
+// five-line prologue verbatim; buildVcalendar additionally appends one
+// X-WR-CALNAME line AFTER it (see below). buildIcs must NOT gain that line —
+// that is precisely what keeps buildIcs output byte-identical to before.
+const VCALENDAR_HEADER: readonly string[] = [
+  "BEGIN:VCALENDAR",
+  "VERSION:2.0",
+  "PRODID:-//LFG//Looking For Group//EN",
+  "CALSCALE:GREGORIAN",
+  "METHOD:PUBLISH",
+];
+
 /**
- * Build a valid iCalendar (.ics) document for a single VEVENT. All-day when
- * startTime is null (DTSTART;VALUE=DATE + next-day DTEND); floating timed
- * otherwise (no Z, no TZID). DESCRIPTION only when non-empty; never a LOCATION.
+ * The VEVENT body lines for one event (LD-5), in the EXACT order buildIcs used
+ * before the extraction: BEGIN:VEVENT, UID, DTSTAMP, the all-day-vs-timed
+ * DTSTART/DTEND branch (VALUE=DATE next-day DTEND for all-day; floating +180min
+ * end for timed), SUMMARY, DESCRIPTION (only when the description has text),
+ * END:VEVENT. No LOCATION, ever. Returned UNFOLDED — the caller folds.
  */
-export function buildIcs({
+function veventLines({
   title,
   description,
   date,
   startTime,
   uid,
-}: BuildArgs & { uid: string }): string {
+}: BuildArgs & { uid: string }): string[] {
   const summary = escapeIcsText(resolveTitle(title, description));
 
   const lines: string[] = [
-    "BEGIN:VCALENDAR",
-    "VERSION:2.0",
-    "PRODID:-//LFG//Looking For Group//EN",
-    "CALSCALE:GREGORIAN",
-    "METHOD:PUBLISH",
     "BEGIN:VEVENT",
     `UID:${uid}`,
     `DTSTAMP:${nowStampUtc()}`,
@@ -234,8 +243,51 @@ export function buildIcs({
   }
   // NO LOCATION property, ever (decision).
 
-  lines.push("END:VEVENT", "END:VCALENDAR");
+  lines.push("END:VEVENT");
+  return lines;
+}
+
+/**
+ * Build a valid iCalendar (.ics) document for a single VEVENT. All-day when
+ * startTime is null (DTSTART;VALUE=DATE + next-day DTEND); floating timed
+ * otherwise (no Z, no TZID). DESCRIPTION only when non-empty; never a LOCATION.
+ *
+ * Composed from the shared header + veventLines so buildVcalendar can reuse the
+ * exact same event body. buildIcs's output is UNCHANGED — same header order, no
+ * X-WR-CALNAME, same fold/escape, same trailing CRLF (byte-identical, LD-5).
+ */
+export function buildIcs(args: BuildArgs & { uid: string }): string {
+  const lines: string[] = [
+    ...VCALENDAR_HEADER,
+    ...veventLines(args),
+    "END:VCALENDAR",
+  ];
 
   // Fold each line AFTER escaping, join with CRLF, and terminate with a final CRLF.
+  return lines.map(foldLine).join("\r\n") + "\r\n";
+}
+
+/**
+ * Build a multi-event VCALENDAR for the organizer calendar feed (LD-5). Emits the
+ * SAME header as buildIcs PLUS one X-WR-CALNAME line (the subscription's display
+ * name) inserted after METHOD:PUBLISH, then one VEVENT per input event IN INPUT
+ * ORDER (no sort — the caller controls ordering; the feed query already returns a
+ * deterministic order), then END:VCALENDAR. An empty array yields a valid empty
+ * calendar (header + X-WR-CALNAME + END:VCALENDAR, no VEVENT). All user text is
+ * escapeIcsText-guarded via veventLines and the X-WR-CALNAME escape here
+ * (ICS-injection defense, LD-7 / T-sn2-03).
+ */
+export function buildVcalendar(
+  events: Array<BuildArgs & { uid: string }>,
+  opts?: { calName?: string },
+): string {
+  const lines: string[] = [
+    ...VCALENDAR_HEADER,
+    `X-WR-CALNAME:${escapeIcsText(opts?.calName ?? "My LFG booked dates")}`,
+    ...events.flatMap(veventLines),
+    "END:VCALENDAR",
+  ];
+
+  // Fold + CRLF-join + trailing CRLF, exactly like buildIcs.
   return lines.map(foldLine).join("\r\n") + "\r\n";
 }
