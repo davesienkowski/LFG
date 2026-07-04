@@ -253,8 +253,12 @@ export default async function AdminPage({
       </div>
 
       {/* RIGHT hero: Results (the wide table that most wants horizontal room) +
-          Book-it. Below lg this stacks under the controls rail. */}
-      <div className="flex flex-col gap-8">
+          Book-it. Below lg this stacks under the controls rail. `min-w-0` is
+          load-bearing: a CSS grid item defaults to `min-width:auto`, so without
+          it the wide Results table forces this 1fr track (and the whole page) to
+          expand instead of scrolling inside ResultsGrid's own overflow-x-auto —
+          i.e. it produces document-level horizontal scroll on desktop. */}
+      <div className="flex min-w-0 flex-col gap-8">
         {/* Results (DASH-01..05) — wrapped in a Card p-6 for parity with the
             Share/Invite cards. */}
         <Card className="flex flex-col gap-4 p-6">
