@@ -329,6 +329,9 @@ describe("createPoll — success path", () => {
     const adminUrlId = adminIdFromRedirect(redirectUrl);
     const { poll } = await loadCreated(adminUrlId);
     expect(poll.title).toBe("Email Me");
+    // t7e: the creator email is now PERSISTED on the poll row so both
+    // participant actions can notify the creator on each response.
+    expect(poll.creatorEmail).toBe("creator@example.com");
     // Flush the after() microtask so the scheduled send has run.
     await new Promise((r) => setTimeout(r, 0));
     expect(sendEmailMock).toHaveBeenCalledTimes(1);
@@ -348,6 +351,8 @@ describe("createPoll — success path", () => {
     await new Promise((r) => setTimeout(r, 0));
     const { poll } = await loadCreated(adminUrlId);
     expect(poll.title).toBe("No Email");
+    // t7e: no creator email supplied -> stored as NULL (D-02, never notified).
+    expect(poll.creatorEmail).toBeNull();
     expect(sendEmailMock).not.toHaveBeenCalled();
   });
 

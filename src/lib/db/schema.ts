@@ -55,6 +55,14 @@ export const polls = pgTable(
   // one organizer token (that shared grouping IS the feed). Legacy polls created
   // before this column simply have NULL and never appear in any feed.
   organizerId: text("organizer_id"),
+  // Persisted creator email (quick task t7e). NULLABLE text — stored when the
+  // creator opts in at creation so both participant actions can notify them on
+  // EACH response (first submit + every edit) with the participant's name and
+  // the /a/ admin results link. Legacy polls (created before this column, or
+  // created without an email) have NULL and are NEVER notified (D-02). Read
+  // ONLY server-side via getPollAdminNotifyTargets — never selected by any
+  // participant-facing query.
+  creatorEmail: text("creator_email"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

@@ -1,0 +1,1 @@
+ALTER TABLE "polls" ADD COLUMN "creator_email" text;

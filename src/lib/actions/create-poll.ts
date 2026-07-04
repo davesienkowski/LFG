@@ -51,8 +51,9 @@ const CreatePollSchema = z.object({
     .optional(),
   // Optional. Mirrors submit-response.ts's `email` field VERBATIM: max() before
   // email() so an over-length string surfaces the length message; an invalid
-  // short string surfaces the format message. Used ONLY to address the one
-  // best-effort admin-link recovery email — never persisted (no DB column).
+  // short string surfaces the format message. Addresses the one best-effort
+  // admin-link recovery email AND is now persisted as polls.creator_email (t7e)
+  // so the creator can be notified on each participant response.
   creatorEmail: z
     .string()
     .max(200, "Email must be 200 characters or fewer")
@@ -169,6 +170,11 @@ export async function createPoll(
           participantUrlId,
           adminUrlId,
           organizerId,
+          // Persist the opted-in creator email (t7e). Empty/absent -> undefined
+          // -> NULL, so a poll created without an email is never notified (D-02).
+          // The existing best-effort admin-link recovery send (rqc) below still
+          // fires off the same `creatorEmail` local, unchanged.
+          creatorEmail: creatorEmail ?? null,
         })
         .returning({ id: polls.id });
       pollId = poll.id;
