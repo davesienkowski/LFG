@@ -41,6 +41,8 @@ export function PollCreateForm() {
   const descriptionErrorId = `${descriptionId}-error`;
   const locationId = useId();
   const locationErrorId = `${locationId}-error`;
+  const creatorEmailId = useId();
+  const creatorEmailErrorId = `${creatorEmailId}-error`;
   const datesErrorId = useId();
 
   const errors = state?.errors ?? {};
@@ -115,6 +117,33 @@ export function PollCreateForm() {
             aria-invalid={errors.location ? true : undefined}
           />
           <FieldError id={locationErrorId} messages={errors.location} />
+        </div>
+
+        {/* Email me the admin link — optional (260703-rqc) */}
+        <div className="flex flex-col gap-2">
+          <Label htmlFor={creatorEmailId}>
+            Email me the admin link (optional)
+          </Label>
+          <Input
+            id={creatorEmailId}
+            name="creatorEmail"
+            type="email"
+            maxLength={200}
+            placeholder="you@example.com"
+            disabled={isPending}
+            aria-describedby={
+              errors.creatorEmail ? creatorEmailErrorId : undefined
+            }
+            aria-invalid={errors.creatorEmail ? true : undefined}
+          />
+          <p className="text-muted-foreground text-sm">
+            This link is the only way to manage or close your poll — we&apos;ll
+            email you a copy so you don&apos;t lose it.
+          </p>
+          <FieldError
+            id={creatorEmailErrorId}
+            messages={errors.creatorEmail}
+          />
         </div>
       </div>
 

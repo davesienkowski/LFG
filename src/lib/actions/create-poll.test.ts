@@ -6,7 +6,7 @@
 //
 // redirect() is mocked so we can assert the success destination deterministically
 // without a Next request context.
-import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, afterAll, vi } from "vitest";
 import { eq, inArray } from "drizzle-orm";
 
 vi.mock("next/navigation", () => ({
@@ -17,9 +17,40 @@ vi.mock("next/navigation", () => ({
   },
 }));
 
+// The best-effort creator admin-link hook resolves the base URL from request
+// headers before scheduling the send. A minimal stub is enough for the
+// deterministic run. These mocks are inert for the pre-existing success tests —
+// none pass creatorEmail, so the `if (creatorEmail)` guard skips headers()/after().
+vi.mock("next/headers", () => ({
+  headers: async () => ({
+    get: (name: string) =>
+      name === "host"
+        ? "localhost:3000"
+        : name === "x-forwarded-proto"
+          ? "http"
+          : null,
+  }),
+}));
+
+// after() schedules the best-effort admin-link send. Run the callback as a
+// swallowed microtask so a send failure can never surface into the test (mirrors
+// the platform's fire-and-never-throw-past-after() contract, D-02/D-07).
+vi.mock("next/server", () => ({
+  after: (cb: () => Promise<void> | void) => {
+    void Promise.resolve().then(cb).catch(() => {});
+  },
+}));
+
+vi.mock("@/lib/email/send", () => ({
+  sendEmail: vi.fn(async () => ({ ok: true })),
+}));
+
 import { createPoll } from "./create-poll";
+import { sendEmail } from "@/lib/email/send";
 import { db } from "@/lib/db";
 import { polls, options } from "@/lib/db/schema";
+
+const sendEmailMock = vi.mocked(sendEmail);
 
 // Track admin tokens we create so we can clean up (cascade deletes options).
 const createdAdminIds: string[] = [];
@@ -104,6 +135,10 @@ beforeAll(() => {
   }
 });
 
+beforeEach(() => {
+  sendEmailMock.mockClear();
+});
+
 afterAll(async () => {
   if (createdAdminIds.length) {
     await db.delete(polls).where(inArray(polls.adminUrlId, createdAdminIds));
@@ -178,6 +213,21 @@ describe("createPoll — validation (no rows created)", () => {
     );
     expect(state?.errors?.dates?.[0]).toBe("Enter a valid date");
   });
+
+  it("rejects a non-empty malformed creatorEmail — field error, no poll, no send", async () => {
+    const before = await pollCount();
+    const { state, redirectUrl } = await run(
+      fd({
+        title: "Valid",
+        creatorEmail: "not-an-email",
+        dates: datesJson([{ date: "2026-07-12" }]),
+      }),
+    );
+    expect(state?.errors?.creatorEmail?.[0]).toBe("Enter a valid email address");
+    expect(redirectUrl).toBeNull();
+    expect(await pollCount()).toBe(before);
+    expect(sendEmailMock).not.toHaveBeenCalled();
+  });
 });
 
 describe("createPoll — success path", () => {
@@ -246,6 +296,39 @@ describe("createPoll — success path", () => {
       ["2026-07-19", "14:00:00"],
     ]);
     expect(ordered.map((o) => o.position)).toEqual([0, 1, 2]);
+  });
+
+  it("valid creatorEmail: creates the poll AND schedules one admin-link send to that address", async () => {
+    const { redirectUrl } = await run(
+      fd({
+        title: "Email Me",
+        creatorEmail: "creator@example.com",
+        dates: datesJson([{ date: "2026-07-12" }]),
+      }),
+    );
+    const adminUrlId = adminIdFromRedirect(redirectUrl);
+    const { poll } = await loadCreated(adminUrlId);
+    expect(poll.title).toBe("Email Me");
+    // Flush the after() microtask so the scheduled send has run.
+    await new Promise((r) => setTimeout(r, 0));
+    expect(sendEmailMock).toHaveBeenCalledTimes(1);
+    const arg = sendEmailMock.mock.calls[0][0];
+    expect(arg.to).toBe("creator@example.com");
+    expect(arg.subject).toContain("Email Me");
+    expect(arg.html).toContain(`/a/${adminUrlId}`);
+  });
+
+  it("no creatorEmail (D-02): creates the poll and NEVER sends", async () => {
+    const { redirectUrl } = await run(
+      fd({ title: "No Email", dates: datesJson([{ date: "2026-07-12" }]) }),
+    );
+    const adminUrlId = adminIdFromRedirect(redirectUrl);
+    // Flush microtasks FIRST so an accidental scheduled send would have run
+    // before the assertion (no false green), THEN assert nothing was sent.
+    await new Promise((r) => setTimeout(r, 0));
+    const { poll } = await loadCreated(adminUrlId);
+    expect(poll.title).toBe("No Email");
+    expect(sendEmailMock).not.toHaveBeenCalled();
   });
 
   it("rapid double-submit yields two independent polls with distinct tokens (idempotency/concurrency)", async () => {

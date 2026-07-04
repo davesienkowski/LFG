@@ -127,6 +127,37 @@ export function renderConfirmationEmail({
 }
 
 /**
+ * Creator admin-link email (260703-rqc). CTA is the poll's ADMIN link
+ * (`/a/<adminUrlId>`) — a recovery channel so the creator can regain management
+ * access if they lose the on-screen admin page.
+ *
+ * DELIBERATE T-04-02 EXCEPTION: this is the SOLE template that legitimately
+ * accepts and emits an `/a/` admin URL. Every other template
+ * (renderInviteEmail / renderConfirmationEmail / renderFinalizationEmail)
+ * forbids admin URLs because their recipient is a PARTICIPANT — leaking the
+ * admin secret to a participant would hand them poll-management control. Here
+ * the recipient is the poll CREATOR themselves, receiving a copy of their own
+ * credential, so carrying the admin URL is correct rather than a leak. The
+ * participant-facing no-admin-URL discipline (and its T-04-02 negative test)
+ * stays intact and unchanged.
+ */
+export function renderCreatorAdminLinkEmail({
+  title,
+  adminUrl,
+}: {
+  title: string;
+  adminUrl: string;
+}): string {
+  return renderShell({
+    heading: `Manage your poll: ${title}`,
+    bodyText:
+      "Save this link — it's the only way to manage or close your poll. Don't share it; anyone with this link can manage your poll.",
+    ctaUrl: adminUrl,
+    ctaLabel: "Manage my poll",
+  });
+}
+
+/**
  * Finalization email (FNL-03). Shows the chosen date (rendered via
  * formatDateWithTime), title, and optional location in an event-details block.
  * The styled button is dropped in favor of a plain "View the poll" fallback link

@@ -8,11 +8,13 @@ import {
   renderInviteEmail,
   renderConfirmationEmail,
   renderFinalizationEmail,
+  renderCreatorAdminLinkEmail,
 } from "./templates";
 
 const PARTICIPANT_URL = "https://lfg.example/p/participant-token-abc";
 const EDIT_URL =
   "https://lfg.example/p/participant-token-abc/edit/edit-token-xyz";
+const ADMIN_URL = "https://lfg.example/a/admin-token-abc";
 
 describe("renderInviteEmail", () => {
   it("embeds the participant CTA URL and the invite heading", () => {
@@ -35,6 +37,20 @@ describe("renderConfirmationEmail", () => {
     expect(html).toContain(EDIT_URL);
     expect(html).toContain("Your response to D&D Session is saved");
     expect(html).toContain("View or edit my response");
+  });
+});
+
+describe("renderCreatorAdminLinkEmail", () => {
+  it("embeds the admin CTA URL, the manage heading, and the CTA label", () => {
+    const html = renderCreatorAdminLinkEmail({
+      title: "D&D Session",
+      adminUrl: ADMIN_URL,
+    });
+    // The SOLE template that legitimately carries an /a/ admin URL (recipient is
+    // the creator, a recovery channel for their own credential).
+    expect(html).toContain(ADMIN_URL);
+    expect(html).toContain("Manage your poll: D&D Session");
+    expect(html).toContain("Manage my poll");
   });
 });
 

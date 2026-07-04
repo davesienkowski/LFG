@@ -16,9 +16,14 @@
 
 import { z } from "zod";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+import { after } from "next/server";
 import { db } from "@/lib/db";
 import { polls, options } from "@/lib/db/schema";
 import { generateToken } from "@/lib/tokens";
+import { resolveBaseUrl, buildAdminUrl } from "@/lib/urls";
+import { sendEmail } from "@/lib/email/send";
+import { renderCreatorAdminLinkEmail } from "@/lib/email/templates";
 
 const DateOptionSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Enter a valid date"),
@@ -43,6 +48,15 @@ const CreatePollSchema = z.object({
   location: z
     .string()
     .max(200, "Location must be 200 characters or fewer")
+    .optional(),
+  // Optional. Mirrors submit-response.ts's `email` field VERBATIM: max() before
+  // email() so an over-length string surfaces the length message; an invalid
+  // short string surfaces the format message. Used ONLY to address the one
+  // best-effort admin-link recovery email — never persisted (no DB column).
+  creatorEmail: z
+    .string()
+    .max(200, "Email must be 200 characters or fewer")
+    .email("Enter a valid email address")
     .optional(),
   dates: DateOptionSchema.array().min(1, "Add at least one candidate date"),
 });
@@ -78,6 +92,11 @@ export async function createPoll(
     title: formData.get("title"),
     description: formData.get("description") || undefined,
     location: formData.get("location") || undefined,
+    // `|| undefined` makes an empty/untouched field "not provided" so it never
+    // errors and never sends; a non-empty malformed value stays a string and
+    // fails `.email()`, surfacing a top-level `creatorEmail` field error via the
+    // existing flatten() path (no special lift needed, unlike the dates array).
+    creatorEmail: formData.get("creatorEmail") || undefined,
     dates: parsedDates,
   };
 
@@ -97,7 +116,7 @@ export async function createPoll(
     return { errors: fieldErrors };
   }
 
-  const { title, description, location, dates } = parsed.data;
+  const { title, description, location, creatorEmail, dates } = parsed.data;
 
   // App-layer dedupe of identical (date, startTime) pairs — belt-and-suspenders
   // ahead of the DB's NULLS NOT DISTINCT unique constraint (POLL-03).
@@ -147,6 +166,33 @@ export async function createPoll(
       position: i,
     })),
   );
+
+  // Best-effort admin-link recovery email (260703-rqc / D-02). Fires ONLY when
+  // the creator supplied an email. This block lives OUTSIDE the token-mint retry
+  // loop and AFTER both inserts, so the send is scheduled EXACTLY ONCE on the
+  // true success path — never per token-collision retry attempt, and never on a
+  // validation reject (which return()s earlier) or a failed insert (which
+  // throws). Mirrors submit-response.ts's confirmation hook.
+  //
+  // The base URL is captured HERE, inside the request, BEFORE after() runs — the
+  // deferred callback must not call next/headers after the redirect is issued.
+  // With EMAIL_PROVIDER unset the after() callback still runs but sendEmail()
+  // no-ops safely, so creation is unaffected (D-02 preserved). The admin link is
+  // a bearer secret: it is never logged and the send result is intentionally
+  // IGNORED — a failure must never surface past after() or affect the redirect.
+  if (creatorEmail) {
+    const h = await headers();
+    const base = resolveBaseUrl(h.get("host"), h.get("x-forwarded-proto"));
+    const to = creatorEmail;
+    after(async () => {
+      const adminUrl = buildAdminUrl(base, adminUrlId);
+      await sendEmail({
+        to,
+        subject: `Manage your poll: ${title}`,
+        html: renderCreatorAdminLinkEmail({ title, adminUrl }),
+      });
+    });
+  }
 
   // redirect() throws — no code runs after this line.
   redirect(`/a/${adminUrlId}`);
