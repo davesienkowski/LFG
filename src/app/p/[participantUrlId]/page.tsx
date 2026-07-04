@@ -61,7 +61,7 @@ export default async function ParticipantPage({
   const isReturning = priorParticipant !== null;
 
   return (
-    <main className="mx-auto w-full max-w-2xl px-4 py-12 flex flex-col gap-8">
+    <main className="mx-auto w-full max-w-4xl px-4 py-12 flex flex-col gap-8">
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-semibold leading-tight">{poll.title}</h1>
         <PollSummary description={poll.description} location={poll.location} />

@@ -179,11 +179,13 @@ describe("AvailabilityGrid (radio matrix)", () => {
     render(<AvailabilityGrid options={OPTIONS} onChange={vi.fn()} />);
     const desktop = matrix();
 
-    // The three state labels render as TEXT once each, in the header row only
-    // (the desktop radio cells themselves are icon-only, no visible text).
-    expect(desktop.getAllByText("Available")).toHaveLength(1);
-    expect(desktop.getAllByText("If-need-be")).toHaveLength(1);
-    expect(desktop.getAllByText("Not available")).toHaveLength(1);
+    // The three state labels render as TEXT twice each — the header block is
+    // mirrored (one above each body column) at lg so every icon-only radio sits
+    // beneath a labelled header (D-02/D-06). The desktop radio cells themselves
+    // stay icon-only (no visible text).
+    expect(desktop.getAllByText("Available")).toHaveLength(2);
+    expect(desktop.getAllByText("If-need-be")).toHaveLength(2);
+    expect(desktop.getAllByText("Not available")).toHaveLength(2);
 
     // Every desktop radio's accessible name ends with one of those column
     // labels — the icon-only cell inherits its meaning from the labelled column.

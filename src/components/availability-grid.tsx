@@ -39,7 +39,11 @@
 //  - date labels use formatDateWithTime (timezone-safe, D-11/P3), never new Date.
 import { useEffect, useState } from "react";
 import { Check, X, RotateCcw } from "lucide-react";
-import { formatDateWithTime } from "@/lib/format-date";
+import {
+  formatDateWithTime,
+  formatDateWithTimeShort,
+  formatMonthYear,
+} from "@/lib/format-date";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { STATE_META, type VoteState } from "@/lib/vote-state";
@@ -67,10 +71,78 @@ const HEADER_COLOR: Record<VoteState, string> = {
   no: "text-muted-foreground",
 };
 
+// FULL date label — used for every aria-label / role=radiogroup label / live
+// announcement so assistive tech still gets the unabbreviated date (D-11/P3).
 function optionLabel(opt: GridOption): string {
   return formatDateWithTime(
     opt.date,
     opt.startTime ? opt.startTime.slice(0, 5) : null,
+  );
+}
+
+// CONDENSED label — the VISIBLE desktop text only (the a11y name stays full via
+// optionLabel above). Halves the row width so the 2-column matrix fits.
+function optionLabelShort(opt: GridOption): string {
+  return formatDateWithTimeShort(
+    opt.date,
+    opt.startTime ? opt.startTime.slice(0, 5) : null,
+  );
+}
+
+// Group options by calendar month using a pure string prefix (YYYY-MM) — no
+// Date construction, so it is timezone-safe by construction. First-appearance
+// (chronological) order is preserved; each group keeps its options in source
+// order. A date on a month boundary groups under its OWN month (edges
+// TV3-02/06). >1 distinct key => multi-month (month subheadings shown).
+function groupByMonth(
+  options: GridOption[],
+): { key: string; options: GridOption[] }[] {
+  const groups: { key: string; options: GridOption[] }[] = [];
+  const byKey = new Map<string, { key: string; options: GridOption[] }>();
+  for (const opt of options) {
+    const key = opt.date.slice(0, 7);
+    let group = byKey.get(key);
+    if (!group) {
+      group = { key, options: [] };
+      byKey.set(key, group);
+      groups.push(group);
+    }
+    group.options.push(opt);
+  }
+  return groups;
+}
+
+// One labelled state-header block (empty spacer + the three icon+text column
+// headers). Rendered TWICE on desktop at lg (the second mirrored above the
+// right body column) so every icon-only radio still sits beneath a labelled
+// header (D-02/D-06). `className` carries the display toggle (grid vs
+// hidden lg:grid) so the base `grid` never conflicts on the mirrored copy.
+function StateHeaderRow({ className }: { className: string }) {
+  return (
+    <div
+      className={cn(
+        "grid-cols-[1.6fr_1fr_1fr_1fr] items-end gap-2 border-b px-1 pb-2.5",
+        className,
+      )}
+    >
+      <span />
+      {STATE_ORDER.map((s) => {
+        const meta = STATE_META[s];
+        const { Icon } = meta;
+        return (
+          <span
+            key={s}
+            className={cn(
+              "flex flex-col items-center gap-1.5 text-sm font-semibold",
+              HEADER_COLOR[s],
+            )}
+          >
+            <Icon aria-hidden className="size-[18px]" />
+            {meta.label}
+          </span>
+        );
+      })}
+    </div>
   );
 }
 
@@ -183,70 +255,84 @@ export function AvailabilityGrid({
       ) : (
         <>
           {/* DESKTOP matrix (>=640px). display:none at <640px removes this whole
-              layer from the a11y tree (EDGE-A11Y-EXCL). */}
+              layer from the a11y tree (EDGE-A11Y-EXCL). At lg it becomes a
+              responsive 2-column matrix so long date lists fill the width
+              instead of a 1000px+ single-column stack. */}
           <div data-testid="matrix-desktop" className="hidden sm:block">
             {/* Persistent labelled column headers — the icon+text that the
-                icon-only radio cells below inherit their meaning from (D-02). */}
-            <div className="grid grid-cols-[1.6fr_1fr_1fr_1fr] items-end gap-2 border-b px-1 pb-2.5">
-              <span />
-              {STATE_ORDER.map((s) => {
-                const meta = STATE_META[s];
-                const { Icon } = meta;
-                return (
-                  <span
-                    key={s}
-                    className={cn(
-                      "flex flex-col items-center gap-1.5 text-sm font-semibold",
-                      HEADER_COLOR[s],
-                    )}
-                  >
-                    <Icon aria-hidden className="size-[18px]" />
-                    {meta.label}
-                  </span>
-                );
-              })}
+                icon-only radio cells below inherit their meaning from (D-02).
+                Mirrored at lg so BOTH body columns sit under a labelled header. */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 lg:gap-x-8">
+              <StateHeaderRow className="grid" />
+              <StateHeaderRow className="hidden lg:grid" />
             </div>
 
-            {options.map((opt) => {
-              const state = cellState[opt.id] ?? "no";
-              const label = optionLabel(opt);
+            {/* Body: exactly ONE role=radiogroup per option (source order, no
+                duplication) laid out across a 2-column grid at lg. Month
+                subheadings appear ONLY when the set spans >1 month; each <h3>
+                is a full-width presentational grid item OUTSIDE every
+                radiogroup, so radio semantics are never broken. */}
+            {(() => {
+              const groups = groupByMonth(options);
+              const multiMonth = groups.length > 1;
               return (
-                <div
-                  key={opt.id}
-                  role="radiogroup"
-                  aria-label={label}
-                  className="grid grid-cols-[1.6fr_1fr_1fr_1fr] items-center gap-2 border-b px-1 py-3"
-                >
-                  <span className="text-base">{label}</span>
-                  {STATE_ORDER.map((s) => {
-                    const meta = STATE_META[s];
-                    const { Icon } = meta;
-                    const checked = state === s;
-                    return (
-                      <div key={s} className="flex justify-center">
-                        <button
-                          type="button"
-                          role="radio"
-                          aria-checked={checked}
-                          aria-label={`${label}: ${meta.label}`}
-                          onClick={() => selectCell(opt, s)}
-                          className={cn(
-                            "flex size-11 items-center justify-center rounded-lg border outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50",
-                            checked
-                              ? meta.className
-                              : "border-border bg-white",
-                          )}
+                <div className="grid grid-cols-1 lg:grid-cols-2 lg:gap-x-8 gap-y-0">
+                  {groups.flatMap((group) => {
+                    const rows = group.options.map((opt) => {
+                      const state = cellState[opt.id] ?? "no";
+                      const label = optionLabel(opt);
+                      const shortLabel = optionLabelShort(opt);
+                      return (
+                        <div
+                          key={opt.id}
+                          role="radiogroup"
+                          aria-label={label}
+                          className="grid grid-cols-[1.6fr_1fr_1fr_1fr] items-center gap-2 border-b px-1 py-3"
                         >
-                          {checked ? (
-                            <Icon aria-hidden className="size-5" />
-                          ) : null}
-                        </button>
-                      </div>
-                    );
+                          <span className="text-base">{shortLabel}</span>
+                          {STATE_ORDER.map((s) => {
+                            const meta = STATE_META[s];
+                            const { Icon } = meta;
+                            const checked = state === s;
+                            return (
+                              <div key={s} className="flex justify-center">
+                                <button
+                                  type="button"
+                                  role="radio"
+                                  aria-checked={checked}
+                                  aria-label={`${label}: ${meta.label}`}
+                                  onClick={() => selectCell(opt, s)}
+                                  className={cn(
+                                    "flex size-11 items-center justify-center rounded-lg border outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50",
+                                    checked
+                                      ? meta.className
+                                      : "border-border bg-white",
+                                  )}
+                                >
+                                  {checked ? (
+                                    <Icon aria-hidden className="size-5" />
+                                  ) : null}
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    });
+                    if (!multiMonth) return rows;
+                    return [
+                      <h3
+                        key={`month-${group.key}`}
+                        className="lg:col-span-2 pt-4 pb-1 text-sm font-semibold text-muted-foreground"
+                      >
+                        {formatMonthYear(group.options[0].date)}
+                      </h3>,
+                      ...rows,
+                    ];
                   })}
                 </div>
               );
-            })}
+            })()}
           </div>
 
           {/* MOBILE stacked segments (<640px). display:none at >=640px removes
