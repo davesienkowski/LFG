@@ -88,7 +88,9 @@ describe("BookItControl — pre-selection (D-08)", () => {
     expect(radios[0].checked).toBe(false);
     expect(radios[1].value).toBe("opt-b");
     expect(radios[1].checked).toBe(true);
-    expect(screen.getByText("Suggested")).toBeTruthy();
+    // "Suggested" now appears on BOTH the radio badge and the mobile summary
+    // badge (jsdom renders both branches — Tailwind visibility is inert).
+    expect(screen.getAllByText("Suggested").length).toBeGreaterThan(0);
   });
 
   it("falls back to pre-checking the first candidate when no option is best (zero votes)", () => {
@@ -106,5 +108,57 @@ describe("BookItControl — pre-selection (D-08)", () => {
     expect(radios[0].checked).toBe(true);
     expect(radios[1].checked).toBe(false);
     expect(screen.queryByText("Suggested")).toBeNull();
+  });
+});
+
+describe("BookItControl — mobile collapse-to-suggested (260703-wfm)", () => {
+  it("keeps the radios in the DOM while collapsed (winningOptionId still submits)", () => {
+    render(
+      <BookItControl
+        adminUrlId="admin-1"
+        options={options}
+        results={[
+          { optionId: "opt-a", isBest: false },
+          { optionId: "opt-b", isBest: true },
+        ]}
+      />,
+    );
+    // Default (collapsed) state: radios are always present and preselected, so
+    // the form still carries a winningOptionId even before "Change date".
+    const radios = screen.getAllByRole("radio") as HTMLInputElement[];
+    expect(radios).toHaveLength(2);
+    for (const radio of radios) {
+      expect(radio.name).toBe("winningOptionId");
+    }
+    expect(radios[1].checked).toBe(true); // opt-b (best) preselected
+    // The reveal toggle is type=button — it can never submit the form.
+    const change = screen.getByRole("button", { name: "Change date" });
+    expect(change.getAttribute("type")).toBe("button");
+  });
+
+  it("'Change date' reveals the list without remounting the radios or losing the preselection (WFM-05)", () => {
+    render(
+      <BookItControl
+        adminUrlId="admin-1"
+        options={options}
+        results={[
+          { optionId: "opt-a", isBest: false },
+          { optionId: "opt-b", isBest: true },
+        ]}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Change date" }));
+
+    // Display toggle, not an unmount: same 2 radios, preselection survives.
+    const radios = screen.getAllByRole("radio") as HTMLInputElement[];
+    expect(radios).toHaveLength(2);
+    expect(radios[1].checked).toBe(true);
+    // Booking is still two-step: no confirm control until "Book this date".
+    expect(
+      screen.queryByRole("button", { name: /Confirm and close poll/ }),
+    ).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Book this date" }),
+    ).toBeTruthy();
   });
 });

@@ -18,6 +18,7 @@ import {
 } from "@/lib/format-date";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 type BookItOption = {
   id: string;
@@ -46,6 +47,11 @@ export function BookItControl({
     FormData
   >(closePoll, null);
   const [showConfirm, setShowConfirm] = useState(false);
+  // Mobile-only collapse: the radio list starts hidden behind a suggested-date
+  // summary + "Change date" toggle. One-way reveal (no re-collapse control) — a
+  // display toggle only, the radios NEVER unmount (winningOptionId keeps
+  // submitting collapsed; re-expand never resets the uncontrolled preselection).
+  const [showAllDates, setShowAllDates] = useState(false);
 
   const bestIds = new Set(
     results.filter((r) => r.isBest).map((r) => r.optionId),
@@ -56,6 +62,10 @@ export function BookItControl({
   // radios permit a single defaultChecked, and closePoll needs a winningOptionId.
   const preselectedId =
     options.find((o) => bestIds.has(o.id))?.id ?? options[0]?.id;
+  const preselectedOption = options.find((o) => o.id === preselectedId);
+  const preselectedIsBest = preselectedOption
+    ? bestIds.has(preselectedOption.id)
+    : false;
 
   const formError = state?.errors?._form?.[0];
 
@@ -65,12 +75,53 @@ export function BookItControl({
       <Card className="flex flex-col gap-3 p-6">
         <fieldset className="flex flex-col gap-2">
           <legend className="text-sm font-semibold">Candidate dates</legend>
+          {/* MOBILE-ONLY suggested-date summary (sm:hidden) — collapses the long
+              radio list to the pre-selected date + a "Change date" toggle.
+              Guarded on preselectedOption (empty-options edge, WFM-04). Hidden
+              once the list is expanded. The Suggested badge shows ONLY when the
+              preselection is genuinely best (parity with the radio list). */}
+          {preselectedOption ? (
+            <div
+              className={cn(
+                "flex flex-wrap items-center gap-2 sm:hidden",
+                showAllDates && "hidden",
+              )}
+            >
+              <span className="text-base font-semibold">
+                {formatDateWithTimeShort(
+                  preselectedOption.date,
+                  preselectedOption.startTime
+                    ? preselectedOption.startTime.slice(0, 5)
+                    : null,
+                )}
+              </span>
+              {preselectedIsBest ? (
+                <span className="inline-flex items-center rounded-full border border-emerald-300 bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">
+                  Suggested
+                </span>
+              ) : null}
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-11"
+                onClick={() => setShowAllDates(true)}
+              >
+                Change date
+              </Button>
+            </div>
+          ) : null}
           {/* Denser responsive grid (it now lives in the narrower-then-full
               right hero). CSS grid flows in options.map SOURCE (chronological)
               order, so the chronologically-first-best preselection + Suggested
               badge stay correct (edge TV3-11). Short visible label; FULL date in
-              title + aria-label for AT + hover. */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2">
+              title + aria-label for AT + hover. Radios ALWAYS render (display
+              toggle only) so winningOptionId submits while collapsed on mobile. */}
+          <div
+            className={cn(
+              "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2.5",
+              showAllDates ? "grid" : "hidden sm:grid",
+            )}
+          >
             {options.map((opt) => {
               const hhmm = opt.startTime ? opt.startTime.slice(0, 5) : null;
               const full = formatDateWithTime(opt.date, hhmm);
