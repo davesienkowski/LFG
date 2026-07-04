@@ -3,10 +3,11 @@
 // BOTH share links. The admin link card always carries the amber "Keep private"
 // badge AND the do-not-share warning copy (UI-P1) — never the link alone.
 //
-// Layout (quick task 260703-tv3): a desktop dashboard — controls rail (title,
-// candidate-date echo, share/invite) on the LEFT, Results + Book-it as the wide
-// hero on the RIGHT at lg; single column (controls-then-results) below lg. PURE
-// layout — every query, action, and branch is preserved verbatim.
+// Layout (tv3 + follow-up): a single full-width column (max-w-6xl) stacked as
+// header (title + location) -> compact candidate-date echo (small chips) ->
+// full-width Results hero -> share/invite -> Book-it. Results spans the full
+// content width so the participants × dates table has maximum horizontal room.
+// PURE layout — every query, action, and branch is preserved verbatim.
 //
 // Dates render via formatDateWithTime (string-based, D-11/P3) — never new Date()
 // on the date-only value. DB returns start_time as 'HH:MM:SS'; we slice to
@@ -70,7 +71,7 @@ function CandidateChip({ opt }: { opt: AdminOption }) {
     <li
       title={full}
       aria-label={full}
-      className="inline-flex items-center rounded-full border bg-muted px-3 py-1 text-sm"
+      className="inline-flex items-center rounded-full border bg-muted px-2.5 py-0.5 text-xs"
     >
       {formatDateWithTimeShort(opt.date, hhmm)}
     </li>
@@ -113,200 +114,187 @@ export default async function AdminPage({
   const multiMonth = monthGroups.length > 1;
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-12 flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(320px,380px)_1fr] lg:gap-10">
-      {/* LEFT rail: setup/controls cluster (title, candidate-date echo, share +
-          invite). Single column below lg (stacks above the results hero). */}
-      <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-semibold leading-tight">
-              {poll.title}
-            </h1>
-            {/* "Booked" emerald pill — only once the poll is finalized (closed). */}
-            {isClosed ? (
-              <span className="inline-flex items-center rounded-full border border-emerald-300 bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">
-                Booked
-              </span>
-            ) : null}
-          </div>
-          <PollSummary description={poll.description} location={poll.location} />
+    <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-12">
+      {/* Header: poll title + status pill + location/description (TBD). */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-semibold leading-tight">{poll.title}</h1>
+          {/* "Booked" emerald pill — only once the poll is finalized (closed). */}
+          {isClosed ? (
+            <span className="inline-flex items-center rounded-full border border-emerald-300 bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">
+              Booked
+            </span>
+          ) : null}
         </div>
+        <PollSummary description={poll.description} location={poll.location} />
+      </div>
 
-        {/* Condensed candidate-date echo — short visible label, FULL date in
+      {/* Condensed candidate-date echo — short visible label, FULL date in
             title + aria-label; month-grouped only when the set spans >1 month. */}
-        {multiMonth ? (
-          <div className="flex flex-col gap-4">
-            {monthGroups.map((group) => (
-              <section key={group.key} className="flex flex-col gap-2">
-                <h3 className="text-sm font-semibold text-muted-foreground">
-                  {formatMonthYear(group.options[0].date)}
-                </h3>
-                <ul className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {group.options.map((opt) => (
-                    <CandidateChip key={opt.id} opt={opt} />
-                  ))}
-                </ul>
-              </section>
-            ))}
-          </div>
-        ) : (
-          <ul className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {options.map((opt) => (
-              <CandidateChip key={opt.id} opt={opt} />
-            ))}
-          </ul>
-        )}
-
+      {multiMonth ? (
         <div className="flex flex-col gap-4">
-          <h2 className="text-2xl font-semibold leading-snug">
-            Share your poll
-          </h2>
+          {monthGroups.map((group) => (
+            <section key={group.key} className="flex flex-col gap-2">
+              <h3 className="text-sm font-semibold text-muted-foreground">
+                {formatMonthYear(group.options[0].date)}
+              </h3>
+              <ul className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+                {group.options.map((opt) => (
+                  <CandidateChip key={opt.id} opt={opt} />
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
+      ) : (
+        <ul className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+          {options.map((opt) => (
+            <CandidateChip key={opt.id} opt={opt} />
+          ))}
+        </ul>
+      )}
 
-          {/* Participant link — safe to share */}
-          <Card className="flex flex-col gap-2 p-6">
-            <span className="text-sm font-semibold">Participant link</span>
-            <span className="text-base text-muted-foreground">
-              Share this link with your group
-            </span>
-            <span className="font-mono text-sm truncate">{participantUrl}</span>
-            <div>
-              <CopyLinkButton
-                url={participantUrl}
-                label="Copy participant link"
-              />
-            </div>
-          </Card>
+      {/* Results (DASH-01..05) — full-width hero directly under the header.
+          min-w-0 lets the wide table scroll inside its own overflow-x-auto
+          rather than forcing document-level horizontal scroll. */}
+      <Card className="flex min-w-0 flex-col gap-4 p-6">
+        <h2 className="text-2xl font-semibold leading-snug">Results</h2>
+        <ResultsGrid
+          options={options}
+          participants={participants}
+          results={results}
+        />
+      </Card>
 
-          {/* Admin link — private management credential (UI-P1) */}
-          <Card className="flex flex-col gap-2 p-6 border-amber-200">
-            <span className="flex items-center gap-2">
-              <span className="text-sm font-semibold">Admin link</span>
-              <span className="bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2 py-0.5 text-xs font-semibold">
-                Keep private
-              </span>
-            </span>
-            <span className="text-base text-muted-foreground">
-              Do not share this link. It grants full management access to this
-              poll.
-            </span>
-            <span className="font-mono text-sm truncate">{adminLink}</span>
-            <div>
-              <CopyLinkButton url={adminLink} label="Copy admin link" />
-            </div>
-          </Card>
+      {/* Share your poll + invite ("the other stuff"), below the results. */}
+      <div className="flex flex-col gap-4">
+        <h2 className="text-2xl font-semibold leading-snug">Share your poll</h2>
 
-          {/* Subscribe to the booked-dates calendar feed (LD-6). Rendered ONLY when
+        {/* Participant link — safe to share */}
+        <Card className="flex flex-col gap-2 p-6">
+          <span className="text-sm font-semibold">Participant link</span>
+          <span className="text-base text-muted-foreground">
+            Share this link with your group
+          </span>
+          <span className="font-mono text-sm truncate">{participantUrl}</span>
+          <div>
+            <CopyLinkButton
+              url={participantUrl}
+              label="Copy participant link"
+            />
+          </div>
+        </Card>
+
+        {/* Admin link — private management credential (UI-P1) */}
+        <Card className="flex flex-col gap-2 p-6 border-amber-200">
+          <span className="flex items-center gap-2">
+            <span className="text-sm font-semibold">Admin link</span>
+            <span className="bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2 py-0.5 text-xs font-semibold">
+              Keep private
+            </span>
+          </span>
+          <span className="text-base text-muted-foreground">
+            Do not share this link. It grants full management access to this
+            poll.
+          </span>
+          <span className="font-mono text-sm truncate">{adminLink}</span>
+          <div>
+            <CopyLinkButton url={adminLink} label="Copy admin link" />
+          </div>
+        </Card>
+
+        {/* Subscribe to the booked-dates calendar feed (LD-6). Rendered ONLY when
               the poll has an organizer token — legacy polls (organizerId null) hide
               it entirely. NEUTRAL severity: it is an unguessable bearer link but
               exposes only booked dates/titles (no participant data), so it carries
               NO amber border and NO "Keep private" badge (LD-7 / T-sn2-04). */}
-          {poll.organizerId ? (
-            <Card className="flex flex-col gap-2 p-6">
-              <span className="text-sm font-semibold">
-                Subscribe to your booked-dates calendar
-              </span>
-              <span className="text-base text-muted-foreground">
-                Add this once to your phone/desktop calendar; every poll you
-                finalize appears automatically.
-              </span>
-              <span className="text-sm text-muted-foreground">
-                This is a group-shareable link — it shows only booked dates and
-                poll titles, never any participant data.
-              </span>
-              <span className="font-mono text-sm truncate">
-                {buildOrganizerFeedUrl(base, poll.organizerId)}
-              </span>
-              <div className="flex flex-wrap items-center gap-2">
-                <a
-                  href={buildOrganizerWebcalUrl(base, poll.organizerId)}
-                  className="inline-flex items-center rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted"
-                >
-                  Subscribe in calendar
-                </a>
-                <CopyLinkButton
-                  url={buildOrganizerFeedUrl(base, poll.organizerId)}
-                  label="Copy calendar link"
-                />
-              </div>
-            </Card>
-          ) : null}
+        {poll.organizerId ? (
+          <Card className="flex flex-col gap-2 p-6">
+            <span className="text-sm font-semibold">
+              Subscribe to your booked-dates calendar
+            </span>
+            <span className="text-base text-muted-foreground">
+              Add this once to your phone/desktop calendar; every poll you
+              finalize appears automatically.
+            </span>
+            <span className="text-sm text-muted-foreground">
+              This is a group-shareable link — it shows only booked dates and
+              poll titles, never any participant data.
+            </span>
+            <span className="font-mono text-sm truncate">
+              {buildOrganizerFeedUrl(base, poll.organizerId)}
+            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <a
+                href={buildOrganizerWebcalUrl(base, poll.organizerId)}
+                className="inline-flex items-center rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted"
+              >
+                Subscribe in calendar
+              </a>
+              <CopyLinkButton
+                url={buildOrganizerFeedUrl(base, poll.organizerId)}
+                label="Copy calendar link"
+              />
+            </div>
+          </Card>
+        ) : null}
 
-          {/* Invite by email (MAIL-01/02/03). Hidden on a closed poll. When email
+        {/* Invite by email (MAIL-01/02/03). Hidden on a closed poll. When email
               is configured, render the send-invites form; otherwise degrade to the
               explanatory copy-link fallback — the actionable copy button already
               lives in the Participant-link Card above (D-05 / MAIL-03). */}
-          {showInvite ? (
-            emailConfigured ? (
-              <InviteByEmailForm adminUrlId={poll.adminUrlId} />
-            ) : (
-              <Card className="flex flex-col gap-2 p-6">
-                <h3 className="text-2xl font-semibold leading-snug">
-                  Email isn&apos;t set up
-                </h3>
-                <p className="text-base text-muted-foreground">
-                  Copy the participant link above and share it manually.
-                </p>
-              </Card>
-            )
-          ) : null}
-        </div>
+        {showInvite ? (
+          emailConfigured ? (
+            <InviteByEmailForm adminUrlId={poll.adminUrlId} />
+          ) : (
+            <Card className="flex flex-col gap-2 p-6">
+              <h3 className="text-2xl font-semibold leading-snug">
+                Email isn&apos;t set up
+              </h3>
+              <p className="text-base text-muted-foreground">
+                Copy the participant link above and share it manually.
+              </p>
+            </Card>
+          )
+        ) : null}
       </div>
 
-      {/* RIGHT hero: Results (the wide table that most wants horizontal room) +
-          Book-it. Below lg this stacks under the controls rail. `min-w-0` is
-          load-bearing: a CSS grid item defaults to `min-width:auto`, so without
-          it the wide Results table forces this 1fr track (and the whole page) to
-          expand instead of scrolling inside ResultsGrid's own overflow-x-auto —
-          i.e. it produces document-level horizontal scroll on desktop. */}
-      <div className="flex min-w-0 flex-col gap-8">
-        {/* Results (DASH-01..05) — wrapped in a Card p-6 for parity with the
-            Share/Invite cards. */}
-        <Card className="flex flex-col gap-4 p-6">
-          <h2 className="text-2xl font-semibold leading-snug">Results</h2>
-          <ResultsGrid
+      {/* Book it (FNL-01/02/03). Renders EXACTLY ONE of {picker, finalized card}
+          based on poll.status — never both, never neither. BookItControl already
+          emits its own Card, so the open-poll branch is NOT double-wrapped
+          (edge TV3-10). */}
+      {isClosed ? (
+        <Card className="flex flex-col gap-2 p-6 border-emerald-200 bg-emerald-50/40">
+          <h2 className="text-2xl font-semibold leading-snug">
+            Poll finalized
+          </h2>
+          <p className="text-base text-muted-foreground">
+            {poll.winningDate
+              ? `${formatDateWithTime(
+                  poll.winningDate,
+                  poll.winningStartTime
+                    ? poll.winningStartTime.slice(0, 5)
+                    : null,
+                )} is booked. `
+              : ""}
+            {/* Best-effort framing: "should get", NOT "was notified" (D-09). */}
+            Everyone who voted and gave an email should get a confirmation.
+          </p>
+        </Card>
+      ) : (
+        <div className="flex flex-col gap-4">
+          <h2 className="text-2xl font-semibold leading-snug">Book it</h2>
+          <p className="text-base text-muted-foreground">
+            Pick the date you&apos;re going with. This closes voting for
+            everyone.
+          </p>
+          <BookItControl
+            adminUrlId={poll.adminUrlId}
             options={options}
-            participants={participants}
             results={results}
           />
-        </Card>
-
-        {/* Book it (FNL-01/02/03). Renders EXACTLY ONE of {picker, finalized card}
-            based on poll.status — never both, never neither. BookItControl already
-            emits its own Card, so the open-poll branch is NOT double-wrapped
-            (edge TV3-10). */}
-        {isClosed ? (
-          <Card className="flex flex-col gap-2 p-6 border-emerald-200 bg-emerald-50/40">
-            <h2 className="text-2xl font-semibold leading-snug">
-              Poll finalized
-            </h2>
-            <p className="text-base text-muted-foreground">
-              {poll.winningDate
-                ? `${formatDateWithTime(
-                    poll.winningDate,
-                    poll.winningStartTime
-                      ? poll.winningStartTime.slice(0, 5)
-                      : null,
-                  )} is booked. `
-                : ""}
-              {/* Best-effort framing: "should get", NOT "was notified" (D-09). */}
-              Everyone who voted and gave an email should get a confirmation.
-            </p>
-          </Card>
-        ) : (
-          <div className="flex flex-col gap-4">
-            <h2 className="text-2xl font-semibold leading-snug">Book it</h2>
-            <p className="text-base text-muted-foreground">
-              Pick the date you&apos;re going with. This closes voting for
-              everyone.
-            </p>
-            <BookItControl
-              adminUrlId={poll.adminUrlId}
-              options={options}
-              results={results}
-            />
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </main>
   );
 }
