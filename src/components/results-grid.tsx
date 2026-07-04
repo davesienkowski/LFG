@@ -337,9 +337,16 @@ export function ResultsGrid({
       </div>
 
       {/* overflow-x-auto wrapper carrying the scroll-edge fade affordance,
-          inside the bordered/rounded results card container (board 3d). */}
+          inside the bordered/rounded results card container (board 3d).
+          BOUNDED vertical scroll box (max-h + overflow-y-auto): required so the
+          sticky <thead> top-0 actually pins — overflow-x:auto already forces
+          overflow-y to compute to auto, making THIS wrapper the sticky
+          containing block, so it must be a bounded box (edge TV3-09). The 70vh
+          cap is generous: short tables (the common D&D case) never gain a
+          vertical scrollbar and behave exactly as before; only a tall table
+          scrolls internally with the header pinned. */}
       <div
-        className="overflow-x-auto rounded-xl border"
+        className="max-h-[70vh] overflow-x-auto overflow-y-auto rounded-xl border"
         style={SCROLL_FADE_STYLE}
       >
         <table className="w-full border-collapse text-left">
@@ -350,7 +357,7 @@ export function ResultsGrid({
             <tr className="border-b">
               <th
                 scope="col"
-                className="sticky left-0 z-10 border-r bg-background px-4 py-3 text-left text-sm font-semibold whitespace-nowrap"
+                className="sticky top-0 left-0 z-30 border-r bg-background px-4 py-3 text-left text-sm font-semibold whitespace-nowrap"
               >
                 Participant
               </th>
@@ -362,7 +369,10 @@ export function ResultsGrid({
                     key={opt.id}
                     scope="col"
                     className={cn(
-                      "px-4 py-3 align-bottom text-center",
+                      // sticky top-0 + opaque bg so scrolled body cells don't
+                      // show through; emerald (listed last) overrides the plain
+                      // background on best columns.
+                      "sticky top-0 z-20 bg-background px-4 py-3 align-bottom text-center",
                       isBest && "bg-emerald-50",
                     )}
                   >
