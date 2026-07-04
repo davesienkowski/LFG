@@ -71,7 +71,7 @@ function CandidateChip({ opt }: { opt: AdminOption }) {
     <li
       title={full}
       aria-label={full}
-      className="inline-flex items-center rounded-full border bg-muted px-2.5 py-0.5 text-xs"
+      className="inline-flex items-center rounded-full border bg-muted px-2.5 py-0.5 text-sm"
     >
       {formatDateWithTimeShort(opt.date, hhmm)}
     </li>
