@@ -17,6 +17,7 @@ import {
   getResultsForPoll,
   getVoterEmailsForPoll,
   getFinalizedPollsByOrganizerId,
+  getPollAdminNotifyTargets,
 } from "@/lib/db/queries";
 import { db } from "@/lib/db";
 import { polls, options, participants, votes } from "@/lib/db/schema";
@@ -360,5 +361,55 @@ describe("getFinalizedPollsByOrganizerId", () => {
   it("returns [] for an unknown organizerId", async () => {
     const result = await getFinalizedPollsByOrganizerId(generateToken());
     expect(result).toEqual([]);
+  });
+});
+
+// getPollAdminNotifyTargets (t7e / T-t7e-01/02). The sole server-side resolver
+// of admin_url_id for the participant actions; returns { adminUrlId,
+// creatorEmail } keyed by poll id (creatorEmail null when the column is unset),
+// or null for an unknown poll.
+describe("getPollAdminNotifyTargets", () => {
+  it("returns { adminUrlId, creatorEmail } for a poll with a stored creator_email", async () => {
+    const adminUrlId = generateToken();
+    const [poll] = await db
+      .insert(polls)
+      .values({
+        title: "Notify Poll",
+        participantUrlId: generateToken(),
+        adminUrlId,
+        creatorEmail: "creator@example.com",
+      })
+      .returning({ id: polls.id });
+    createdPollIds.push(poll.id);
+
+    const target = await getPollAdminNotifyTargets(poll.id);
+    expect(target).toEqual({ adminUrlId, creatorEmail: "creator@example.com" });
+    // Structural: own keys are EXACTLY adminUrlId/creatorEmail — no token/email
+    // of participants, no other poll column.
+    expect(Object.keys(target!).sort()).toEqual(["adminUrlId", "creatorEmail"]);
+  });
+
+  it("returns creatorEmail null when the column is unset", async () => {
+    const adminUrlId = generateToken();
+    const [poll] = await db
+      .insert(polls)
+      .values({
+        title: "No-Creator-Email Poll",
+        participantUrlId: generateToken(),
+        adminUrlId,
+      })
+      .returning({ id: polls.id });
+    createdPollIds.push(poll.id);
+
+    const target = await getPollAdminNotifyTargets(poll.id);
+    expect(target).toEqual({ adminUrlId, creatorEmail: null });
+  });
+
+  it("returns null for an unknown pollId", async () => {
+    // A random UUID that matches no poll row.
+    const target = await getPollAdminNotifyTargets(
+      "00000000-0000-0000-0000-000000000000",
+    );
+    expect(target).toBeNull();
   });
 });

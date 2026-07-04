@@ -9,6 +9,7 @@ import {
   renderConfirmationEmail,
   renderFinalizationEmail,
   renderCreatorAdminLinkEmail,
+  renderParticipantResponseNotification,
 } from "./templates";
 
 const PARTICIPANT_URL = "https://lfg.example/p/participant-token-abc";
@@ -51,6 +52,37 @@ describe("renderCreatorAdminLinkEmail", () => {
     expect(html).toContain(ADMIN_URL);
     expect(html).toContain("Manage your poll: D&D Session");
     expect(html).toContain("Manage my poll");
+  });
+});
+
+describe("renderParticipantResponseNotification", () => {
+  it("embeds the admin URL, the 'New response to <title>' heading, the participant name, and the CTA", () => {
+    const html = renderParticipantResponseNotification({
+      title: "D&D Session",
+      participantName: "Alex",
+      adminUrl: ADMIN_URL,
+    });
+    // The creator-recipient notification legitimately carries the /a/ admin URL
+    // (T-04-02 exception, like renderCreatorAdminLinkEmail).
+    expect(html).toContain(ADMIN_URL);
+    expect(html).toContain("New response to D&D Session");
+    expect(html).toContain("Alex");
+    expect(html).toContain("View current results");
+  });
+
+  it("F2 (non-vacuous): the signature has no email/token param — a participant email cannot leak", () => {
+    // The function accepts ONLY { title, participantName, adminUrl }. Passing a
+    // distinctive canary as the NAME proves the name IS rendered; the canary
+    // email string is never passed (there is no param for it) so it can never
+    // appear (T-t7e-06).
+    const CANARY_EMAIL = "secret-participant@example.com";
+    const html = renderParticipantResponseNotification({
+      title: "D&D Session",
+      participantName: "Alex",
+      adminUrl: ADMIN_URL,
+    });
+    expect(html).toContain("Alex");
+    expect(html).not.toContain(CANARY_EMAIL);
   });
 });
 

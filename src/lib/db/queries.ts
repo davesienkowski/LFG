@@ -44,6 +44,34 @@ export async function getPollByParticipantUrlId(participantUrlId: string) {
 }
 
 /**
+ * The creator-notification target for the PARTICIPANT actions (t7e). Returns
+ * `{ adminUrlId, creatorEmail }` for a poll keyed by its id, or null for an
+ * unknown poll.
+ *
+ * This is the SOLE server-side path that resolves admin_url_id inside the
+ * participant actions. getPollByParticipantUrlId / getParticipantByEditToken
+ * DELIBERATELY omit admin_url_id (D-09 / P2) so it can never reach the
+ * participant page or its RSC payload; submitResponse / updateResponse call this
+ * helper only to build the CREATOR's notification email, and the returned
+ * adminUrlId is used ONLY inside an after() callback — it must NEVER be returned
+ * to the page, placed in RSC props, or otherwise reach the participant's browser
+ * (three-token discipline, D-09 / T-t7e-01). Selects ONLY these two columns,
+ * mirroring the getVoterEmailsForPoll no-leak column-selection discipline;
+ * creator_email is read by no participant-facing query (T-t7e-02).
+ */
+export async function getPollAdminNotifyTargets(pollId: string) {
+  const [row] = await db
+    .select({
+      adminUrlId: polls.adminUrlId,
+      creatorEmail: polls.creatorEmail,
+    })
+    .from(polls)
+    .where(eq(polls.id, pollId))
+    .limit(1);
+  return row ?? null;
+}
+
+/**
  * Candidate options for a poll, ordered chronologically. A date-only option
  * (NULL start_time = "the whole day") precedes a timed option on the same day,
  * so we order ASC with an explicit NULLS FIRST on start_time (Postgres defaults

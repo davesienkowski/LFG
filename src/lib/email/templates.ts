@@ -158,6 +158,41 @@ export function renderCreatorAdminLinkEmail({
 }
 
 /**
+ * Participant-response notification (t7e). Sent to the poll CREATOR every time a
+ * participant records their availability — on the first submit AND on any later
+ * edit — naming who responded and linking straight to the `/a/` admin results
+ * view.
+ *
+ * DELIBERATE T-04-02 EXCEPTION (same as renderCreatorAdminLinkEmail): this is a
+ * CREATOR-recipient template that legitimately carries an `/a/` admin URL — the
+ * recipient is the poll creator, not a participant, so surfacing the admin link
+ * is correct rather than a leak. The participant-facing templates' no-admin-URL
+ * discipline (and its T-04-02 negative loop) stays intact.
+ *
+ * The signature has EXACTLY these three params — NO email/token param (F2 /
+ * T-t7e-06): the notification names the participant but must NEVER carry their
+ * private email address or edit token. participantName is interpolated EXACTLY
+ * as `title` is (straight into renderShell) — no new raw-HTML/escaping path;
+ * renderShell governs markup, matching the app's established template posture.
+ */
+export function renderParticipantResponseNotification({
+  title,
+  participantName,
+  adminUrl,
+}: {
+  title: string;
+  participantName: string;
+  adminUrl: string;
+}): string {
+  return renderShell({
+    heading: `New response to ${title}`,
+    bodyText: `${participantName} just submitted their availability.`,
+    ctaUrl: adminUrl,
+    ctaLabel: "View current results",
+  });
+}
+
+/**
  * Finalization email (FNL-03). Shows the chosen date (rendered via
  * formatDateWithTime), title, and optional location in an event-details block.
  * The styled button is dropped in favor of a plain "View the poll" fallback link
