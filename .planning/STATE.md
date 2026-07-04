@@ -111,7 +111,10 @@ Live-site UX review (2026-07-03) captured 5 results/admin/participant polish ite
 - ~~Show current results on participant page~~ ✓ DONE 2026-07-03 (quick task 260703-pdt)
 - ~~Make candidate date lists horizontal/compact ("Book it" + poll description)~~ ✓ DONE 2026-07-03 (quick task 260703-ppz)
 - ~~Email admin link to creator on poll creation~~ ✓ DONE 2026-07-03 (quick task 260703-rqc)
-- Shared subscribable calendar feed of finalized poll dates — pending (needs scoping decision; no organizer entity in schema)
+- ~~Shared subscribable calendar feed of finalized poll dates~~ ✓ DONE 2026-07-03 (quick task 260703-sn2 — multi-poll organizer feed; user chose the real-value scope; prod migrate+deploy pending, batched with QT5)
+
+**New feature request (2026-07-03, user) — QUEUED as next quick task:** email the poll creator on EACH participant submission, naming the participant + linking the admin results view. Requires persisting the creator email (QT3 left it transient) → `polls.creator_email` migration 0004; notify best-effort via after() on submit + update; admin_url_id fetched server-side (never on participant surface). Runs after sn2 lands (done), prod-migrate 0003+0004 together, single deploy.
+**Prod deploy status:** commits through sn2 (f6b293b) are on master but NOT yet on prod (prod still at the earlier 5bae03b-era deploy). Batching prod Neon migrate (0003+0004) + one Vercel deploy after QT5.
 
 **Live design refinement (2026-07-03, user) — RESOLVED:** results grid on BOTH admin + participant should surface the "best" slot first/most-prominent. User chose: KEEP orientation (people=rows, dates=columns), move best day column(s) leftmost (NOT a transpose — Phase 05 D-09 preserved), and fix filters in same task. Shipped in 260703-r8r.
 
@@ -137,6 +140,7 @@ Review with `/gsd-capture --list`.
 | 260703-ppz | Compact horizontal wrapping candidate-date chips on admin echo + Book-it picker (layout only; radio/two-step-confirm semantics intact; 44px tap targets) | 2026-07-03 | 32669ce | [260703-ppz-compact-horizontal-candidate-date-lists-](./quick/260703-ppz-compact-horizontal-candidate-date-lists-/) |
 | 260703-r8r | ResultsGrid rework (admin + participant): best-day column(s) moved leftmost via single displayOptions array, best-day summary line, readability polish, and decoupled always-active filter (Best day / specific / All-dates modes; status works standalone). Covers 2 todos: redesign-results-display + fix-admin-filters | 2026-07-03 | 11cd350 | [260703-r8r-results-grid-rework-best-day-column-firs](./quick/260703-r8r-results-grid-rework-best-day-column-firs/) |
 | 260703-rqc | Optionally email the ADMIN link to the poll creator on creation — optional creatorEmail form field, best-effort after()+sendEmail send (mirrors Phase 04 pattern), new renderCreatorAdminLinkEmail template (sole legit /a/ admin-URL email, creator recipient). Email transient (never persisted, no migration); D-02 preserved | 2026-07-03 | 62a2c0f | [260703-rqc-email-admin-link-to-creator-on-poll-crea](./quick/260703-rqc-email-admin-link-to-creator-on-poll-crea/) |
+| 260703-sn2 | Subscribable multi-poll organizer calendar feed. NEW account-free organizer identity: `polls.organizer_id` (nullable, indexed — **migration 0003_organic_metal_master.sql**), minted/reused via httpOnly `lfg_organizer` cookie in createPoll so same-browser polls group. New `GET /feed/[organizerId]/calendar.ics` emits a multi-event VCALENDAR of that organizer's closed polls (unknown/empty → valid empty calendar, no 404 oracle, no token/participant leak); refactored calendar/links.ts to add `buildVcalendar` (buildIcs byte-identical); subscribe card on admin page. 211 tests green. **Prod Neon 0003 migrate + deploy deferred to batch with QT5.** | 2026-07-03 | f6b293b | [260703-sn2-subscribable-multi-poll-organizer-calend](./quick/260703-sn2-subscribable-multi-poll-organizer-calend/) |
 
 ## Deferred Items
 
