@@ -12,7 +12,10 @@
 // side effects. This makes an accidental one-click close structurally impossible.
 import { useActionState, useState } from "react";
 import { closePoll, type ClosePollState } from "@/lib/actions/close-poll";
-import { formatDateWithTime } from "@/lib/format-date";
+import {
+  formatDateWithTime,
+  formatDateWithTimeShort,
+} from "@/lib/format-date";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
@@ -62,31 +65,39 @@ export function BookItControl({
       <Card className="flex flex-col gap-3 p-6">
         <fieldset className="flex flex-col gap-2">
           <legend className="text-sm font-semibold">Candidate dates</legend>
-          <div className="flex flex-wrap gap-2">
-            {options.map((opt) => (
-              <label
-                key={opt.id}
-                className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-base has-[:checked]:border-foreground has-[:checked]:bg-muted"
-              >
-                <input
-                  type="radio"
-                  name="winningOptionId"
-                  value={opt.id}
-                  defaultChecked={opt.id === preselectedId}
-                  disabled={isPending}
-                  className="size-4"
-                />
-                {formatDateWithTime(
-                  opt.date,
-                  opt.startTime ? opt.startTime.slice(0, 5) : null,
-                )}
-                {bestIds.has(opt.id) ? (
-                  <span className="inline-flex items-center rounded-full border border-emerald-300 bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">
-                    Suggested
-                  </span>
-                ) : null}
-              </label>
-            ))}
+          {/* Denser responsive grid (it now lives in the narrower-then-full
+              right hero). CSS grid flows in options.map SOURCE (chronological)
+              order, so the chronologically-first-best preselection + Suggested
+              badge stay correct (edge TV3-11). Short visible label; FULL date in
+              title + aria-label for AT + hover. */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2">
+            {options.map((opt) => {
+              const hhmm = opt.startTime ? opt.startTime.slice(0, 5) : null;
+              const full = formatDateWithTime(opt.date, hhmm);
+              return (
+                <label
+                  key={opt.id}
+                  title={full}
+                  aria-label={full}
+                  className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-base has-[:checked]:border-foreground has-[:checked]:bg-muted"
+                >
+                  <input
+                    type="radio"
+                    name="winningOptionId"
+                    value={opt.id}
+                    defaultChecked={opt.id === preselectedId}
+                    disabled={isPending}
+                    className="size-4"
+                  />
+                  {formatDateWithTimeShort(opt.date, hhmm)}
+                  {bestIds.has(opt.id) ? (
+                    <span className="inline-flex items-center rounded-full border border-emerald-300 bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">
+                      Suggested
+                    </span>
+                  ) : null}
+                </label>
+              );
+            })}
           </div>
         </fieldset>
 
