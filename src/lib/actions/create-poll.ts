@@ -16,7 +16,7 @@
 
 import { z } from "zod";
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
 import { after } from "next/server";
 import { db } from "@/lib/db";
 import { polls, options } from "@/lib/db/schema";
@@ -136,6 +136,20 @@ export async function createPoll(
     return 0;
   });
 
+  // Organizer identity (LD-2 / EP-ORG-EMPTY). Read AFTER validation so a rejected
+  // submit stays cookie-free (mirrors the headers() email-hook placement below).
+  // NORMALIZE first: an empty or whitespace-only cookie is treated as ABSENT —
+  // NOT via `?? generateToken()`, because `??` does NOT treat the empty string ""
+  // as nullish and would store an empty organizer_id that the feed query could
+  // then group across unrelated polls. Compute organizerId ONCE, above the retry
+  // loop, so it is stable across any token-collision retry. Clearing cookies
+  // starts a fresh organizer identity — acceptable for the no-accounts model.
+  const cookieStore = await cookies();
+  const rawOrganizer = cookieStore.get("lfg_organizer")?.value;
+  const existingOrganizer =
+    rawOrganizer && rawOrganizer.trim() ? rawOrganizer : undefined;
+  const organizerId = existingOrganizer ?? generateToken();
+
   // Insert the poll, retrying on the astronomically-improbable token collision.
   // (No interactive transaction: neon-http in prod does not support callback
   // transactions; app-layer dedupe already guarantees the options insert below
@@ -148,7 +162,14 @@ export async function createPoll(
     try {
       const [poll] = await db
         .insert(polls)
-        .values({ title, description, location, participantUrlId, adminUrlId })
+        .values({
+          title,
+          description,
+          location,
+          participantUrlId,
+          adminUrlId,
+          organizerId,
+        })
         .returning({ id: polls.id });
       pollId = poll.id;
       break;
@@ -166,6 +187,24 @@ export async function createPoll(
       position: i,
     })),
   );
+
+  // Mint/refresh the organizer cookie whenever it was absent OR empty/whitespace
+  // (LD-2 / EP-ORG-EMPTY). When it was already present with a non-empty value we
+  // reuse it and do NOT re-set it. httpOnly + sameSite lax + secure-in-prod +
+  // path "/" mirrors the lfg_edit cookie discipline (T-sn2-06); it is a
+  // convenience continuity token, never an authorization credential. Set BEFORE
+  // redirect() (which throws) so the Set-Cookie header is emitted.
+  if (!existingOrganizer) {
+    cookieStore.set({
+      name: "lfg_organizer",
+      value: organizerId,
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+    });
+  }
 
   // Best-effort admin-link recovery email (260703-rqc / D-02). Fires ONLY when
   // the creator supplied an email. This block lives OUTSIDE the token-mint retry

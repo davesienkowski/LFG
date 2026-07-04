@@ -17,10 +17,19 @@ vi.mock("next/navigation", () => ({
   },
 }));
 
+// Module-level mutable cookie state driven by each test (mirrors the
+// submit-response.test.ts cookie-capture pattern). The outer-variable reference
+// inside the vi.mock factory is safe because the factory runs lazily on first
+// import. `organizerCookieValue` seeds the "already present" cookie; every
+// success path now calls cookies().set/get, so this mock is REQUIRED for the
+// pre-existing success tests to keep passing.
+let organizerCookieValue: string | undefined;
+const organizerCookieSets: Array<Record<string, unknown>> = [];
+
 // The best-effort creator admin-link hook resolves the base URL from request
 // headers before scheduling the send. A minimal stub is enough for the
-// deterministic run. These mocks are inert for the pre-existing success tests —
-// none pass creatorEmail, so the `if (creatorEmail)` guard skips headers()/after().
+// deterministic run. cookies() is also stubbed: get() returns the current
+// organizerCookieValue for "lfg_organizer", set() captures the options.
 vi.mock("next/headers", () => ({
   headers: async () => ({
     get: (name: string) =>
@@ -29,6 +38,15 @@ vi.mock("next/headers", () => ({
         : name === "x-forwarded-proto"
           ? "http"
           : null,
+  }),
+  cookies: async () => ({
+    get: (name: string) =>
+      name === "lfg_organizer" && organizerCookieValue !== undefined
+        ? { name, value: organizerCookieValue }
+        : undefined,
+    set: (opts: Record<string, unknown>) => {
+      organizerCookieSets.push(opts);
+    },
   }),
 }));
 
@@ -137,6 +155,8 @@ beforeAll(() => {
 
 beforeEach(() => {
   sendEmailMock.mockClear();
+  organizerCookieValue = undefined;
+  organizerCookieSets.length = 0;
 });
 
 afterAll(async () => {
@@ -343,5 +363,79 @@ describe("createPoll — success path", () => {
     const pb = await loadCreated(idB);
     expect(pa.poll.participantUrlId).not.toBe(pb.poll.participantUrlId);
     expect(pa.poll.adminUrlId).not.toBe(pb.poll.adminUrlId);
+  });
+});
+
+describe("createPoll — organizer identity (LD-2 / EP-ORG-EMPTY)", () => {
+  it("MINT: with no cookie, stores a fresh 21-char organizerId and sets the httpOnly lfg_organizer cookie", async () => {
+    // organizerCookieValue is undefined (reset in beforeEach) => absent.
+    const { redirectUrl } = await run(
+      fd({ title: "Mint", dates: datesJson([{ date: "2026-07-12" }]) }),
+    );
+    const adminUrlId = adminIdFromRedirect(redirectUrl);
+    const { poll } = await loadCreated(adminUrlId);
+
+    expect(poll.organizerId).toHaveLength(21);
+    const organizerSets = organizerCookieSets.filter(
+      (c) => c.name === "lfg_organizer",
+    );
+    expect(organizerSets).toHaveLength(1);
+    const set = organizerSets[0];
+    expect(set.value).toBe(poll.organizerId);
+    expect(set.httpOnly).toBe(true);
+    expect(set.sameSite).toBe("lax");
+    expect(set.path).toBe("/");
+    expect(set.maxAge).toBe(60 * 60 * 24 * 365);
+    // Test env is not production => secure false (works over localhost HTTP).
+    expect(set.secure).toBe(false);
+  });
+
+  it("REUSE: with a present non-empty cookie, reuses its value and does NOT re-set the cookie", async () => {
+    organizerCookieValue = "reuse-organizer-tok01"; // fixed 21-char token
+    const { redirectUrl } = await run(
+      fd({ title: "Reuse", dates: datesJson([{ date: "2026-07-12" }]) }),
+    );
+    const adminUrlId = adminIdFromRedirect(redirectUrl);
+    const { poll } = await loadCreated(adminUrlId);
+
+    expect(poll.organizerId).toBe("reuse-organizer-tok01");
+    expect(
+      organizerCookieSets.filter((c) => c.name === "lfg_organizer"),
+    ).toHaveLength(0);
+  });
+
+  it("SHARED: two createPoll calls under one present cookie produce two polls with the SAME organizerId", async () => {
+    organizerCookieValue = "shared-organizer-tok1"; // 21 chars, present
+    const first = await run(
+      fd({ title: "Shared A", dates: datesJson([{ date: "2026-07-12" }]) }),
+    );
+    const second = await run(
+      fd({ title: "Shared B", dates: datesJson([{ date: "2026-07-19" }]) }),
+    );
+    const idA = adminIdFromRedirect(first.redirectUrl);
+    const idB = adminIdFromRedirect(second.redirectUrl);
+    expect(idA).not.toBe(idB);
+    const pa = await loadCreated(idA);
+    const pb = await loadCreated(idB);
+    expect(pa.poll.organizerId).toBe("shared-organizer-tok1");
+    expect(pb.poll.organizerId).toBe("shared-organizer-tok1");
+    expect(pa.poll.organizerId).toBe(pb.poll.organizerId);
+  });
+
+  it("EP-ORG-EMPTY: an empty-string cookie is treated as ABSENT — mints a fresh NON-EMPTY organizerId (guards the ??-accepts-\"\" footgun)", async () => {
+    organizerCookieValue = ""; // present but empty
+    const { redirectUrl } = await run(
+      fd({ title: "Empty Cookie", dates: datesJson([{ date: "2026-07-12" }]) }),
+    );
+    const adminUrlId = adminIdFromRedirect(redirectUrl);
+    const { poll } = await loadCreated(adminUrlId);
+
+    expect(poll.organizerId).not.toBe("");
+    expect(poll.organizerId).toHaveLength(21);
+    const organizerSets = organizerCookieSets.filter(
+      (c) => c.name === "lfg_organizer",
+    );
+    expect(organizerSets).toHaveLength(1);
+    expect(organizerSets[0].value).toBe(poll.organizerId);
   });
 });
