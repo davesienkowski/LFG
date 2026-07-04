@@ -15,6 +15,7 @@
 // but carries the FULL date in title + aria-label (a11y + hover, TV3-08).
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
+import { ChevronRight } from "lucide-react";
 import {
   getPollWithWinningOption,
   getOptionsForPoll,
@@ -130,29 +131,41 @@ export default async function AdminPage({
       </div>
 
       {/* Condensed candidate-date echo — short visible label, FULL date in
-            title + aria-label; month-grouped only when the set spans >1 month. */}
-      {multiMonth ? (
-        <div className="flex flex-col gap-4">
-          {monthGroups.map((group) => (
-            <section key={group.key} className="flex flex-col gap-2">
-              <h3 className="text-sm font-semibold text-muted-foreground">
-                {formatMonthYear(group.options[0].date)}
-              </h3>
-              <ul className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
-                {group.options.map((opt) => (
-                  <CandidateChip key={opt.id} opt={opt} />
-                ))}
-              </ul>
-            </section>
-          ))}
-        </div>
-      ) : (
-        <ul className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
-          {options.map((opt) => (
-            <CandidateChip key={opt.id} opt={opt} />
-          ))}
-        </ul>
-      )}
+            title + aria-label; month-grouped only when the set spans >1 month.
+            Wrapped in a native <details> closed by default (no client JS): the
+            summary toggles the chip list on click/Enter with SR disclosure +
+            keyboard focus for free. Breakpoint-agnostic (desktop + mobile). */}
+      <details className="group flex flex-col gap-2">
+        <summary className="flex min-h-11 cursor-pointer select-none list-none items-center gap-2 text-sm font-semibold [&::-webkit-details-marker]:hidden">
+          <ChevronRight
+            aria-hidden
+            className="size-4 shrink-0 transition-transform group-open:rotate-90"
+          />
+          Candidate dates ({options.length})
+        </summary>
+        {multiMonth ? (
+          <div className="flex flex-col gap-4">
+            {monthGroups.map((group) => (
+              <section key={group.key} className="flex flex-col gap-2">
+                <h3 className="text-sm font-semibold text-muted-foreground">
+                  {formatMonthYear(group.options[0].date)}
+                </h3>
+                <ul className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+                  {group.options.map((opt) => (
+                    <CandidateChip key={opt.id} opt={opt} />
+                  ))}
+                </ul>
+              </section>
+            ))}
+          </div>
+        ) : (
+          <ul className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+            {options.map((opt) => (
+              <CandidateChip key={opt.id} opt={opt} />
+            ))}
+          </ul>
+        )}
+      </details>
 
       {/* Results (DASH-01..05) — full-width hero directly under the header.
           min-w-0 lets the wide table scroll inside its own overflow-x-auto
@@ -165,6 +178,43 @@ export default async function AdminPage({
           results={results}
         />
       </Card>
+
+      {/* Book it (FNL-01/02/03). Renders EXACTLY ONE of {picker, finalized card}
+          based on poll.status — never both, never neither. BookItControl already
+          emits its own Card, so the open-poll branch is NOT double-wrapped
+          (edge TV3-10). */}
+      {isClosed ? (
+        <Card className="flex flex-col gap-2 p-6 border-emerald-200 bg-emerald-50/40">
+          <h2 className="text-2xl font-semibold leading-snug">
+            Poll finalized
+          </h2>
+          <p className="text-base text-muted-foreground">
+            {poll.winningDate
+              ? `${formatDateWithTime(
+                  poll.winningDate,
+                  poll.winningStartTime
+                    ? poll.winningStartTime.slice(0, 5)
+                    : null,
+                )} is booked. `
+              : ""}
+            {/* Best-effort framing: "should get", NOT "was notified" (D-09). */}
+            Everyone who voted and gave an email should get a confirmation.
+          </p>
+        </Card>
+      ) : (
+        <div className="flex flex-col gap-4">
+          <h2 className="text-2xl font-semibold leading-snug">Book it</h2>
+          <p className="text-base text-muted-foreground">
+            Pick the date you&apos;re going with. This closes voting for
+            everyone.
+          </p>
+          <BookItControl
+            adminUrlId={poll.adminUrlId}
+            options={options}
+            results={results}
+          />
+        </div>
+      )}
 
       {/* Share your poll + invite ("the other stuff"), below the results. */}
       <div className="flex flex-col gap-4">
@@ -258,43 +308,6 @@ export default async function AdminPage({
           )
         ) : null}
       </div>
-
-      {/* Book it (FNL-01/02/03). Renders EXACTLY ONE of {picker, finalized card}
-          based on poll.status — never both, never neither. BookItControl already
-          emits its own Card, so the open-poll branch is NOT double-wrapped
-          (edge TV3-10). */}
-      {isClosed ? (
-        <Card className="flex flex-col gap-2 p-6 border-emerald-200 bg-emerald-50/40">
-          <h2 className="text-2xl font-semibold leading-snug">
-            Poll finalized
-          </h2>
-          <p className="text-base text-muted-foreground">
-            {poll.winningDate
-              ? `${formatDateWithTime(
-                  poll.winningDate,
-                  poll.winningStartTime
-                    ? poll.winningStartTime.slice(0, 5)
-                    : null,
-                )} is booked. `
-              : ""}
-            {/* Best-effort framing: "should get", NOT "was notified" (D-09). */}
-            Everyone who voted and gave an email should get a confirmation.
-          </p>
-        </Card>
-      ) : (
-        <div className="flex flex-col gap-4">
-          <h2 className="text-2xl font-semibold leading-snug">Book it</h2>
-          <p className="text-base text-muted-foreground">
-            Pick the date you&apos;re going with. This closes voting for
-            everyone.
-          </p>
-          <BookItControl
-            adminUrlId={poll.adminUrlId}
-            options={options}
-            results={results}
-          />
-        </div>
-      )}
     </main>
   );
 }
