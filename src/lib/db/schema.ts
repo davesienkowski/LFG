@@ -21,7 +21,9 @@ import {
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 
-export const polls = pgTable("polls", {
+export const polls = pgTable(
+  "polls",
+  {
   id: uuid("id").primaryKey().defaultRandom(),
   participantUrlId: text("participant_url_id").notNull().unique(),
   adminUrlId: text("admin_url_id").notNull().unique(),
@@ -47,10 +49,18 @@ export const polls = pgTable("polls", {
     (): AnyPgColumn => options.id,
     { onDelete: "set null" },
   ),
+  // Organizer identity (LD-1). NULLABLE text — a browser's polls group under one
+  // unguessable `lfg_organizer` cookie token so the calendar feed can list every
+  // finalized poll for that organizer. NOT unique: many polls deliberately share
+  // one organizer token (that shared grouping IS the feed). Legacy polls created
+  // before this column simply have NULL and never appear in any feed.
+  organizerId: text("organizer_id"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
+  },
+  (t) => [index("polls_organizer_id_idx").on(t.organizerId)],
+);
 
 export const options = pgTable(
   "options",

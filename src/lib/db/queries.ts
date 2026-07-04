@@ -234,6 +234,9 @@ export async function getPollWithWinningOption(adminUrlId: string) {
       location: polls.location,
       status: polls.status,
       winningOptionId: polls.winningOptionId,
+      // organizerId (LD-4) so the admin page can decide whether to render the
+      // subscribe card and build the feed URL. Null for legacy polls (card hidden).
+      organizerId: polls.organizerId,
       createdAt: polls.createdAt,
       winningDate: options.date,
       winningStartTime: options.startTime,
@@ -243,4 +246,45 @@ export async function getPollWithWinningOption(adminUrlId: string) {
     .where(eq(polls.adminUrlId, adminUrlId))
     .limit(1);
   return row ?? null;
+}
+
+/**
+ * The organizer calendar-feed read (LD-4 / T-sn2-01). Returns every FINALIZED
+ * poll (status "closed" AND a non-null winning option) for one organizer token,
+ * ordered by winning date asc — then start_time asc NULLS FIRST, then a STABLE
+ * `polls.id` tiebreaker so two finalized polls sharing the same date+time have a
+ * deterministic feed order (EP-FEED-ORDER; prevents non-deterministic ICS output
+ * and flaky tests).
+ *
+ * Selects PARTICIPANT-SAFE columns ONLY — id/title/description/winningOptionId
+ * plus the winning option's date/startTime. It DELIBERATELY OMITS admin_url_id,
+ * participant_url_id, edit_token, participant names/emails, and votes: the feed
+ * is a public bearer-token surface and must leak none of them (LD-7 / T-sn2-01).
+ * An OPEN poll (winning_option_id NULL) is excluded by isNotNull. An unknown
+ * organizerId matches no rows → Drizzle returns [] (no throw, no oracle).
+ */
+export async function getFinalizedPollsByOrganizerId(organizerId: string) {
+  return db
+    .select({
+      id: polls.id,
+      title: polls.title,
+      description: polls.description,
+      winningOptionId: polls.winningOptionId,
+      winningDate: options.date,
+      winningStartTime: options.startTime,
+    })
+    .from(polls)
+    .leftJoin(options, eq(options.id, polls.winningOptionId))
+    .where(
+      and(
+        eq(polls.organizerId, organizerId),
+        eq(polls.status, "closed"),
+        isNotNull(polls.winningOptionId),
+      ),
+    )
+    .orderBy(
+      asc(options.date),
+      sql`${options.startTime} asc nulls first`,
+      asc(polls.id),
+    );
 }

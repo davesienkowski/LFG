@@ -16,6 +16,7 @@ import { inArray } from "drizzle-orm";
 import {
   getResultsForPoll,
   getVoterEmailsForPoll,
+  getFinalizedPollsByOrganizerId,
 } from "@/lib/db/queries";
 import { db } from "@/lib/db";
 import { polls, options, participants, votes } from "@/lib/db/schema";
@@ -228,5 +229,136 @@ describe("getVoterEmailsForPoll", () => {
     });
     const voters = await getVoterEmailsForPoll(poll.id);
     expect(voters).toEqual([]);
+  });
+});
+
+// getFinalizedPollsByOrganizerId (LD-4 / LD-7 / EP-FEED-ORDER). Seeds a fresh
+// organizer token and, under it, two CLOSED polls with distinct winning dates
+// plus one OPEN poll (winning_option_id null) that must be excluded. A canary
+// email on a participant under one closed poll makes the no-leak assertion
+// non-vacuous.
+async function seedFinalizedPoll(
+  organizerId: string,
+  winningDate: string,
+  winningStartTime: string | null,
+  opts?: { open?: boolean; canaryEmail?: string },
+) {
+  const [poll] = await db
+    .insert(polls)
+    .values({
+      title: "Finalized Feed Poll",
+      description: "Bring dice",
+      participantUrlId: generateToken(),
+      adminUrlId: generateToken(),
+      organizerId,
+      status: opts?.open ? "open" : "closed",
+    })
+    .returning({ id: polls.id });
+  createdPollIds.push(poll.id);
+
+  const [opt] = await db
+    .insert(options)
+    .values({
+      pollId: poll.id,
+      date: winningDate,
+      startTime: winningStartTime,
+      position: 0,
+    })
+    .returning({ id: options.id });
+
+  // An OPEN poll keeps winning_option_id NULL (must be excluded); a CLOSED poll
+  // wires the winner.
+  if (!opts?.open) {
+    await db
+      .update(polls)
+      .set({ winningOptionId: opt.id })
+      .where(inArray(polls.id, [poll.id]));
+  }
+
+  if (opts?.canaryEmail) {
+    await db.insert(participants).values({
+      pollId: poll.id,
+      name: "Canary Voter",
+      email: opts.canaryEmail,
+      editToken: generateToken(),
+    });
+  }
+
+  return { pollId: poll.id, winningOptionId: opt.id };
+}
+
+describe("getFinalizedPollsByOrganizerId", () => {
+  const FEED_CANARY = "feed-canary@example.com";
+
+  it("returns ONLY finalized (closed + winner) polls for the organizer, ordered by winning date asc, excluding open polls", async () => {
+    const organizerId = generateToken();
+    // Seed OUT of date order to prove the ORDER BY (later date first).
+    const later = await seedFinalizedPoll(organizerId, "2026-10-20", "18:00", {
+      canaryEmail: FEED_CANARY,
+    });
+    const earlier = await seedFinalizedPoll(organizerId, "2026-10-10", null);
+    // An OPEN poll under the SAME organizer must be excluded.
+    await seedFinalizedPoll(organizerId, "2026-10-15", null, { open: true });
+
+    const result = await getFinalizedPollsByOrganizerId(organizerId);
+
+    expect(result.map((p) => p.id)).toEqual([earlier.pollId, later.pollId]);
+    expect(result.map((p) => p.winningDate)).toEqual([
+      "2026-10-10",
+      "2026-10-20",
+    ]);
+  });
+
+  it("returns objects whose own keys are EXACTLY id/title/description/winningOptionId/winningDate/winningStartTime", async () => {
+    const organizerId = generateToken();
+    await seedFinalizedPoll(organizerId, "2026-11-01", null);
+    const result = await getFinalizedPollsByOrganizerId(organizerId);
+    expect(result.length).toBeGreaterThan(0);
+    for (const p of result) {
+      expect(Object.keys(p).sort()).toEqual([
+        "description",
+        "id",
+        "title",
+        "winningDate",
+        "winningOptionId",
+        "winningStartTime",
+      ]);
+    }
+  });
+
+  it("leaks no email/token substrings into the serialized shape (non-vacuous, LD-7)", async () => {
+    const organizerId = generateToken();
+    await seedFinalizedPoll(organizerId, "2026-11-05", null, {
+      canaryEmail: FEED_CANARY,
+    });
+    const result = await getFinalizedPollsByOrganizerId(organizerId);
+    const serialized = JSON.stringify(result);
+    // The canary email WAS stored under this organizer, so absence is meaningful.
+    expect(serialized).not.toContain(FEED_CANARY);
+    expect(serialized).not.toContain("email");
+    expect(serialized).not.toContain("editToken");
+    expect(serialized).not.toContain("edit_token");
+    expect(serialized).not.toContain("adminUrlId");
+    expect(serialized).not.toContain("admin_url_id");
+    expect(serialized).not.toContain("participantUrlId");
+    expect(serialized).not.toContain("participant_url_id");
+  });
+
+  it("orders two finalized polls sharing the same date+time deterministically (stable polls.id tiebreaker, EP-FEED-ORDER)", async () => {
+    const organizerId = generateToken();
+    const a = await seedFinalizedPoll(organizerId, "2026-12-01", "19:00");
+    const b = await seedFinalizedPoll(organizerId, "2026-12-01", "19:00");
+    const expectedOrder = [a.pollId, b.pollId].sort();
+
+    // Two independent calls must return the SAME order (deterministic).
+    const first = await getFinalizedPollsByOrganizerId(organizerId);
+    const second = await getFinalizedPollsByOrganizerId(organizerId);
+    expect(first.map((p) => p.id)).toEqual(expectedOrder);
+    expect(second.map((p) => p.id)).toEqual(expectedOrder);
+  });
+
+  it("returns [] for an unknown organizerId", async () => {
+    const result = await getFinalizedPollsByOrganizerId(generateToken());
+    expect(result).toEqual([]);
   });
 });
