@@ -13,6 +13,7 @@
 // on the date-only value. DB returns start_time as 'HH:MM:SS'; we slice to
 // 'HH:MM' for the formatter. The candidate-date echo shows the CONDENSED label
 // but carries the FULL date in title + aria-label (a11y + hover, TV3-08).
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { ChevronRight } from "lucide-react";
@@ -25,8 +26,6 @@ import {
   resolveBaseUrl,
   buildParticipantUrl,
   buildAdminUrl,
-  buildOrganizerFeedUrl,
-  buildOrganizerWebcalUrl,
 } from "@/lib/urls";
 import {
   formatDateWithTime,
@@ -39,6 +38,7 @@ import { CopyLinkButton } from "@/components/copy-link-button";
 import { ResultsGrid } from "@/components/results-grid";
 import { InviteByEmailForm } from "@/components/invite-by-email-form";
 import { BookItControl } from "@/components/book-it-control";
+import { SubscribeCard } from "@/components/subscribe-card";
 import { Card } from "@/components/ui/card";
 
 type AdminOption = { id: string; date: string; startTime: string | null };
@@ -121,6 +121,24 @@ export default async function AdminPage({
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-12">
+      {/* Entry links (MYP-06): navigation back to the organizer's dashboard and
+          to create another poll. Small muted text links — navigation, not
+          primary buttons. Both are static paths (no token embedded, T-06-09). */}
+      <nav className="flex items-center gap-4 text-sm">
+        <Link
+          href="/polls"
+          className="text-muted-foreground hover:text-foreground hover:underline"
+        >
+          Your polls
+        </Link>
+        <Link
+          href="/"
+          className="text-muted-foreground hover:text-foreground hover:underline"
+        >
+          Create a poll
+        </Link>
+      </nav>
+
       {/* Header: poll title + status pill + location/description (TBD). */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-3">
@@ -280,34 +298,7 @@ export default async function AdminPage({
               exposes only booked dates/titles (no participant data), so it carries
               NO amber border and NO "Keep private" badge (LD-7 / T-sn2-04). */}
         {poll.organizerId ? (
-          <Card className="flex flex-col gap-2 p-6">
-            <span className="text-sm font-semibold">
-              Subscribe to your booked-dates calendar
-            </span>
-            <span className="text-base text-muted-foreground">
-              Add this once to your phone/desktop calendar; every poll you
-              finalize appears automatically.
-            </span>
-            <span className="text-sm text-muted-foreground">
-              This is a group-shareable link — it shows only booked dates and
-              poll titles, never any participant data.
-            </span>
-            <span className="font-mono text-sm truncate">
-              {buildOrganizerFeedUrl(base, poll.organizerId)}
-            </span>
-            <div className="flex flex-wrap items-center gap-2">
-              <a
-                href={buildOrganizerWebcalUrl(base, poll.organizerId)}
-                className="inline-flex items-center rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted"
-              >
-                Subscribe in calendar
-              </a>
-              <CopyLinkButton
-                url={buildOrganizerFeedUrl(base, poll.organizerId)}
-                label="Copy calendar link"
-              />
-            </div>
-          </Card>
+          <SubscribeCard base={base} organizerId={poll.organizerId} />
         ) : null}
 
         {/* Invite by email (MAIL-01/02/03). Hidden on a closed poll. When email
