@@ -8,7 +8,7 @@
 //    pages render oldest-to-newest without re-sorting (POLL-03). Dates stay
 //    'YYYY-MM-DD' strings end-to-end — never a JS Date (D-11 / P3).
 import { db } from "@/lib/db";
-import { polls, options, participants, votes } from "@/lib/db/schema";
+import { polls, options, participants, votes, invitations } from "@/lib/db/schema";
 import { eq, asc, desc, sql, and, isNotNull } from "drizzle-orm";
 
 /** Full poll row by admin token (admin route is the management surface). */
@@ -344,6 +344,46 @@ export async function getFinalizedPollsByOrganizerId(organizerId: string) {
  * organizerId)` predicate is a SQL `= $1` that never matches a NULL organizer_id
  * (MYP-07 / PROH-1), so a null-organizer poll can never appear.
  */
+/**
+ * The admin-only respondent-tracking read (RESP-01). Returns ONE row per
+ * invitation on the poll — the invited `email` (as originally entered) plus a
+ * `responded` flag — ordered by `invitedAt` asc (stable send order) with a
+ * STABLE `invitations.id` tiebreaker so two invitations sharing an `invited_at`
+ * have a deterministic order across repeated calls (prevents flaky ordering).
+ *
+ * `responded` is a correlated EXISTS: true iff SOME participant ON THE SAME POLL
+ * has a case-insensitively matching email. The subquery is correlated to
+ * `invitations.poll_id` (CROSS-POLL ISOLATION, T-07-10) — a same-email voter on
+ * a DIFFERENT poll can never flip this poll's invitation to responded. Because
+ * `participants.email` is nullable and `lower(NULL) = lower(x)` is NULL (never
+ * true), a participant with no email never matches — the correct, accepted
+ * limitation (CONTEXT RESP-01).
+ *
+ * This is a NEW admin-only read: it deliberately RETURNS invitation emails (the
+ * organizer needs to SEE who was invited), but — exactly like getVoterEmailsForPoll
+ * / getPollAdminNotifyTargets — it is NEVER called by any participant-facing
+ * route, and no participant-facing query selects the invitations table (D-09
+ * no-leak). No throw / empty-array on miss, matching the other read helpers here.
+ */
+export async function getInvitationTrackingForPoll(
+  pollId: string,
+): Promise<{ email: string; responded: boolean }[]> {
+  return db
+    .select({
+      email: invitations.email,
+      // Correlated EXISTS written with EXPLICIT literal table qualifiers rather
+      // than drizzle `${column}` interpolation: this query's main FROM has a
+      // SINGLE table (invitations), so drizzle omits ALL column qualifiers when
+      // rendering, which would collapse the correlation to `poll_id = poll_id`
+      // (trivially true). Hardcoding `p.*` (subquery) vs `invitations.*` (outer)
+      // keeps the correlation — and the cross-poll isolation — unambiguous.
+      responded: sql<boolean>`exists (select 1 from participants p where p.poll_id = invitations.poll_id and lower(p.email) = lower(invitations.email))`,
+    })
+    .from(invitations)
+    .where(eq(invitations.pollId, pollId))
+    .orderBy(asc(invitations.invitedAt), asc(invitations.id));
+}
+
 export async function getPollsByOrganizerId(organizerId: string) {
   // MYP-05: empty/whitespace token is ABSENT, never a wildcard — no query.
   if (!organizerId || !organizerId.trim()) return [];

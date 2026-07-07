@@ -19,9 +19,10 @@ import {
   getFinalizedPollsByOrganizerId,
   getPollsByOrganizerId,
   getPollAdminNotifyTargets,
+  getInvitationTrackingForPoll,
 } from "@/lib/db/queries";
 import { db } from "@/lib/db";
-import { polls, options, participants, votes } from "@/lib/db/schema";
+import { polls, options, participants, votes, invitations } from "@/lib/db/schema";
 import { generateToken } from "@/lib/tokens";
 
 const CANARY_EMAIL = "leak-canary@example.com";
@@ -646,5 +647,157 @@ describe("getPollAdminNotifyTargets", () => {
       "00000000-0000-0000-0000-000000000000",
     );
     expect(target).toBeNull();
+  });
+});
+
+// getInvitationTrackingForPoll (RESP-01 / T-07-10). The admin-only respondent
+// read: one row per invitation with a `responded` flag = some participant on the
+// SAME poll has a case-insensitively matching email. Seeds a single poll with the
+// exact/case-differ/no-match/null-email matrix plus a SECOND poll proving
+// cross-poll isolation.
+describe("getInvitationTrackingForPoll", () => {
+  async function seedTrackingPoll() {
+    const [poll] = await db
+      .insert(polls)
+      .values({
+        title: "Tracking Poll",
+        participantUrlId: generateToken(),
+        adminUrlId: generateToken(),
+      })
+      .returning({ id: polls.id });
+    createdPollIds.push(poll.id);
+
+    // The SECOND poll — used only for the cross-poll isolation case. It has a
+    // participant whose email equals invitation (iii)'s address; that MUST NOT
+    // mark poll-one's invitation (iii) responded.
+    const [otherPoll] = await db
+      .insert(polls)
+      .values({
+        title: "Other Poll",
+        participantUrlId: generateToken(),
+        adminUrlId: generateToken(),
+      })
+      .returning({ id: polls.id });
+    createdPollIds.push(otherPoll.id);
+
+    // Participants on poll-one:
+    //  - "exact@example.com" matches invitation (i) EXACTLY.
+    //  - "Case@Example.com" matches invitation (ii) by DIFFERENT casing.
+    //  - a NULL-email participant (must never match anything).
+    await db.insert(participants).values([
+      {
+        pollId: poll.id,
+        name: "Exact Voter",
+        email: "exact@example.com",
+        editToken: generateToken(),
+      },
+      {
+        pollId: poll.id,
+        name: "Case Voter",
+        email: "Case@Example.com",
+        editToken: generateToken(),
+      },
+      {
+        pollId: poll.id,
+        name: "No Email Voter",
+        email: null,
+        editToken: generateToken(),
+      },
+    ]);
+
+    // A participant on the OTHER poll whose email equals invitation (iii)'s
+    // address — the cross-poll isolation trap.
+    await db.insert(participants).values({
+      pollId: otherPoll.id,
+      name: "Cross Poll Voter",
+      email: "nomatch@example.com",
+      editToken: generateToken(),
+    });
+
+    // Invitations on poll-one, inserted in a deterministic invited_at order
+    // (sequential inserts => strictly increasing invited_at):
+    //  (i)   exact-case match          -> responded=true
+    //  (ii)  different-casing match     -> responded=true
+    //  (iii) no matching participant    -> responded=false (cross-poll trap)
+    //  (iv)  matches only a NULL-email  -> responded=false
+    const [inv1] = await db
+      .insert(invitations)
+      .values({ pollId: poll.id, email: "exact@example.com" })
+      .returning({ id: invitations.id });
+    const [inv2] = await db
+      .insert(invitations)
+      .values({ pollId: poll.id, email: "case@example.com" })
+      .returning({ id: invitations.id });
+    const [inv3] = await db
+      .insert(invitations)
+      .values({ pollId: poll.id, email: "nomatch@example.com" })
+      .returning({ id: invitations.id });
+    const [inv4] = await db
+      .insert(invitations)
+      .values({ pollId: poll.id, email: "nulled@example.com" })
+      .returning({ id: invitations.id });
+
+    return {
+      pollId: poll.id,
+      otherPollId: otherPoll.id,
+      invIds: [inv1.id, inv2.id, inv3.id, inv4.id],
+    };
+  }
+
+  it("labels each invitation responded via a case-insensitive same-poll match, ordered by invited_at", async () => {
+    const seed = await seedTrackingPoll();
+    const rows = await getInvitationTrackingForPoll(seed.pollId);
+
+    // One row per invitation, in invited_at (send) order.
+    expect(rows.map((r) => r.email)).toEqual([
+      "exact@example.com",
+      "case@example.com",
+      "nomatch@example.com",
+      "nulled@example.com",
+    ]);
+    expect(rows.map((r) => r.responded)).toEqual([
+      true, // (i)   exact-case match
+      true, // (ii)  different-casing match
+      false, // (iii) no matching participant on THIS poll
+      false, // (iv)  only a NULL-email participant exists
+    ]);
+  });
+
+  it("is cross-poll isolated: a same-email voter on a DIFFERENT poll never marks this poll's invitation responded (T-07-10)", async () => {
+    const seed = await seedTrackingPoll();
+
+    // Poll-one's invitation (iii) "nomatch@example.com" has NO matching
+    // participant on poll-one, but the OTHER poll DOES have one — it must stay
+    // responded=false here.
+    const rows = await getInvitationTrackingForPoll(seed.pollId);
+    const iii = rows.find((r) => r.email === "nomatch@example.com")!;
+    expect(iii.responded).toBe(false);
+
+    // And the other poll has no invitations at all -> empty.
+    const otherRows = await getInvitationTrackingForPoll(seed.otherPollId);
+    expect(otherRows).toEqual([]);
+  });
+
+  it("returns [] for a poll with no invitations", async () => {
+    const [poll] = await db
+      .insert(polls)
+      .values({
+        title: "No Invites Poll",
+        participantUrlId: generateToken(),
+        adminUrlId: generateToken(),
+      })
+      .returning({ id: polls.id });
+    createdPollIds.push(poll.id);
+    expect(await getInvitationTrackingForPoll(poll.id)).toEqual([]);
+  });
+
+  it("returns rows whose own keys are EXACTLY email/responded (structural)", async () => {
+    const seed = await seedTrackingPoll();
+    const rows = await getInvitationTrackingForPoll(seed.pollId);
+    expect(rows.length).toBeGreaterThan(0);
+    for (const r of rows) {
+      expect(Object.keys(r).sort()).toEqual(["email", "responded"]);
+      expect(typeof r.responded).toBe("boolean");
+    }
   });
 });
