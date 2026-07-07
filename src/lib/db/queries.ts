@@ -195,6 +195,33 @@ export async function getResultsForPoll(pollId: string) {
 }
 
 /**
+ * The single organizer participant row for a poll (ORG-01 / LOCKED 6). Returns
+ * the `{ id, name }` of the one `is_organizer = true` participant, or null when
+ * the organizer has not added their own availability yet. This is the
+ * insert-vs-update discriminator for saveOrganizerAvailability: null => INSERT a
+ * fresh organizer row; a hit => UPDATE that same row's name and upsert its votes
+ * on the returned id (the at-most-one enforcement, no DB constraint).
+ *
+ * Selects PARTICIPANT-SAFE columns ONLY — `id`/`name`. It DELIBERATELY OMITS
+ * `email` (the organizer row has none anyway) and `edit_token` (never needs to
+ * flow back into a rendered payload), mirroring the no-leak column discipline of
+ * the other read helpers here. `limit(1)` is defensive: the upsert action keeps
+ * at most one such row, but the read never assumes more. No throw / null on miss.
+ */
+export async function getOrganizerParticipant(
+  pollId: string,
+): Promise<{ id: string; name: string } | null> {
+  const [row] = await db
+    .select({ id: participants.id, name: participants.name })
+    .from(participants)
+    .where(
+      and(eq(participants.pollId, pollId), eq(participants.isOrganizer, true)),
+    )
+    .limit(1);
+  return row ?? null;
+}
+
+/**
  * The finalization-notify target (FNL-03 / T-04-08). Returns `{ name, email }`
  * for EVERY participant of this poll that has a stored email — voters without an
  * email are excluded by the `email IS NOT NULL` predicate, so closePoll simply
