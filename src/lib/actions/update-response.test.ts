@@ -82,6 +82,7 @@ async function seedPoll(opts?: {
   status?: string;
   dates?: Array<{ date: string; startTime?: string | null }>;
   creatorEmail?: string | null;
+  deadline?: Date | null;
 }): Promise<{
   pollId: string;
   participantUrlId: string;
@@ -98,6 +99,7 @@ async function seedPoll(opts?: {
       adminUrlId,
       status: opts?.status ?? "open",
       creatorEmail: opts?.creatorEmail ?? null,
+      deadline: opts?.deadline ?? null,
     })
     .returning({ id: polls.id });
   const dates = opts?.dates ?? [
@@ -370,6 +372,29 @@ describe("updateResponse — status guard", () => {
         participantUrlId,
         editToken: p.editToken,
         name: "Late",
+        votes: votesJson([{ optionId: optionIds[0], state: "no" }]),
+      }),
+    );
+    expect(redirectUrl).toBeNull();
+    expect(state?.errors?._form?.[0]).toBe("Voting is closed for this poll.");
+    const pStates = stateByOption(await votesFor(p.participantId));
+    expect(pStates[optionIds[0]]).toBe("yes");
+  });
+
+  it("rejects an edit on an OPEN poll whose deadline has PASSED and changes no rows (LOCKED 4)", async () => {
+    const { pollId, participantUrlId, optionIds } = await seedPoll({
+      status: "open",
+      deadline: new Date(Date.now() - 60 * 60 * 1000),
+    });
+    const p = await seedParticipant(pollId, optionIds, {
+      [optionIds[0]]: "yes",
+    });
+
+    const { state, redirectUrl } = await run(
+      fd({
+        participantUrlId,
+        editToken: p.editToken,
+        name: "Stale",
         votes: votesJson([{ optionId: optionIds[0], state: "no" }]),
       }),
     );

@@ -85,6 +85,7 @@ async function seedPoll(opts?: {
   status?: string;
   dates?: Array<{ date: string; startTime?: string | null }>;
   creatorEmail?: string | null;
+  deadline?: Date | null;
 }): Promise<{
   pollId: string;
   participantUrlId: string;
@@ -101,6 +102,7 @@ async function seedPoll(opts?: {
       adminUrlId,
       status: opts?.status ?? "open",
       creatorEmail: opts?.creatorEmail ?? null,
+      deadline: opts?.deadline ?? null,
     })
     .returning({ id: polls.id });
   const dates = opts?.dates ?? [
@@ -391,6 +393,23 @@ describe("submitResponse — status guard & unknown token", () => {
       fd({
         participantUrlId,
         name: "Late",
+        votes: votesJson([{ optionId: optionIds[0], state: "yes" }]),
+      }),
+    );
+    expect(redirectUrl).toBeNull();
+    expect(state?.errors?._form?.[0]).toBe("Voting is closed for this poll.");
+    expect(await participantsFor(pollId)).toHaveLength(0);
+  });
+
+  it("rejects a write on an OPEN poll whose deadline has PASSED and creates zero rows (LOCKED 4)", async () => {
+    const { pollId, participantUrlId, optionIds } = await seedPoll({
+      status: "open",
+      deadline: new Date(Date.now() - 60 * 60 * 1000),
+    });
+    const { state, redirectUrl } = await run(
+      fd({
+        participantUrlId,
+        name: "Stale",
         votes: votesJson([{ optionId: optionIds[0], state: "yes" }]),
       }),
     );
