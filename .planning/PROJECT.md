@@ -1,8 +1,12 @@
 # Looking For Group (LFG)
 
+## Current State
+
+**Shipped v1.0 MVP (2026-07-07)** — live on Vercel free tier + Neon, with all 30 v1 requirements complete and verified. The full happy path works end-to-end in production: create poll → (optionally email) invite → account-free three-state vote → admin results grid + best-day → "Book it" → confirmation emails. Free-tier email is enabled via Gmail SMTP.
+
 ## What This Is
 
-A free, self-hostable clone of Doodle.com's "Group Poll" feature, focused on the single use case of helping a group agree on which day(s) to meet. The creator proposes a set of candidate dates, sends participants a link (by email), and each participant marks every date as **Available**, **Tentative (if-need-be)**, or **Not available**. A live results dashboard shows everyone's choices in a grid and surfaces the best day(s). Built for a Dungeons & Dragons group to schedule game sessions without paying Doodle's subscription.
+A free, self-hostable clone of Doodle.com's "Group Poll" feature, focused on the single use case of helping a group agree on which day(s) to meet. The creator proposes a set of candidate dates, sends participants a link (by email), and each participant marks every date as **Available**, **Tentative (if-need-be)**, or **Not available**. A live results dashboard shows everyone's choices in a grid and surfaces the best day(s), and the organizer finalizes with "Book it". Built for a Dungeons & Dragons group to schedule game sessions without paying Doodle's subscription.
 
 ## Core Value
 
@@ -22,12 +26,16 @@ A poll creator can propose candidate dates, get participants to mark their avail
 - [x] Participants can return and edit their own response — *Validated in Phase 2 (VOTE-05/06; token-verified ownership + same-device auto-load)*
 - [x] Results dashboard shows a grid of participants × dates with their selections — *Validated in Phase 3 (DASH-01/02/03; admin-only, participant-safe read)*
 - [x] Dashboard highlights the best day(s) and supports sorting/filtering by who is available / tentative / not available — *Validated in Phase 3 (DASH-04/05)*
+- [x] System can email participants an invitation containing the poll link — *Validated in Phase 4 (MAIL-01..03; env-switched sendEmail seam, copy-link fallback, live Gmail SMTP in prod)*
+- [x] Organizer can finalize on the winning date ("Book it") and every voter gets a confirmation email — *Validated in Phase 4 (FNL-01..03; two-step confirm closes the poll)*
+- [x] Accessible, responsive UI across all screens (WCAG radiogroup vote matrix, mobile sticky footers) — *Validated in Phase 5 (D-01..D-10; behavior-preserving redesign)*
+- [x] Organizer "Your polls" dashboard + subscribable calendar feed of booked dates — *Validated in Phase 6 (account-free `lfg_organizer` cookie identity)*
 
 ### Active
 
-<!-- Current scope. Building toward these. -->
+<!-- Current scope. Building toward these. Next milestone TBD — see v2 candidates in the archived milestones/v1.0-REQUIREMENTS.md (respondent tracking, deadlines, comments, per-day multi-slot). -->
 
-- [ ] System can email participants an invitation containing the poll link — *Phase 4*
+- (none — v1.0 shipped; next milestone not yet defined. Run `/gsd-new-milestone`.)
 
 ### Out of Scope
 
@@ -45,6 +53,8 @@ A poll creator can propose candidate dates, get participants to mark their avail
 - **Doodle group-poll model (reference behavior to replicate):** organizer creates a poll with options (dates or date/time slots) → shares a link / emails invitees → each invitee enters their name and marks each option Yes / If-need-be / No → organizer sees a results table and picks a final date. Doodle shows a count column and lets you see, per option, who said yes/maybe/no.
 - **Users:** a handful of non-technical friends (poll participants) plus the user as organizer/host. Low traffic, small data volumes.
 - **Deployment intent:** must run on the user's own PC and also deploy to Vercel's free tier; everything in the stack must have a free option (DB, email).
+- **Shipped state (v1.0):** ~13.5K LOC TypeScript/TSX (app + tests), 270 tests green. Stack as built: Next.js 16 (App Router + Server Actions), React 19, Drizzle ORM (dual-driver: node-postgres local / neon-http prod), Postgres (Docker local + Neon prod), Tailwind v4, nanoid tokens, Zod validation, Nodemailer/Gmail-SMTP email. Live on Vercel free tier (`looking-for-group-eight.vercel.app`). Prod DB backups kept outside the repo at `/home/dave/lfg-db-backups/`.
+- **Open human checks carried past v1.0:** a real prod invite landing in the owner's inbox (not spam); a full prod happy-path smoke run. Phase 5 formal visual/AT UAT was superseded by prod screenshot verification (see STATE.md Deferred Items).
 
 ## Constraints
 
@@ -58,11 +68,17 @@ A poll creator can propose candidate dates, get participants to mark their avail
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Clone only Doodle's "Group Poll" feature, nothing else | User explicitly needs just this one feature | — Pending |
-| No participant accounts; link-based access | Matches Doodle group-poll UX, lowest friction | — Pending |
-| Target Vercel free tier + local self-host as deploy targets | User's stated hosting options; free constraint | — Pending |
-| Create a private GitHub repo under `davesienkowski` and sync | User requested git tracking + GitHub sync | — Pending |
-| Tech stack to be confirmed by research (free-tier-friendly) | Stack must satisfy $0 + Vercel + local constraints | — Pending |
+| Clone only Doodle's "Group Poll" feature, nothing else | User explicitly needs just this one feature | ✓ Good — shipped focused; no scope creep |
+| No participant accounts; link-based access | Matches Doodle group-poll UX, lowest friction | ✓ Good — anonymous voting works end-to-end |
+| Target Vercel free tier + local self-host as deploy targets | User's stated hosting options; free constraint | ✓ Good — live on Vercel free tier + local Docker Postgres |
+| Create a private GitHub repo under `davesienkowski` and sync | User requested git tracking + GitHub sync | ✓ Good |
+| Tech stack: Next.js 16 + Drizzle + Postgres + Tailwind v4 (research-confirmed) | Stack must satisfy $0 + Vercel + local constraints | ✓ Good — all free-tier, ~13.5K LOC shipped |
+| Three independent unguessable nanoid tokens (admin/participant/edit), none derivable | Least-privilege link sharing; IDOR defense | ✓ Good — LINK-03 verified; no token leak |
+| Date-only slots as Postgres DATE, never parsed via `new Date()` | Avoid timezone drift (PLAT-04) | ✓ Good — no off-by-one across month boundaries |
+| Single env-switched `sendEmail()` seam; email fully optional | $0 default + graceful degradation (MAIL-03) | ✓ Good — zero-config builds green; Gmail SMTP live in prod |
+| Gmail SMTP with `EMAIL_FROM = SMTP_USER` (self-aligned SPF/DKIM/DMARC) | Free-tier deliverability without a domain | ⚠️ Revisit — live inbox/spam landing not yet human-verified |
+| WCAG role=radiogroup/radio vote matrix, both responsive layers in DOM | Accessible three-state input | ⚠️ Revisit — code-verified; formal screen-reader pass deferred |
+| Account-free organizer identity via `lfg_organizer` cookie + nullable `organizer_id` | Same-browser poll grouping without auth | ✓ Good — powers /polls + calendar feed |
 
 ## Evolution
 
@@ -82,4 +98,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-01 after Phase 3 (results dashboard) completion*
+*Last updated: 2026-07-07 after v1.0 MVP milestone*

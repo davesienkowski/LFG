@@ -2,38 +2,35 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 06
-current_phase_name: your-polls-dashboard
-status: verified
-stopped_at: Phase 06 verified PASSED (06-VERIFICATION.md, 8/8) — 06-01-SUMMARY reconciled on resume
-last_updated: "2026-07-07T03:34:37.945Z"
-last_activity: 2026-07-06
-last_activity_desc: Phase 06 verified PASSED; bookkeeping reconciled
+current_phase: 0
+status: Awaiting next milestone
+stopped_at: Phase 06 verified PASSED; wrote missing 06-01-SUMMARY, checked ROADMAP 06-01 (4/4), removed stale 04/.continue-here.md, STATE → phase 06 verified
+last_updated: "2026-07-07T19:29:52.834Z"
+last_activity: 2026-07-07
+last_activity_desc: Milestone v1.0 completed and archived
 progress:
   total_phases: 1
   completed_phases: 1
   total_plans: 4
   completed_plans: 4
+current_phase_name: your-polls-dashboard
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-30)
+See: .planning/PROJECT.md (updated 2026-07-07 after v1.0 milestone)
 
 **Core value:** A poll creator can propose candidate dates, get participants to mark their availability via an emailed link, and instantly see which day(s) work for the whole group — no participant login, no cost.
-**Current focus:** Phase 05 — vote-grid-redesign-matrix-1c-rewrite-availabilitygrid-to-a-r
+**Current focus:** v1.0 MVP shipped 2026-07-07. Awaiting next milestone — run `/gsd-new-milestone`.
 
 ## Current Position
 
-Phase: 06 (your-polls-dashboard) — ✅ VERIFIED COMPLETE
-Plan: 4 of 4 (all executed + summarized; 06-01-SUMMARY reconstructed on resume 2026-07-07)
-Status: Phase 06 verified PASSED (06-VERIFICATION.md — 8/8 reqs, 5/5 ★ must_haves, PROH-1..4, 270 tests green)
-Next: No open plan. Milestone v1.0 (Phase 06 the only roadmap phase) appears complete. Options: close milestone (/gsd-complete-milestone), or plan a new phase. Carried-forward human checks from Phase 04 still stand: (1) a real prod invite lands in the owner's inbox not spam (MAIL-02, no executor inbox access); (2) full prod happy-path smoke (create → vote → results/best-day → Book it → closed). SMTP2GO single-sender is the recorded fallback (T-04-13).
-Last activity: 2026-07-06 — Phase 06 verified PASSED; bookkeeping reconciled 2026-07-07
-
-Progress: [██████████] 100% (Phase 06 — sole roadmap phase — executed + verified)
+Phase: Milestone v1.0 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-07-07 — Milestone v1.0 completed and archived
 
 ## Performance Metrics
 
@@ -158,11 +155,14 @@ Review with `/gsd-capture --list`.
 
 ## Deferred Items
 
-Items acknowledged and carried forward from previous milestone close:
+Items acknowledged and deferred at v1.0 milestone close on 2026-07-07 (override_closeout — none are shipped-code gaps; all are human-eyeball sign-offs or an obsolete seed):
 
 | Category | Item | Status | Deferred At |
 |----------|------|--------|-------------|
-| *(none)* | | | |
+| uat | Phase 05 05-UAT.md — 9 human visual/AT scenarios (screen-reader announcement, pixel fidelity vs mocks, mobile sticky footer) | testing | 2026-07-07 |
+| verification | Phase 05 05-VERIFICATION.md — human_needed (same visual/AT sign-off; code-level 10/10 must-haves verified, 270 tests green, design screenshot-verified on prod) | human_needed | 2026-07-07 |
+| uat | Phase 03 03-UAT.md — 0 pending scenarios (effectively clear; flagged only because file present) | passed | 2026-07-07 |
+| seed | SEED-001-phase4-free-email-no-domain — obsolete; Phase 4 email shipped (Gmail SMTP live in prod) | dormant | 2026-07-07 |
 
 ## Session Continuity
 
@@ -178,3 +178,7 @@ all decisions traceable to tasks; requirements coverage 6/6 and 5/5 respectively
 were shipped under a documented override. **Fixed:** all decision IDs across `.planning/` renamed
 to bare `D-NN` (Phase 1 already used it); the gate now parses (Phase 2 total:11, Phase 3 total:7).
 Going forward, author CONTEXT.md decisions as bare `D-NN`.
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone
