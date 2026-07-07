@@ -17,7 +17,7 @@ import {
   beforeEach,
   vi,
 } from "vitest";
-import { inArray } from "drizzle-orm";
+import { inArray, and, eq, sql } from "drizzle-orm";
 
 vi.mock("next/navigation", () => ({
   notFound: () => {
@@ -40,10 +40,30 @@ vi.mock("@/lib/email/send", () => ({
 
 import { sendInvites } from "./send-invites";
 import { db } from "@/lib/db";
-import { polls, options } from "@/lib/db/schema";
+import { polls, options, invitations } from "@/lib/db/schema";
 import { generateToken } from "@/lib/tokens";
 
 const createdAdminIds: string[] = [];
+const createdPollIds: string[] = [];
+
+// Count invitations rows for a poll, optionally matching a specific address
+// case-insensitively (mirrors the functional unique index).
+async function invitationCount(
+  pollId: string,
+  email?: string,
+): Promise<number> {
+  const where = email
+    ? and(
+        eq(invitations.pollId, pollId),
+        sql`lower(${invitations.email}) = lower(${email})`,
+      )
+    : eq(invitations.pollId, pollId);
+  const rows = await db
+    .select({ email: invitations.email })
+    .from(invitations)
+    .where(where);
+  return rows.length;
+}
 
 function fd(fields: Record<string, string | undefined>): FormData {
   const f = new FormData();
@@ -56,6 +76,7 @@ function fd(fields: Record<string, string | undefined>): FormData {
 async function seedPoll(title = "Invite Poll"): Promise<{
   adminUrlId: string;
   participantUrlId: string;
+  pollId: string;
 }> {
   const participantUrlId = generateToken();
   const adminUrlId = generateToken();
@@ -67,7 +88,8 @@ async function seedPoll(title = "Invite Poll"): Promise<{
     .insert(options)
     .values([{ pollId: poll.id, date: "2026-07-12", startTime: null, position: 0 }]);
   createdAdminIds.push(adminUrlId);
-  return { adminUrlId, participantUrlId };
+  createdPollIds.push(poll.id);
+  return { adminUrlId, participantUrlId, pollId: poll.id };
 }
 
 async function run(formData: FormData): Promise<{
@@ -92,6 +114,13 @@ beforeAll(() => {
 });
 
 afterAll(async () => {
+  // Explicitly clear invitations first (poll delete cascades too, but keep the
+  // cleanup explicit per plan). Then remove the seeded polls.
+  if (createdPollIds.length) {
+    await db
+      .delete(invitations)
+      .where(inArray(invitations.pollId, createdPollIds));
+  }
   if (createdAdminIds.length) {
     await db.delete(polls).where(inArray(polls.adminUrlId, createdAdminIds));
   }
@@ -217,6 +246,95 @@ describe("sendInvites — dedupe & empty input (MAIL-01 edges)", () => {
       "Enter at least one email address.",
     );
     expect(sendEmailMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("sendInvites — invitation recording (RESP-03)", () => {
+  it("(a) records exactly one invitations row for a successful send", async () => {
+    const { adminUrlId, pollId } = await seedPoll();
+    // Default mock: ok.
+    const { state } = await run(
+      fd({ adminUrlId, addresses: "recorded@example.com" }),
+    );
+    expect(state?.results?.[0]).toEqual({
+      email: "recorded@example.com",
+      status: "sent",
+    });
+    expect(await invitationCount(pollId, "recorded@example.com")).toBe(1);
+    expect(await invitationCount(pollId)).toBe(1);
+  });
+
+  it("(b) records NO row for a rate_limited send", async () => {
+    const { adminUrlId, pollId } = await seedPoll();
+    sendEmailMock.mockResolvedValue({
+      ok: false,
+      error: "450 rate limit",
+      rateLimited: true,
+    });
+    const { state } = await run(
+      fd({ adminUrlId, addresses: "cap@example.com" }),
+    );
+    expect(state?.results?.[0].status).toBe("rate_limited");
+    expect(await invitationCount(pollId)).toBe(0);
+  });
+
+  it("(b) records NO row for a failed send", async () => {
+    const { adminUrlId, pollId } = await seedPoll();
+    sendEmailMock.mockResolvedValue({ ok: false, error: "smtp down" });
+    const { state } = await run(
+      fd({ adminUrlId, addresses: "boom@example.com" }),
+    );
+    expect(state?.results?.[0].status).toBe("failed");
+    expect(await invitationCount(pollId)).toBe(0);
+  });
+
+  it("(c) a re-invite of the same address (any casing) stays exactly one row", async () => {
+    const { adminUrlId, pollId } = await seedPoll();
+    // First send.
+    await run(fd({ adminUrlId, addresses: "Dup@Example.com" }));
+    // Second send, different casing — onConflictDoNothing must no-op.
+    const { state } = await run(
+      fd({ adminUrlId, addresses: "dup@EXAMPLE.com" }),
+    );
+    // The UI still reports a successful send both times.
+    expect(state?.results?.[0].status).toBe("sent");
+    expect(await invitationCount(pollId, "dup@example.com")).toBe(1);
+    expect(await invitationCount(pollId)).toBe(1);
+  });
+
+  it("(d) recording does not perturb the SendInviteResult contract for a mixed batch", async () => {
+    const { adminUrlId, pollId } = await seedPoll();
+    sendEmailMock.mockImplementation(({ to }: { to: string }) => {
+      if (to === "ok@example.com") return Promise.resolve({ ok: true });
+      if (to === "cap@example.com")
+        return Promise.resolve({
+          ok: false,
+          error: "450",
+          rateLimited: true,
+        });
+      return Promise.resolve({ ok: false, error: "smtp down" });
+    });
+    const { state } = await run(
+      fd({
+        adminUrlId,
+        addresses:
+          "ok@example.com, cap@example.com, fail@example.com, not-an-email",
+      }),
+    );
+    // Byte-for-byte the same result rows the pre-change action returned.
+    expect(state?.results).toEqual([
+      { email: "ok@example.com", status: "sent" },
+      { email: "cap@example.com", status: "rate_limited" },
+      { email: "fail@example.com", status: "failed" },
+      {
+        email: "not-an-email",
+        status: "failed",
+        message: "Not a valid email address",
+      },
+    ]);
+    // Only the ok recipient was recorded.
+    expect(await invitationCount(pollId)).toBe(1);
+    expect(await invitationCount(pollId, "ok@example.com")).toBe(1);
   });
 });
 

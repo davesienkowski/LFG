@@ -27,6 +27,8 @@ import { z } from "zod";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { getPollByAdminUrlId } from "@/lib/db/queries";
+import { db } from "@/lib/db";
+import { invitations } from "@/lib/db/schema";
 import { resolveBaseUrl, buildParticipantUrl } from "@/lib/urls";
 import { sendEmail } from "@/lib/email/send";
 import { renderInviteEmail } from "@/lib/email/templates";
@@ -112,6 +114,20 @@ export async function sendInvites(
     const result = await sendEmail({ to: email, subject, html });
     if (result.ok) {
       results.push({ email, status: "sent" });
+      // RESP-03: persist WHO actually got a link — recorded ONLY on a successful
+      // send (never rate_limited/failed). Best-effort (D-05): a DB failure MUST
+      // NOT throw to the user, MUST NOT abort the send loop, and MUST NOT alter
+      // the SendInviteResult row already pushed above. Store the address
+      // as-entered; the target-less onConflictDoNothing() catches the functional
+      // unique index (poll_id, lower(email)) so any-casing re-invites are no-ops.
+      try {
+        await db
+          .insert(invitations)
+          .values({ pollId: poll.id, email })
+          .onConflictDoNothing();
+      } catch {
+        // Swallow — recording is best-effort and never affects the UI result.
+      }
     } else if (result.rateLimited) {
       results.push({ email, status: "rate_limited" });
     } else {
