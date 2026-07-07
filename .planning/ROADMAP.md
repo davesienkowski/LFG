@@ -157,3 +157,14 @@ Plans:
 - [x] 05-03-PLAN.md — Participant surfaces: vote-form sticky mobile submit + closed banner, vote/thanks/edit pages (boards 2a–2e/3b/3c; D-03/D-09)
 - [x] 05-04-PLAN.md — Create surface: PollCreateForm, CalendarDatePicker, root page (board 3a; D-09)
 - [x] 05-05-PLAN.md — Email templates 3f–3h reconciliation + per-provider calendar-button color (D-09/D-10)
+
+### Phase 6: Your Polls Dashboard
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 5
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 6 to break down)
