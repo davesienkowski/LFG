@@ -50,6 +50,13 @@
       "when": 1783463620013,
       "tag": "0006_lonely_korg",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1783465295742,
+      "tag": "0007_strange_earthquake",
+      "breakpoints": true
     }
   ]
 }

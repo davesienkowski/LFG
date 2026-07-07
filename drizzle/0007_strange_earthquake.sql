@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "participants_one_organizer_per_poll" ON "participants" USING btree ("poll_id") WHERE "participants"."is_organizer" = true;

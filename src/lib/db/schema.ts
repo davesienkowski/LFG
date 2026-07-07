@@ -117,26 +117,38 @@ export const options = pgTable(
 //  - the votes_participant_option_unique constraint enforces exactly one vote per
 //    (participant, option); 02-02's updateResponse upsert targets it exactly
 //    (RESEARCH Pitfall 1).
-export const participants = pgTable("participants", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  pollId: uuid("poll_id")
-    .notNull()
-    .references(() => polls.id, { onDelete: "cascade" }),
-  name: text("name").notNull(),
-  email: text("email"),
-  editToken: text("edit_token").notNull().unique(),
-  // Organizer's own availability flag (08-01 / ORG-01). Additive, NULLABLE boolean
-  // defaulting false — legacy participant rows read as false. AT MOST ONE row per
-  // poll is ever is_organizer=true; that single-row invariant is enforced by the
-  // ORG-01 upsert action (plan 03), NOT by a DB constraint here (matches the
-  // single-admin model — no partial unique index this phase). The organizer row is
-  // an ordinary participant everywhere else: it folds into computeResults/the grid
-  // with zero changes; the flag is presentation-only ("(you)" label).
-  isOrganizer: boolean("is_organizer").default(false),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const participants = pgTable(
+  "participants",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    pollId: uuid("poll_id")
+      .notNull()
+      .references(() => polls.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    email: text("email"),
+    editToken: text("edit_token").notNull().unique(),
+    // Organizer's own availability flag (08-01 / ORG-01). Additive, NULLABLE boolean
+    // defaulting false — legacy participant rows read as false. AT MOST ONE row per
+    // poll is ever is_organizer=true; that single-row invariant is enforced BOTH by
+    // the ORG-01 upsert action (find-or-create → on a concurrent-insert 23505 it
+    // re-reads and UPDATEs) AND — the real guarantee under concurrency — by the
+    // partial unique index below (08-04 code-review hardening). Two admin tabs /
+    // a double-click can no longer create two "(you)" rows. The organizer row is an
+    // ordinary participant everywhere else: it folds into computeResults/the grid
+    // with zero changes; the flag is presentation-only ("(you)" label).
+    isOrganizer: boolean("is_organizer").default(false),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    // Partial unique index: at most one is_organizer=true row per poll. Legacy /
+    // ordinary participant rows (is_organizer false or NULL) are unconstrained.
+    uniqueIndex("participants_one_organizer_per_poll")
+      .on(t.pollId)
+      .where(sql`${t.isOrganizer} = true`),
+  ],
+);
 
 export const votes = pgTable(
   "votes",

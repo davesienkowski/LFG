@@ -18,12 +18,14 @@
 // redirect to /a/{adminUrlId}.
 //
 // Load-bearing invariants:
-//  - AT MOST ONE organizer row (LOCKED 6). The find-or-create is the whole
-//    enforcement — there is NO DB partial-unique index this phase (matches the
-//    single-admin model / the existing no-constraint participant precedent). The
-//    form's isPending single-submit guard (organizer-availability-control.tsx)
-//    bounds the concurrency window; a duplicate-creating code path is never
-//    introduced here (edge-probe ORG-01 concurrency resolution).
+//  - AT MOST ONE organizer row (LOCKED 6). Enforced at TWO layers: the
+//    find-or-create upsert here PLUS a partial unique index
+//    (participants_one_organizer_per_poll, migration 0007) that makes it a real
+//    DB guarantee under concurrency. If two saves race (2nd admin tab /
+//    double-click) the losing INSERT hits 23505 on that index; the catch re-reads
+//    the organizer row and UPDATEs it instead of creating a duplicate. The form's
+//    isPending single-submit guard still narrows the window (08-04 code-review
+//    hardening of the edge-probe ORG-01 concurrency resolution).
 //  - Admin-token authorization ONLY (LOCKED 7). The poll is re-derived from
 //    adminUrlId; a client-supplied poll id or participant id is never trusted.
 //  - The isVotingOpen gate is the SERVER-SIDE counterpart to the client hiding the
@@ -75,13 +77,21 @@ export type SaveOrganizerAvailabilityState = {
   errors?: Record<string, string[]>;
 } | null;
 
+// Postgres unique-violation SQLSTATE. Drizzle (drizzle-orm/node-postgres) wraps
+// the driver error in a `DrizzleQueryError`, so the raw pg `.code` lives on the
+// `.cause`, not the top-level error — check BOTH so the check works whether the
+// error is the wrapped Drizzle error or a bare pg error.
 function isUniqueViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code?: unknown }).code === "23505"
-  );
+  const codeOf = (e: unknown): unknown =>
+    typeof e === "object" && e !== null && "code" in e
+      ? (e as { code?: unknown }).code
+      : undefined;
+  if (codeOf(error) === "23505") return true;
+  const cause =
+    typeof error === "object" && error !== null && "cause" in error
+      ? (error as { cause?: unknown }).cause
+      : undefined;
+  return codeOf(cause) === "23505";
 }
 
 export async function saveOrganizerAvailability(
@@ -140,7 +150,7 @@ export async function saveOrganizerAvailability(
   let participantId: string;
   if (!existing) {
     let insertedId: string | null = null;
-    for (let attempt = 0; ; attempt++) {
+    for (let attempt = 0; attempt < 5; attempt++) {
       const editToken = generateToken();
       try {
         const [participant] = await db
@@ -156,11 +166,32 @@ export async function saveOrganizerAvailability(
         insertedId = participant.id;
         break;
       } catch (error) {
-        if (isUniqueViolation(error) && attempt < 4) continue;
-        throw error;
+        if (!isUniqueViolation(error)) throw error;
+        // A unique violation here is one of two constraints:
+        //  (a) participants_one_organizer_per_poll — a CONCURRENT save (2nd tab /
+        //      double-click) already inserted the organizer row. Re-read it and
+        //      UPDATE that row instead of inserting a duplicate (the DB index makes
+        //      the "at most one" invariant real, not just best-effort).
+        //  (b) edit_token unique — an astronomically-rare nanoid collision; retry
+        //      with a fresh token.
+        const raced = await getOrganizerParticipant(poll.id);
+        if (raced) {
+          await db
+            .update(participants)
+            .set({ name })
+            .where(eq(participants.id, raced.id));
+          insertedId = raced.id;
+          break;
+        }
+        // else: edit_token collision — loop to retry with a new token.
       }
     }
-    participantId = insertedId as string;
+    if (insertedId === null) {
+      throw new Error(
+        "saveOrganizerAvailability: could not persist organizer row after retries",
+      );
+    }
+    participantId = insertedId;
   } else {
     await db
       .update(participants)

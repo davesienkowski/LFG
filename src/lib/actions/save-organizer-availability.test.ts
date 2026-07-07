@@ -301,6 +301,59 @@ describe("saveOrganizerAvailability — isVotingOpen write gate (LOCKED 4)", () 
   });
 });
 
+describe("at-most-one organizer row is DB-enforced (0007 partial unique index)", () => {
+  it("rejects a second is_organizer=true row for the same poll with a unique violation (23505)", async () => {
+    // Bypass the action entirely — assert the DATABASE constraint itself, so the
+    // 'at most one' invariant holds even under a concurrent-insert race the app
+    // find-or-create can't serialize on neon-http (08-04 code-review hardening).
+    const { pollId } = await seedPoll();
+    await db.insert(participants).values({
+      pollId,
+      name: "You",
+      email: null,
+      isOrganizer: true,
+      editToken: generateToken(),
+    });
+    let threw = false;
+    let code: unknown;
+    try {
+      await db.insert(participants).values({
+        pollId,
+        name: "You again",
+        email: null,
+        isOrganizer: true,
+        editToken: generateToken(),
+      });
+    } catch (e) {
+      threw = true;
+      // Drizzle wraps the pg error, so the 23505 code is on the top level OR .cause.
+      code =
+        (e as { code?: unknown })?.code ??
+        (e as { cause?: { code?: unknown } })?.cause?.code;
+    }
+    expect(threw).toBe(true);
+    expect(code).toBe("23505");
+    // Exactly one organizer row survived.
+    expect(await organizerRowsFor(pollId)).toHaveLength(1);
+    // A non-organizer participant on the same poll is unconstrained (partial index).
+    await db.insert(participants).values({
+      pollId,
+      name: "Ordinary voter",
+      email: null,
+      isOrganizer: false,
+      editToken: generateToken(),
+    });
+    await db.insert(participants).values({
+      pollId,
+      name: "Another voter",
+      email: null,
+      isOrganizer: false,
+      editToken: generateToken(),
+    });
+    expect(await organizerRowsFor(pollId)).toHaveLength(1);
+  });
+});
+
 describe("saveOrganizerAvailability — admin-token authorization (LOCKED 7)", () => {
   it("notFound()s on an unknown adminUrlId and writes nothing", async () => {
     const { notFound } = await run(
