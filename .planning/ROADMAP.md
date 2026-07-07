@@ -31,31 +31,39 @@ Full detail: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 ## Phase Details
 
 ### Phase 7: Respondent Tracking & Nudges
+
 **Goal**: The organizer can see who they invited but hasn't voted yet and chase the stragglers with a single click — without retyping the invite. Sending invitations now records each recipient, giving respondent tracking its source of truth (v1.0 sent invites without recording who received them).
 **Depends on**: Phase 6 (v1.0 MVP shipped)
 **Requirements**: RESP-03, RESP-01, RESP-02
 **Success Criteria** (what must be TRUE):
+
   1. Sending invitation emails records each recipient against the poll, so the invited list survives after the send.
   2. The admin view shows every invited email with a clear "responded" or "not yet responded" status, matched to the participant who actually voted.
   3. The organizer can trigger a one-click "nudge" that emails only the non-respondents, each message carrying the participant link.
   4. The nudge routes through the existing env-switched `sendEmail()` seam — with no email configured it degrades gracefully (no error, copy-link fallback) exactly like v1.0 invites.
-**Plans**: 4 plans (waves 1→4, sequential)
-- [ ] 07-01-PLAN.md — Invitation persistence & recording: additive `invitations` table + migration; record-on-successful-send in sendInvites (RESP-03)
-- [ ] 07-02-PLAN.md — Tracking read + nudge backend: admin-only responded/not-responded query; renderReminderEmail; nudgeNonRespondents action with server-side recompute + closed re-check (RESP-01, RESP-02)
-- [ ] 07-03-PLAN.md — Who's responded card + nudge control UI wired into the admin page, no-leak canary tests (RESP-01, RESP-02)
-- [ ] 07-04-PLAN.md — Prod backup → migrate → deploy + human-verify a real nudge email delivers (RESP-03, RESP-02)
+
+**Plans**: 4/4 plans executed
+
+- [x] 07-01-PLAN.md — Invitation persistence & recording: additive `invitations` table + migration; record-on-successful-send in sendInvites (RESP-03)
+- [x] 07-02-PLAN.md — Tracking read + nudge backend: admin-only responded/not-responded query; renderReminderEmail; nudgeNonRespondents action with server-side recompute + closed re-check (RESP-01, RESP-02)
+- [x] 07-03-PLAN.md — Who's responded card + nudge control UI wired into the admin page, no-leak canary tests (RESP-01, RESP-02)
+- [x] 07-04-PLAN.md — Prod backup → migrate → deploy + human-verify a real nudge email delivers (RESP-03, RESP-02)
+
 **UI hint**: yes
 
 ### Phase 8: Scheduling Controls
+
 **Goal**: The organizer directly controls the poll's timeline and their own participation: an optional voting deadline that closes the poll on its own (evaluated lazily on poll access — no cron/scheduled job), plus the ability to add and edit their own availability row straight from the admin view.
 **Depends on**: Phase 6 (v1.0 MVP shipped); independent of Phase 7 — may execute in either order
 **Requirements**: DEAD-01, ORG-01
 **Success Criteria** (what must be TRUE):
+
   1. The organizer can set an optional voting deadline on a poll from the admin view, and can also leave it unset.
   2. Once the deadline has passed, the next visitor's vote form is read-only/closed — the same closed state as a "Book it"-finalized poll (FNL-02) — with no scheduled job involved.
   3. Polls without a deadline behave exactly as before, and evaluating an expired deadline never blocks or errors a normal page load.
   4. The organizer can add and edit their own availability row from the admin view, without using the participant link.
   5. The organizer's row appears in the results grid and best-day computation just like any other participant.
+
 **Plans**: TBD
 **UI hint**: yes
 
@@ -71,5 +79,5 @@ Full detail: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 | 4. Email & Finalization     | v1.0      | 3/3            | Complete    | 2026-07-02 |
 | 5. Vote-Grid Redesign       | v1.0      | 5/5            | Complete    | 2026-07-02 |
 | 6. Your Polls Dashboard     | v1.0      | 4/4            | Complete    | 2026-07-06 |
-| 7. Respondent Tracking & Nudges | v1.1  | 0/4            | Planned     | -          |
+| 7. Respondent Tracking & Nudges | v1.1  | 4/4 | In Progress|  |
 | 8. Scheduling Controls      | v1.1      | 0/TBD          | Not started | -          |
