@@ -58,17 +58,17 @@ Which phases cover which requirements. **Populated by the roadmapper.**
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| RESP-01 | — | Pending |
-| RESP-02 | — | Pending |
-| RESP-03 | — | Pending |
-| DEAD-01 | — | Pending |
-| ORG-01 | — | Pending |
+| RESP-03 | Phase 7 | Pending |
+| RESP-01 | Phase 7 | Pending |
+| RESP-02 | Phase 7 | Pending |
+| DEAD-01 | Phase 8 | Pending |
+| ORG-01 | Phase 8 | Pending |
 
 **Coverage:**
 
 - v1.1 requirements: 5 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 5
+- Mapped to phases: 5 (100%)
+- Unmapped: 0
 
 ## Definition of Done
 
@@ -81,3 +81,4 @@ Which phases cover which requirements. **Populated by the roadmapper.**
 
 ---
 *Requirements defined: 2026-07-07 for milestone v1.1 Organizer Controls*
+*Traceability populated by roadmapper: 2026-07-07 (Phases 7-8)*

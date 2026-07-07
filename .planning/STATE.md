@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Organizer Controls
 status: planning
-last_updated: "2026-07-07T20:45:14.671Z"
+last_updated: "2026-07-07T21:15:00.000Z"
 last_activity: 2026-07-07
 progress:
-  total_phases: 0
+  total_phases: 2
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -20,14 +20,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-07 after v1.0 milestone)
 
 **Core value:** A poll creator can propose candidate dates, get participants to mark their availability via an emailed link, and instantly see which day(s) work for the whole group — no participant login, no cost.
-**Current focus:** v1.0 MVP shipped 2026-07-07. Awaiting next milestone — run `/gsd-new-milestone`.
+**Current focus:** v1.1 Organizer Controls — roadmap created (Phases 7-8). Phase 7 (Respondent Tracking & Nudges) is ready to plan.
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-07-07 — Milestone v1.1 started
+Phase: 7 of 8 (Respondent Tracking & Nudges)
+Plan: — (not yet planned)
+Status: Ready to plan
+Last activity: 2026-07-07 — v1.1 roadmap created; 5/5 requirements mapped (RESP-01/02/03 → Phase 7, DEAD-01/ORG-01 → Phase 8)
+
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
@@ -74,57 +76,22 @@ Recent decisions affecting current work:
 
 - [Phase 1]: Three-token access model — separate `adminUrlId`, `participantUrlId`, and per-participant `editToken`, none derivable from another.
 - [Phase 1]: Crypto-random non-enumerable IDs (nanoid) for all public identifiers; no auto-increment integers in URLs.
-- [Phase 1]: Postgres everywhere (Docker local + Neon prod) — Neon chosen over Supabase (no 7-day pause); use pooled connection string.
 - [Phase 1]: Date-only slots stored as Postgres DATE and parsed without the `new Date()` constructor (no timezone drift).
-- [Phase 1]: Dual-driver Drizzle client typed as a single concrete driver type (cast neon-http branch) — the union type collapses Drizzle's overloaded query signatures
-- [Phase 1]: Schema-push gate honored: polls/options migrated into live Docker Postgres and verified via psql before asserting reads/writes
-- [Phase ?]: 01-02: Order options ASC NULLS FIRST so date-only sorts before timed same-day, matching insert-time position
-- [Phase ?]: 01-02: createPoll uses no interactive transaction (neon-http production-safe); only the poll insert carries the token-collision retry
-- [Phase ?]: submitResponse is INSERT-only; editToken is a third independent nanoid(21), never derived from participantUrlId (D-11)
-- [Phase ?]: vote.state stored as text constrained by Zod enum at the action boundary, not a Postgres enum (D-03)
-- [Phase ?]: VoteForm gained an optional heading prop so 02-02's edit route reuses it verbatim
-- [Phase ?]: 02-02: Fixed missing Secure flag on lfg_edit cookie (secure: NODE_ENV==='production'), found by the production smoke test rather than unit tests
-- [Phase ?]: 02-02: updateResponse re-derives the participant strictly from the server-validated editToken, never a client-supplied participantId (VOTE-06 IDOR defense)
-- [Phase ?]: 04-01: sendEmail() is the single env-switched outbound-email seam (none|smtp|resend); 04-02 finalization reuses it
-- [Phase ?]: 04-01: email fully optional (D-02) — Mailpit local capture, zero email config still builds/tests green; EMAIL_FROM DMARC discipline (D-03) documented
-- [Phase ?]: 04-01: VOTE-04 confirmation fires best-effort via after() only from submitResponse (first-submit-only); update-response.ts untouched
-- [Phase 4]: 04-03: prod Neon migrated (0002 winning_option_id) + Vercel prod deploy live; .env.example documents Mailpit + Gmail SMTP shapes (!.env.example un-ignore, Rule 3)
-- [Phase 4]: 04-03: Gmail SMTP enabled in prod (D-03 EMAIL_FROM=SMTP_USER on smtp.gmail.com self-aligns SPF/DKIM/DMARC); secrets held only in Vercel env; SMTP2GO single-sender is the pre-wired fallback behind the same D-01 seam (T-04-13)
-- [Phase ?]: 05-01: AvailabilityGrid rewritten to role=radiogroup/radio matrix (D-01); desktop icon-only cells + labelled column headers, mobile stacked icon+text segments; both layers in DOM with display:none a11y isolation
-- [Phase 05]: 05-02: kept shipped semantic ResultsGrid <table> + scroll-fade (no CSS-grid port); added only the mock's bordered-card wrapper + filter select widths — D-09 forbids structural rewrites
-- [Phase 05]: 05-02: admin shell, InviteByEmailForm, BookItControl verified no-drift vs boards 3d/3e — two-step finalize + closed-poll hiding preserved
-- [Phase ?]: 05-03: D-03 mobile submit as sticky pinned footer
-- [Phase ?]: 05-04: reconciled poll-create surface to board 3a/3a-m — sm:-only card frame (desktop) + full-bleed mobile so the Create poll action pins as a sticky border-top footer (D-09); createPoll action + serialized dates + timezone-safe date-only handling unchanged
-- [Phase ?]: D-10 implemented: per-provider calendar-button color (Google #1a73e8 vs neutral FG #171717) via calLink background param
-- [Phase 06]: 06-03: /polls resolves base/feed URL only in the >=1-poll branch, so the empty state embeds no organizer token (PROH-4).
-- [Phase 06]: 06-03: /polls empty state is fully static (no organizerId), so absent vs unknown-cookie renders are byte-identical (MYP-03 no oracle).
+- [Phase 4]: sendEmail() is the single env-switched outbound-email seam (none|smtp|resend) — email fully optional (D-02), degrades gracefully; RESP-02 nudge and DEAD-01 must reuse this seam (no new email path).
+- [Phase 6]: Account-free organizer identity via httpOnly `lfg_organizer` cookie + nullable indexed `polls.organizer_id` (same-browser poll grouping without auth).
+
+### v1.1 design constraints (carried into planning)
+
+- All schema changes must be **additive + nullable** (backward-compatible, prod-safe migration) — matches the v1.0 pattern.
+- **RESP-03** (persist invitation recipients) is the data-layer prerequisite for RESP-01/RESP-02 — sequenced first within Phase 7. Invitations are NOT persisted today (see `src/lib/db/schema.ts` — v1.0 sent invites transiently).
+- **DEAD-01** auto-close must be **LAZY** (evaluated on poll access), NOT a cron/scheduled job — Vercel Hobby cron is out of scope. Reuse the existing FNL-02 read-only/closed guard for the expired state.
+- **RESP-02** nudge routes through the existing env-switched `sendEmail()` seam — no new email path.
 
 ### Pending Todos
 
 [From .planning/todos/pending/ — ideas captured during sessions]
 
-Live-site UX review (2026-07-03) captured 5 results/admin/participant polish items, being cleared via quick tasks:
-
-- ~~Redesign admin results display for readability (too small/cramped)~~ ✓ DONE 2026-07-03 (folded into results-grid rework 260703-r8r)
-- ~~Fix admin results filters (best-slot ranking + standalone status filter)~~ ✓ DONE 2026-07-03 (folded into results-grid rework 260703-r8r)
-- ~~Show current results on participant page~~ ✓ DONE 2026-07-03 (quick task 260703-pdt)
-- ~~Make candidate date lists horizontal/compact ("Book it" + poll description)~~ ✓ DONE 2026-07-03 (quick task 260703-ppz)
-- ~~Email admin link to creator on poll creation~~ ✓ DONE 2026-07-03 (quick task 260703-rqc)
-- ~~Shared subscribable calendar feed of finalized poll dates~~ ✓ DONE 2026-07-03 (quick task 260703-sn2 — multi-poll organizer feed; user chose the real-value scope; prod migrate+deploy pending, batched with QT5)
-
-**New feature request (2026-07-03, user) — ✓ DONE (quick task 260703-t7e).**
-**DB backup (2026-07-03, user request, pre-migration):** full pg_dump of PROD Neon saved to `/home/dave/lfg-db-backups/lfg-prod-neon-20260703-211115.sql` (7 polls/70 options/8 participants/122 votes + neon_auth + drizzle ledger). Taken before 0003/0004 hit prod. pg18 client required (Neon prod is PG 18.4; local pg_dump 17 mismatches — dump via `docker run --rm postgres:18`).
-**Prod deploy status — ✓ DONE 2026-07-03:** prod Neon migrated (0003 organizer_id + 0004 creator_email verified present; 5 migrations recorded) and Vercel prod redeployed (alias looking-for-group-eight.vercel.app; new /feed/[organizerId]/calendar.ics route live — smoke: home 200, thanks-no-cookie 404, unknown-organizer feed → 200 valid empty VCALENDAR). Session shipped 6 quick tasks: pdt, ppz, r8r, rqc, sn2, t7e.
-
-**Admin collapse/reorder follow-up (user, quick task 260703-xbo) — ✓ DONE + DEPLOYED:** (1) candidate-date echo at top wrapped in a native `<details>` collapsed by default (both desktop+mobile); (2) BookItControl collapses to the suggested date + "Change date" on ALL breakpoints now (was mobile-only) — radios stay in DOM so booking the suggested date works while collapsed; (3) mobile results cards hide zero-vote dates behind a "Show all dates (+N)" toggle (desktop table keeps all columns; no toggle when nobody has voted yet); (4) Book-it section moved to sit immediately after Results (before Share/Invite). 240 tests green.
-**Admin MOBILE results follow-up (user, 2026-07-03, quick task 260703-wfm) — ✓ DONE + DEPLOYED:** research-backed (mobile-results-RESEARCH.md, NN/g + competitor analysis). Mobile (`<640px`) results table replaced with a date-centric best-first CARD list (`sm:hidden` sibling to the now `hidden sm:block` table; reuses displayOptions/resultByOption verbatim — no re-rank); each card = Best badge + short date + "N available · M if-need-be" tally + native <details> "Who's available" (only best-day card open); filter controls made desktop-only. Book-it mobile collapses to suggested date + "Change date" toggle (radios always in DOM → winningOptionId still submits collapsed). Polish: echo chip text-xs→text-sm, book-it gap-2→gap-2.5. Desktop unchanged. 236 tests green.
-**Admin layout follow-up (user, 2026-07-03) — ✓ DONE + DEPLOYED:** unwrapped the tv3 two-column dashboard into a SINGLE full-width column (max-w-6xl): header (title + TBD location) → compact small-chip candidate-date echo (grid up to lg:grid-cols-8, text-xs) → **full-width Results hero** → share/invite → Book-it. Pure layout (queries/actions/branches unchanged); 229 tests + build green; screenshot-verified desktop 1440 (no h-overflow) + mobile 390; deployed.
-
-**Redesign (260703-tv3) — ✓ DONE + DEPLOYED 2026-07-03:** research-backed responsive redesign of admin + participant pages; screenshot-verified on prod against the live poll (Playwright, desktop 1440 + mobile 390). Orchestrator screenshot-verification caught + fixed a desktop horizontal-overflow bug (grid 1fr results track needed `min-w-0`, else the wide table blew out the document — commit after 9998087). Backup of prod Neon taken pre-redeploy at /home/dave/lfg-db-backups/. Screenshot verification tooling: `npx playwright install chromium` + `npx playwright screenshot --viewport-size=W,H --full-page <url> out.png`; a full-page capture much wider than the viewport = document horizontal scroll (layout bug).
-
-**Live design refinement (2026-07-03, user) — RESOLVED:** results grid on BOTH admin + participant should surface the "best" slot first/most-prominent. User chose: KEEP orientation (people=rows, dates=columns), move best day column(s) leftmost (NOT a transpose — Phase 05 D-09 preserved), and fix filters in same task. Shipped in 260703-r8r.
-
-Plus: Shared subscribable calendar feed of finalized poll dates (2026-07-02).
+v1.0-era live-site UX polish items were all cleared via quick tasks (pdt, ppz, r8r, rqc, sn2, t7e, tv3, wfm, xbo — see Quick Tasks Completed). No open v1.1 todos captured yet.
 
 Review with `/gsd-capture --list`.
 
@@ -132,9 +99,9 @@ Review with `/gsd-capture --list`.
 
 [Issues that affect future work]
 
-- [Phase 4]: Email options researched → **SEED-001** (`.planning/seeds/SEED-001-phase4-free-email-no-domain.md`). Key finding: a domain is NOT required — Gmail SMTP + App Password is a genuinely-free, no-domain path with good deliverability (send *as* your gmail; SPF/DKIM/DMARC align), with SMTP2GO single-sender as fallback and Resend+domain as an optional deliverability upgrade. Watch the gmail-From-via-relay DMARC trap. Re-verify free-tier numbers at build time. (Original concern — ~48h DNS / ~$10-12/yr domain — only applies if we choose the Resend+domain path.)
-- 04-03 Task 1 BLOCKER — **RESOLVED (2026-07-02):** the Neon prod DATABASE_URL was obtained via `npx vercel env pull .env.vercel.local --environment=production`; `npm run db:migrate` applied `drizzle/0002_superb_skaar.sql` to prod Neon (`polls.winning_option_id` verified) and `npx vercel@latest deploy --prod --yes` shipped the Phase 4 code (dpl_2eW7gorAzFRQE45zYmKcsAen8Aew READY on looking-for-group-eight.vercel.app). `.env.vercel.local` stays gitignored/untracked.
-- 04-03 Task 2 (human-action checkpoint) — **RESOLVED (2026-07-02):** the owner enabled Google 2-Step Verification, generated a Gmail App Password, and set the 7 Gmail SMTP vars in Vercel Production (EMAIL_PROVIDER, SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASS, EMAIL_FROM). Var names verified present; prod redeployed (looking-for-group-f8uvztjhh READY; alias serves HTTP 200); the build now selects the Gmail transport. **Open (end-of-phase human check):** a real prod invite arriving in the owner's inbox (not spam) with a working link — the executor has no inbox access to self-verify.
+- **[v1.1 prod migration]** Phase 7 (RESP-03) and Phase 8 (DEAD-01) both add columns. Follow the v1.0 prod pattern: back up prod Neon first (pg18 client — local pg_dump 17 mismatches; store outside repo at `/home/dave/lfg-db-backups/`), pull creds via `npx vercel env pull`, `npm run db:migrate`, then `npx vercel@latest deploy --prod --yes` (git push does NOT auto-deploy).
+- **[carried from v1.0]** Open end-of-phase human email check: a real prod invite/nudge landing in the owner's inbox (not spam) with a working link — the executor has no inbox access to self-verify. Applies again to the RESP-02 nudge.
+- **[process]** Author CONTEXT.md decision IDs as bare `D-NN` (not phase-prefixed) so the `decision-coverage-plan` gate parses (v1.0 false-negative, now resolved).
 
 ### Quick Tasks Completed
 
@@ -163,19 +130,11 @@ Items acknowledged and deferred at v1.0 milestone close on 2026-07-07 (override_
 
 ## Session Continuity
 
-Last session: 2026-07-07 (resume) — reconciled Phase 06 bookkeeping
-Stopped at: Phase 06 verified PASSED; wrote missing 06-01-SUMMARY, checked ROADMAP 06-01 (4/4), removed stale 04/.continue-here.md, STATE → phase 06 verified
+Last session: 2026-07-07 — v1.1 roadmap created
+Stopped at: ROADMAP.md written with Phases 7 (Respondent Tracking & Nudges) and 8 (Scheduling Controls); REQUIREMENTS.md traceability filled (5/5 mapped); STATE.md advanced to v1.1 Phase 7 ready-to-plan
 Resume file: None
-
-**Planning gate note — RESOLVED (2026-07-01):** During Phase 2 and Phase 3 planning, the
-`decision-coverage-plan` gate returned `could-not-parse` (total:0) because those phases'
-CONTEXT.md used phase-prefixed decision IDs (the `D<phase>-NN` form) but the parser only
-recognizes bare `D-NN`. Both times coverage was real (gsd-plan-checker independently confirmed
-all decisions traceable to tasks; requirements coverage 6/6 and 5/5 respectively) and the phases
-were shipped under a documented override. **Fixed:** all decision IDs across `.planning/` renamed
-to bare `D-NN` (Phase 1 already used it); the gate now parses (Phase 2 total:11, Phase 3 total:7).
-Going forward, author CONTEXT.md decisions as bare `D-NN`.
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Plan Phase 7 with `/gsd-plan-phase 7` (Respondent Tracking & Nudges — RESP-03 → RESP-01 → RESP-02).
+- Per project hook: run the edge-probe family after SPEC.md/PLAN.md and close findings before execution.
