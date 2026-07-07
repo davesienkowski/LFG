@@ -8,6 +8,7 @@
 //    date-only options (start_time = NULL) on the same date collide as
 //    duplicates (Postgres 15+; Pitfall 1). Without it, NULL != NULL would let
 //    duplicate date-only options through.
+import { sql } from "drizzle-orm";
 import {
   pgTable,
   uuid,
@@ -18,6 +19,7 @@ import {
   timestamp,
   unique,
   index,
+  uniqueIndex,
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 
@@ -139,6 +141,41 @@ export const votes = pgTable(
   ],
 );
 
+// Phase 7 (RESP-03). Added additively — polls/options/participants/votes above
+// are untouched (v1.0 prod-safe pattern). Persists WHO was actually emailed a
+// participant link so respondent tracking (RESP-01) and nudging (RESP-02) have a
+// source of truth. A row is written by sendInvites ONLY on a successful send
+// (invited = they actually got a link); rate_limited/failed sends record nothing.
+//
+//  - `pollId` cascades on poll delete (matches the options/participants FK idiom).
+//  - `email` stores the address AS ENTERED (original casing from the first
+//    successful send) — the invited list is displayed to the organizer as typed.
+//  - `invitedAt` mirrors the existing `createdAt` timestamptz-default-now columns.
+//  - the functional unique index over (poll_id, lower(email)) enforces
+//    case-insensitive per-poll uniqueness so a re-invite (any casing) is a no-op
+//    via a target-less onConflictDoNothing() on insert. The composite leads with
+//    poll_id, so the admin-only tracking read's `where poll_id = $1` lookups use
+//    it — no separate plain poll_id index is needed (would be redundant).
+export const invitations = pgTable(
+  "invitations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    pollId: uuid("poll_id")
+      .notNull()
+      .references(() => polls.id, { onDelete: "cascade" }),
+    email: text("email").notNull(),
+    invitedAt: timestamp("invited_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("invitations_poll_lower_email_unique").on(
+      t.pollId,
+      sql`lower(${t.email})`,
+    ),
+  ],
+);
+
 export type Poll = typeof polls.$inferSelect;
 export type NewPoll = typeof polls.$inferInsert;
 export type Option = typeof options.$inferSelect;
@@ -147,3 +184,5 @@ export type Participant = typeof participants.$inferSelect;
 export type NewParticipant = typeof participants.$inferInsert;
 export type Vote = typeof votes.$inferSelect;
 export type NewVote = typeof votes.$inferInsert;
+export type Invitation = typeof invitations.$inferSelect;
+export type NewInvitation = typeof invitations.$inferInsert;
