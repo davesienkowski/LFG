@@ -17,6 +17,7 @@ import {
   time,
   date,
   timestamp,
+  boolean,
   unique,
   index,
   uniqueIndex,
@@ -65,6 +66,16 @@ export const polls = pgTable(
   // ONLY server-side via getPollAdminNotifyTargets — never selected by any
   // participant-facing query.
   creatorEmail: text("creator_email"),
+  // Optional voting deadline (08-01 / DEAD-01). Additive, NULLABLE timestamptz —
+  // NULL = no deadline = existing behavior. This is an INSTANT (a specific moment
+  // voting auto-closes), NOT a date-only value, so it is exempt from the PLAT-04
+  // `new Date()` prohibition (which targets date-only candidate strings). The
+  // lazy-close rule lives ENTIRELY in isVotingOpen(poll, now) — there is no cron
+  // and NO status write on read; a passed deadline never sets status='closed'
+  // (Booked stays keyed on a real finalize). Mirrors the createdAt/invitedAt
+  // `withTimezone: true` idiom so Drizzle returns a JS Date for correct
+  // instant-vs-instant comparison regardless of process timezone.
+  deadline: timestamp("deadline", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -114,6 +125,14 @@ export const participants = pgTable("participants", {
   name: text("name").notNull(),
   email: text("email"),
   editToken: text("edit_token").notNull().unique(),
+  // Organizer's own availability flag (08-01 / ORG-01). Additive, NULLABLE boolean
+  // defaulting false — legacy participant rows read as false. AT MOST ONE row per
+  // poll is ever is_organizer=true; that single-row invariant is enforced by the
+  // ORG-01 upsert action (plan 03), NOT by a DB constraint here (matches the
+  // single-admin model — no partial unique index this phase). The organizer row is
+  // an ordinary participant everywhere else: it folds into computeResults/the grid
+  // with zero changes; the flag is presentation-only ("(you)" label).
+  isOrganizer: boolean("is_organizer").default(false),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

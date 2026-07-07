@@ -43,6 +43,13 @@
       "when": 1783459359499,
       "tag": "0005_easy_madripoor",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1783463620013,
+      "tag": "0006_lonely_korg",
+      "breakpoints": true
     }
   ]
 }
