@@ -11,7 +11,7 @@
 //    leaks no admin_url_id; a missing edit cookie 404s
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { inArray } from "drizzle-orm";
+import { inArray, eq } from "drizzle-orm";
 
 vi.mock("next/navigation", () => ({
   notFound: () => {
@@ -154,8 +154,25 @@ describe("ParticipantPage — closed poll", () => {
     // No submit affordance and no bulk actions when read-only.
     expect(html).not.toContain("Submit availability");
     expect(html).not.toContain("Set all Available");
-    // Recorded state is still visible as a label.
-    expect(html).toContain("Not available");
+    // This poll has no participant responses — unanswered dates read as
+    // "No response", NOT a definite "Not available" (UX-UAT F1 on the recap).
+    expect(html).toContain("No response");
+    expect(html).not.toContain("Not available");
+  });
+
+  it("surfaces the finalized date on a booked poll (UX-UAT F2)", async () => {
+    const { pollId, participantUrlId, optionIds } = await seedPoll("closed");
+    // Finalize on the first option (2026-07-12) so the winning date resolves.
+    await db
+      .update(polls)
+      .set({ winningOptionId: optionIds[0] })
+      .where(eq(polls.id, pollId));
+
+    const html = await renderParticipant(participantUrlId);
+    // The participant learns the outcome ON-PAGE, not only by email.
+    expect(html).toContain("The group is meeting");
+    expect(html).toContain("Sunday, July 12");
+    expect(html).not.toContain("Submit availability");
   });
 });
 
@@ -181,12 +198,17 @@ describe("ThanksPage", () => {
     expect(html).not.toContain("/a/");
   });
 
-  it("404s when the edit cookie is absent (no direct-nav-without-submit)", async () => {
+  it("renders a graceful 'not on this device' fallback when the edit cookie is absent (UX-UAT F3)", async () => {
     const { participantUrlId } = await seedPoll("open");
     mockCookieValue = undefined;
-    await expect(renderThanks(participantUrlId)).rejects.toThrow(
-      "NEXT_NOT_FOUND",
-    );
+    // The poll EXISTS, so a misleading notFound()/"Poll not found" would be
+    // wrong (F3). Instead: a friendly message + a link back to the poll, and no
+    // NEXT_NOT_FOUND throw.
+    const html = await renderThanks(participantUrlId);
+    expect(html).toContain("couldn&#x27;t find your response on this device");
+    expect(html).toContain(`/p/${participantUrlId}`);
+    // Still never leaks a token/edit-link on this cookieless surface.
+    expect(html).not.toContain("/edit/");
   });
 });
 

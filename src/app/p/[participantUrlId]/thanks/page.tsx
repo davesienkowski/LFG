@@ -6,6 +6,7 @@
 // The edit token is an UNAUTHENTICATED BEARER CREDENTIAL (VOTE-06): the card
 // carries the explicit "don't share" warning, never the link alone. Only
 // participant-safe columns are read — the admin token never reaches this surface.
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { headers, cookies } from "next/headers";
 import {
@@ -31,7 +32,36 @@ export default async function ThanksPage({
 
   const cookieStore = await cookies();
   const editToken = cookieStore.get(`lfg_edit_${participantUrlId}`)?.value;
-  if (!editToken) notFound();
+  // No submission cookie on THIS device (a bookmark of /thanks, a different
+  // browser/device, or a cleared cookie). The poll resolved fine above, so a
+  // misleading "Poll not found" would be wrong (UX-UAT F3; Postel — handle the
+  // absent cookie gracefully, don't reject a valid poll). Point them back to the
+  // poll instead. `notFound()` stays reserved for a genuinely bad token.
+  if (!editToken) {
+    return (
+      <main className="mx-auto w-full max-w-2xl px-4 py-12 flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
+          <h2 className="text-2xl font-semibold leading-snug">
+            We couldn&apos;t find your response on this device
+          </h2>
+          <p className="text-base text-muted-foreground">
+            Your availability is saved, but this browser doesn&apos;t have your
+            personal edit link. Open the poll to view it or submit again — if you
+            already responded on another device, use the edit link you saved
+            there.
+          </p>
+        </div>
+        <div>
+          <Link
+            href={`/p/${participantUrlId}`}
+            className="inline-flex min-h-11 items-center rounded-lg border px-4 text-sm font-medium hover:bg-muted"
+          >
+            Go to the poll
+          </Link>
+        </div>
+      </main>
+    );
+  }
 
   // Participant-safe reads (T-pdt-01/02): getResultsForPoll omits
   // email + edit/admin tokens; getOptionsForPoll returns id/date/startTime/

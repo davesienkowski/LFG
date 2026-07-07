@@ -24,12 +24,15 @@
 //    from the accessibility tree via display:none (`hidden sm:block` /
 //    `sm:hidden`) so exactly ONE radiogroup-per-date is exposed to AT at any
 //    viewport — the reader never announces two radiogroups for one date.
-//  - the default/untouched state ("no") renders with the "Not available" radio
-//    aria-checked — never blank/dimmed, so an unclicked date reads "Not
-//    available" before submitting (D-04 never-blank).
+//  - the default/untouched state is UNANSWERED: no radio is aria-checked and the
+//    three cells carry a dashed "needs a choice" outline (UX-UAT F1, supersedes
+//    the old D-04 "never-blank / default No"). VoteForm gates Submit until every
+//    row is answered, so an untouched date is never silently recorded as "No".
+//    Unanswered is a CLIENT-ONLY state (VoteState | null) — it never serializes;
+//    the wire vocabulary stays yes|ifneedbe|no.
 //  - EDGE-IDEMPOTENT: re-selecting the already-checked state is a no-op that
-//    keeps exactly one radio checked per row — a radio can never toggle OFF to a
-//    blank row (reinforces D-04).
+//    keeps that one radio checked (a chosen row never toggles back to unanswered
+//    by re-clicking the same cell).
 //  - EDGE-KBD: every role="radio" is a plain focusable <button> (Tab-reachable,
 //    Enter/Space-activatable) — no negative tab index and no roving-tabindex, so
 //    all three states stay keyboard-reachable (WCAG 2.1.1).
@@ -133,7 +136,7 @@ function StateHeaderRow({ className }: { className: string }) {
           <span
             key={s}
             className={cn(
-              "flex flex-col items-center gap-1.5 text-sm font-semibold",
+              "flex flex-col items-center gap-1.5 whitespace-nowrap text-sm font-semibold",
               HEADER_COLOR[s],
             )}
           >
@@ -155,16 +158,18 @@ export function AvailabilityGrid({
   options: GridOption[];
   initial?: Record<string, VoteState>;
   disabled?: boolean;
-  onChange: (votes: { optionId: string; state: VoteState }[]) => void;
+  onChange: (votes: { optionId: string; state: VoteState | null }[]) => void;
 }) {
-  const [cellState, setCellState] = useState<Record<string, VoteState>>(() =>
-    Object.fromEntries(options.map((o) => [o.id, initial?.[o.id] ?? "no"])),
+  // `null` = unanswered (UX-UAT F1). A returning voter seeds real states from
+  // `initial`; a fresh voter starts every row unanswered.
+  const [cellState, setCellState] = useState<Record<string, VoteState | null>>(
+    () => Object.fromEntries(options.map((o) => [o.id, initial?.[o.id] ?? null])),
   );
   const [announcement, setAnnouncement] = useState("");
 
   useEffect(() => {
     onChange(
-      options.map((o) => ({ optionId: o.id, state: cellState[o.id] ?? "no" })),
+      options.map((o) => ({ optionId: o.id, state: cellState[o.id] ?? null })),
     );
   }, [cellState, options, onChange]);
 
@@ -180,9 +185,13 @@ export function AvailabilityGrid({
     setAnnouncement(`${optionLabel(opt)} set to ${STATE_META[next].label}`);
   }
 
-  function setAll(state: VoteState) {
+  // `state: null` clears every row back to unanswered (the "Clear" action);
+  // a concrete VoteState is the "Set all …" bulk fill.
+  function setAll(state: VoteState | null) {
     setCellState(Object.fromEntries(options.map((o) => [o.id, state])));
-    setAnnouncement(`All dates set to ${STATE_META[state].label}`);
+    setAnnouncement(
+      state ? `All dates set to ${STATE_META[state].label}` : "All dates cleared",
+    );
   }
 
   return (
@@ -217,7 +226,7 @@ export function AvailabilityGrid({
             type="button"
             variant="outline"
             className="h-11"
-            onClick={() => setAll("no")}
+            onClick={() => setAll(null)}
           >
             <RotateCcw aria-hidden />
             Clear
@@ -230,24 +239,34 @@ export function AvailabilityGrid({
            matrix, no segments, no bulk row. */
         <ul className="flex flex-col gap-2.5">
           {options.map((opt) => {
-            const state = cellState[opt.id] ?? "no";
-            const meta = STATE_META[state];
-            const { Icon } = meta;
+            // Unanswered (null) is preserved distinctly here too (UX-UAT F1):
+            // a participant who never voted before the poll closed reads as
+            // "No response", NOT a definite "Not available" — the read-only
+            // recap must not misrepresent a non-response as a deliberate No.
+            const state = cellState[opt.id] ?? null;
+            const meta = state ? STATE_META[state] : null;
+            const Icon = meta?.Icon;
             return (
               <li
                 key={opt.id}
                 className="flex items-center justify-between gap-3"
               >
                 <span className="text-base">{optionLabel(opt)}</span>
-                <span
-                  className={cn(
-                    "inline-flex min-h-11 items-center gap-1.5 rounded-lg border px-4 text-sm font-semibold",
-                    meta.className,
-                  )}
-                >
-                  <Icon aria-hidden className="size-4" />
-                  {meta.label}
-                </span>
+                {meta && Icon ? (
+                  <span
+                    className={cn(
+                      "inline-flex min-h-11 items-center gap-1.5 rounded-lg border px-4 text-sm font-semibold",
+                      meta.className,
+                    )}
+                  >
+                    <Icon aria-hidden className="size-4" />
+                    {meta.label}
+                  </span>
+                ) : (
+                  <span className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-dashed px-4 text-sm font-medium text-muted-foreground">
+                    No response
+                  </span>
+                )}
               </li>
             );
           })}
@@ -279,7 +298,8 @@ export function AvailabilityGrid({
                 <div className="grid grid-cols-1 lg:grid-cols-2 lg:gap-x-8 gap-y-0">
                   {groups.flatMap((group) => {
                     const rows = group.options.map((opt) => {
-                      const state = cellState[opt.id] ?? "no";
+                      const state = cellState[opt.id] ?? null;
+                      const rowUnanswered = state === null;
                       const label = optionLabel(opt);
                       const shortLabel = optionLabelShort(opt);
                       return (
@@ -306,7 +326,9 @@ export function AvailabilityGrid({
                                     "flex size-11 items-center justify-center rounded-lg border outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50",
                                     checked
                                       ? meta.className
-                                      : "border-border bg-white",
+                                      : rowUnanswered
+                                        ? "border-dashed border-muted-foreground/40 bg-white hover:border-muted-foreground/70"
+                                        : "border-border bg-white",
                                   )}
                                 >
                                   {checked ? (
@@ -343,7 +365,8 @@ export function AvailabilityGrid({
             className="flex flex-col gap-5 sm:hidden"
           >
             {options.map((opt) => {
-              const state = cellState[opt.id] ?? "no";
+              const state = cellState[opt.id] ?? null;
+              const rowUnanswered = state === null;
               const label = optionLabel(opt);
               return (
                 <div
@@ -369,7 +392,9 @@ export function AvailabilityGrid({
                           "flex min-h-12 w-full items-center justify-center gap-2 rounded-lg border text-[15px] font-semibold outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50",
                           checked
                             ? meta.className
-                            : "border-border bg-white text-muted-foreground",
+                            : rowUnanswered
+                              ? "border-dashed border-muted-foreground/40 bg-white text-muted-foreground"
+                              : "border-border bg-white text-muted-foreground",
                         )}
                       >
                         <Icon aria-hidden className="size-[18px]" />

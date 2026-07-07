@@ -24,7 +24,9 @@ import {
   getOptionsForPoll,
   getParticipantByEditToken,
   getVotesForParticipant,
+  getFinalizedPollByParticipantUrlId,
 } from "@/lib/db/queries";
+import { formatDateWithTime } from "@/lib/format-date";
 import { submitResponse } from "@/lib/actions/submit-response";
 import { updateResponse } from "@/lib/actions/update-response";
 import { PollSummary } from "@/components/poll-summary";
@@ -60,6 +62,23 @@ export default async function ParticipantPage({
   }
   const isReturning = priorParticipant !== null;
 
+  // Closed poll: surface the finalized date so a participant who returns to the
+  // link learns the outcome ON-PAGE (UX-UAT F2 — the core promise), not only by
+  // email. Participant-safe read (omits admin token); winningDate is null while
+  // the poll is open, so this only resolves once finalized.
+  let bookedLabel: string | undefined;
+  if (poll.status !== "open") {
+    const finalized = await getFinalizedPollByParticipantUrlId(participantUrlId);
+    if (finalized?.winningDate) {
+      bookedLabel = formatDateWithTime(
+        finalized.winningDate,
+        finalized.winningStartTime
+          ? finalized.winningStartTime.slice(0, 5)
+          : null,
+      );
+    }
+  }
+
   return (
     <main className="mx-auto w-full max-w-4xl px-4 py-12 flex flex-col gap-8">
       <div className="flex flex-col gap-2">
@@ -86,6 +105,7 @@ export default async function ParticipantPage({
         initialEmail={priorParticipant?.email ?? ""}
         initialVotes={priorVotes ?? undefined}
         readOnly={poll.status !== "open"}
+        bookedLabel={bookedLabel}
         submitLabel="Submit availability"
         pendingLabel="Submitting..."
       />

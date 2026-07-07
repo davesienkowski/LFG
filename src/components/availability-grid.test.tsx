@@ -6,11 +6,12 @@
 // role="radiogroup" of three role="radio" cells; these tests assert the radio
 // contract plus the two load-bearing a11y guarantees:
 //  - radio semantics (radiogroup / radio / aria-checked), NOT click-to-cycle.
-//  - never-blank default: every untouched row has its "Not available" radio
-//    aria-checked (D-04); re-selecting a checked radio stays checked, never
-//    blanks the row (EDGE-IDEMPOTENT).
-//  - bulk actions (Set all Available / Clear) + a single direct override.
-//  - read-only (disabled) renders non-interactive chips, no radios, no bulk row.
+//  - unanswered default (UX-UAT F1, supersedes the old D-04 "never-blank / No"):
+//    every untouched row starts with NO radio aria-checked; re-selecting a
+//    checked radio stays checked, never blanks the row (EDGE-IDEMPOTENT).
+//  - bulk actions (Set all Available / Clear-to-unanswered) + a single override.
+//  - read-only (disabled) renders non-interactive chips (a real recorded state,
+//    or "No response" for an unanswered date), no radios, no bulk row.
 //  - a11y-1 (desktop column-header association): icon-only desktop radio cells
 //    carry an aria-label whose state suffix equals one of the labelled column
 //    headers — the cell inherits its meaning from the labelled column (D-02/D-06).
@@ -57,15 +58,17 @@ function checked(el: HTMLElement): string | null {
 }
 
 describe("AvailabilityGrid (radio matrix)", () => {
-  it("defaults every untouched row to Not available (never-blank, D-04)", () => {
+  it("defaults every row to unanswered — no radio checked (UX-UAT F1)", () => {
     render(<AvailabilityGrid options={OPTIONS} onChange={vi.fn()} />);
 
     const rows = matrix().getAllByRole("radiogroup");
     expect(rows).toHaveLength(2);
     for (const row of rows) {
+      // Untouched rows now start unanswered — the pessimal "default to No" is
+      // gone, so none of the three radios is aria-checked.
       expect(
         checked(within(row).getByRole("radio", { name: NOT_AVAILABLE })),
-      ).toBe("true");
+      ).toBe("false");
       expect(
         checked(within(row).getByRole("radio", { name: AVAILABLE })),
       ).toBe("false");
@@ -106,6 +109,9 @@ describe("AvailabilityGrid (radio matrix)", () => {
 
     const row = matrix().getAllByRole("radiogroup")[0];
     const noRadio = within(row).getByRole("radio", { name: NOT_AVAILABLE });
+    // Rows start unanswered now — select "Not available" first, then re-click it.
+    expect(checked(noRadio)).toBe("false");
+    fireEvent.click(noRadio);
     expect(checked(noRadio)).toBe("true");
 
     // Click the already-checked "Not available" radio again — no-op, stays checked.
@@ -120,16 +126,24 @@ describe("AvailabilityGrid (radio matrix)", () => {
     ).toBe("false");
   });
 
-  it("Clear resets every row to Not available", () => {
+  it("Clear resets every row to unanswered — no radio checked (UX-UAT F1)", () => {
     render(<AvailabilityGrid options={OPTIONS} onChange={vi.fn()} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Set all Available" }));
     fireEvent.click(screen.getByRole("button", { name: "Clear" }));
 
+    // Clear now truly clears (back to unanswered), rather than setting every
+    // row to "Not available" — so no radio is checked in any row.
     for (const row of matrix().getAllByRole("radiogroup")) {
       expect(
         checked(within(row).getByRole("radio", { name: NOT_AVAILABLE })),
-      ).toBe("true");
+      ).toBe("false");
+      expect(
+        checked(within(row).getByRole("radio", { name: AVAILABLE })),
+      ).toBe("false");
+      expect(
+        checked(within(row).getByRole("radio", { name: IFNEEDBE })),
+      ).toBe("false");
     }
   });
 
@@ -151,27 +165,45 @@ describe("AvailabilityGrid (radio matrix)", () => {
     );
   });
 
-  it("emits the serialized votes for every option via onChange", () => {
+  it("emits every option via onChange, unanswered rows as null (UX-UAT F1)", () => {
     const onChange = vi.fn();
     render(<AvailabilityGrid options={OPTIONS} onChange={onChange} />);
-    // Emits once on mount with all options defaulting to 'no'.
+    // Emits once on mount with all options unanswered (null) — VoteForm reads
+    // this to gate Submit until every row is answered.
     expect(onChange).toHaveBeenCalled();
     const last = onChange.mock.calls.at(-1)?.[0];
     expect(last).toEqual([
-      { optionId: "opt-1", state: "no" },
-      { optionId: "opt-2", state: "no" },
+      { optionId: "opt-1", state: null },
+      { optionId: "opt-2", state: null },
     ]);
   });
 
   it("renders read-only chips with no radios and no bulk actions when disabled", () => {
-    render(<AvailabilityGrid options={OPTIONS} disabled onChange={vi.fn()} />);
+    // A participant WITH a recorded response — their real states render as chips.
+    render(
+      <AvailabilityGrid
+        options={OPTIONS}
+        initial={{ "opt-1": "yes", "opt-2": "no" }}
+        disabled
+        onChange={vi.fn()}
+      />,
+    );
     // No interactive radios and no bulk-action buttons.
     expect(screen.queryAllByRole("radio")).toHaveLength(0);
     expect(
       screen.queryByRole("button", { name: "Set all Available" }),
     ).toBeNull();
-    // The recorded default answer is still visible as a chip (icon + label).
-    expect(screen.getAllByText("Not available")).toHaveLength(2);
+    // Recorded answers are visible as chips (icon + label).
+    expect(screen.getByText("Available")).toBeTruthy();
+    expect(screen.getByText("Not available")).toBeTruthy();
+  });
+
+  it("renders 'No response' (not 'Not available') for an unanswered date when disabled (UX-UAT F1)", () => {
+    // A participant who NEVER voted before the poll closed — every date reads as
+    // "No response", never a definite "Not available".
+    render(<AvailabilityGrid options={OPTIONS} disabled onChange={vi.fn()} />);
+    expect(screen.getAllByText("No response")).toHaveLength(2);
+    expect(screen.queryByText("Not available")).toBeNull();
   });
 
   // ---- a11y-1: desktop column-header association (D-02 / D-06) ----

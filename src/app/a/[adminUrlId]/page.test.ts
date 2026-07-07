@@ -104,9 +104,13 @@ async function seedPoll(overrides?: {
   return { pollId: poll.id, participantUrlId, adminUrlId };
 }
 
-async function renderAdmin(adminUrlId: string): Promise<string> {
+async function renderAdmin(
+  adminUrlId: string,
+  searchParams: { created?: string } = {},
+): Promise<string> {
   const element = await AdminPage({
     params: Promise.resolve({ adminUrlId }),
+    searchParams: Promise.resolve(searchParams),
   });
   return renderToStaticMarkup(element);
 }
@@ -136,6 +140,18 @@ describe("AdminPage", () => {
     );
     expect(html).toContain("Participant link");
     expect(html).toContain("Admin link");
+  });
+
+  it("shows the one-time 'poll created' banner only with ?created=1 (UX-UAT F5)", async () => {
+    const { adminUrlId } = await seedPoll();
+
+    const created = await renderAdmin(adminUrlId, { created: "1" });
+    expect(created).toContain("Poll created");
+    expect(created).toContain("Share the participant link below");
+
+    // A later visit / refresh without the flag drops the banner.
+    const plain = await renderAdmin(adminUrlId);
+    expect(plain).not.toContain("Poll created");
   });
 
   it("renders candidate dates chronologically via the string formatter", async () => {

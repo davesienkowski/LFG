@@ -112,7 +112,9 @@ async function run(formData: FormData): Promise<{
 
 function adminIdFromRedirect(url: string | null): string {
   expect(url).toBeTruthy();
-  const m = /^\/a\/(.+)$/.exec(url as string);
+  // The success redirect is `/a/<adminUrlId>?created=1` (the one-time
+  // poll-created banner flag) — capture only the id, up to the query string.
+  const m = /^\/a\/([^?]+)/.exec(url as string);
   expect(m).toBeTruthy();
   const id = (m as RegExpExecArray)[1];
   createdAdminIds.push(id);

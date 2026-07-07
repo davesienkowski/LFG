@@ -81,10 +81,15 @@ function CandidateChip({ opt }: { opt: AdminOption }) {
 
 export default async function AdminPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ adminUrlId: string }>;
+  searchParams: Promise<{ created?: string }>;
 }) {
   const { adminUrlId } = await params;
+  // One-time "poll created" flag from the create redirect (UX-UAT F5). Present
+  // only on the creator's first arrival; a refresh without the param drops it.
+  const justCreated = (await searchParams).created === "1";
 
   const poll = await getPollWithWinningOption(adminUrlId);
   if (!poll) notFound();
@@ -129,6 +134,22 @@ export default async function AdminPage({
         </div>
         <PollSummary description={poll.description} location={poll.location} />
       </div>
+
+      {/* Poll-created confirmation (UX-UAT F5) — the primary next action on a
+          fresh poll is to SHARE, so name it explicitly and point at the link
+          below. Shown once (created=1) and never on a finalized poll. */}
+      {justCreated && !isClosed ? (
+        <Card className="flex flex-col gap-1 border-emerald-200 bg-emerald-50/50 p-5">
+          <span className="text-base font-semibold text-emerald-800">
+            Poll created — you&apos;re all set.
+          </span>
+          <span className="text-base text-muted-foreground">
+            Share the participant link below with your group to start collecting
+            availability. This admin page is your private link to manage the
+            poll — bookmark it.
+          </span>
+        </Card>
+      ) : null}
 
       {/* Condensed candidate-date echo — short visible label, FULL date in
             title + aria-label; month-grouped only when the set spans >1 month.

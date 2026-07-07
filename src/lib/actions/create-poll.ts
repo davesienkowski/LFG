@@ -239,6 +239,8 @@ export async function createPoll(
     });
   }
 
-  // redirect() throws — no code runs after this line.
-  redirect(`/a/${adminUrlId}`);
+  // redirect() throws — no code runs after this line. `?created=1` lets the
+  // admin page surface a one-time "poll created — share the link" banner on the
+  // creator's first arrival (dropped on any later visit / refresh without it).
+  redirect(`/a/${adminUrlId}?created=1`);
 }

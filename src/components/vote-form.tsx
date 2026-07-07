@@ -43,6 +43,7 @@ export function VoteForm({
   initialEmail = "",
   initialVotes,
   readOnly = false,
+  bookedLabel,
   heading = "Your availability",
   submitLabel,
   pendingLabel,
@@ -55,6 +56,9 @@ export function VoteForm({
   initialEmail?: string;
   initialVotes?: Record<string, VoteState>;
   readOnly?: boolean;
+  // The finalized date, preformatted server-side, shown in the closed-poll
+  // banner so a returning participant learns the outcome on-page (UX-UAT F2).
+  bookedLabel?: string;
   heading?: string;
   submitLabel: string;
   pendingLabel: string;
@@ -64,13 +68,23 @@ export function VoteForm({
     null,
   );
 
-  const [votes, setVotes] = useState<{ optionId: string; state: VoteState }[]>(
-    () =>
-      options.map((o) => ({
-        optionId: o.id,
-        state: initialVotes?.[o.id] ?? "no",
-      })),
+  // `null` = "not answered yet" — a CLIENT-ONLY sentinel that never crosses the
+  // wire (UX-UAT F1). It replaces the old pessimal "default everything to No":
+  // an untouched date now reads as unanswered, and Submit is gated until every
+  // date has an explicit choice, so a skimmer can't silently record all-No.
+  // Only answered rows are serialized; the shared VoteState stays yes|ifneedbe|no
+  // and the server still gap-fills any omitted option to "no", so nothing
+  // downstream (Zod, DB, results) changes.
+  const [votes, setVotes] = useState<
+    { optionId: string; state: VoteState | null }[]
+  >(() =>
+    options.map((o) => ({
+      optionId: o.id,
+      state: initialVotes?.[o.id] ?? null,
+    })),
   );
+  const answeredCount = votes.filter((v) => v.state !== null).length;
+  const allAnswered = answeredCount === options.length;
 
   const nameId = useId();
   const nameErrorId = `${nameId}-error`;
@@ -79,7 +93,10 @@ export function VoteForm({
   const emailHelpId = `${emailId}-help`;
 
   const errors = state?.errors ?? {};
-  const votesPayload = JSON.stringify(votes);
+  // Serialize only ANSWERED rows; unanswered (null) rows are omitted. Submit is
+  // gated on allAnswered, so in the normal path every row is present; the filter
+  // is the belt-and-suspenders guard that keeps the sentinel off the wire.
+  const votesPayload = JSON.stringify(votes.filter((v) => v.state !== null));
 
   return (
     <form action={formAction} className="flex flex-col gap-8">
@@ -162,23 +179,43 @@ export function VoteForm({
       */}
       {readOnly ? (
         <div className="sticky bottom-0 z-10 -mx-4 border-t bg-muted p-6 text-center sm:static sm:mx-0 sm:rounded-lg sm:border">
-          <h2 className="text-2xl font-semibold leading-snug">
-            Voting is closed
-          </h2>
+          {/* F2: lead with the outcome the participant came back for. */}
+          {bookedLabel ? (
+            <p className="text-lg font-semibold text-emerald-700">
+              The group is meeting {bookedLabel}.
+            </p>
+          ) : (
+            <h2 className="text-2xl font-semibold leading-snug">
+              Voting is closed
+            </h2>
+          )}
           <p className="text-base text-muted-foreground">
-            The organizer has closed this poll. You can no longer submit or
-            change your availability.
+            {bookedLabel
+              ? "The organizer has finalized this date. Voting is closed."
+              : "The organizer has closed this poll. You can no longer submit or change your availability."}
           </p>
         </div>
       ) : (
-        <div className="sticky bottom-0 z-10 -mx-4 border-t bg-background px-4 py-4 sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
-          <Button
-            type="submit"
-            disabled={isPending}
-            className="w-full sm:w-auto"
-          >
-            {isPending ? pendingLabel : submitLabel}
-          </Button>
+        <div className="sticky bottom-0 z-10 -mx-4 flex flex-col gap-2 border-t bg-background px-4 py-4 sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
+          {/* F1: tell the user why Submit is disabled and how many dates remain. */}
+          {!allAnswered ? (
+            <p className="text-sm text-muted-foreground" role="status">
+              Choose an option for every date to submit
+              {options.length - answeredCount > 0
+                ? ` — ${options.length - answeredCount} left`
+                : ""}
+              .
+            </p>
+          ) : null}
+          <div>
+            <Button
+              type="submit"
+              disabled={isPending || !allAnswered}
+              className="w-full sm:w-auto"
+            >
+              {isPending ? pendingLabel : submitLabel}
+            </Button>
+          </div>
         </div>
       )}
     </form>
