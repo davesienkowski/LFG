@@ -288,7 +288,14 @@ export function ResultsGrid({
                   key={p.id}
                   className="flex flex-wrap items-center justify-between gap-2"
                 >
-                  <span className="text-sm">{p.name}</span>
+                  <span className="text-sm">
+                    {p.name}
+                    {/* ORG-01: flag-driven "(you)" suffix — presentation only,
+                        NEVER inferred from the name string (UI Probe #5). */}
+                    {p.isOrganizer ? (
+                      <span className="text-muted-foreground"> (you)</span>
+                    ) : null}
+                  </span>
                   <span
                     className={cn(
                       "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-sm font-semibold whitespace-nowrap",
@@ -516,6 +523,11 @@ export function ResultsGrid({
                     className="sticky left-0 z-10 border-r bg-background px-4 py-3 text-left text-sm font-semibold whitespace-nowrap"
                   >
                     {p.name}
+                    {/* ORG-01: flag-driven "(you)" suffix — presentation only,
+                        NEVER inferred from the name string (UI Probe #5). */}
+                    {p.isOrganizer ? (
+                      <span className="text-muted-foreground"> (you)</span>
+                    ) : null}
                   </th>
                   {displayOptions.map((opt) => {
                     const state = normalizeVoteState(p.votes[opt.id]);

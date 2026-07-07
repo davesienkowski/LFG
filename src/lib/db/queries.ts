@@ -166,6 +166,12 @@ export async function getResultsForPoll(pollId: string) {
     .select({
       participantId: participants.id,
       participantName: participants.name,
+      // ORG-01: the organizer's own row folds into this all-participants read as
+      // a NORMAL participant (SC5 — no new aggregation path). The ONLY read change
+      // is selecting is_organizer so the grid can append a presentation-only
+      // "(you)" suffix driven SOLELY by this flag (never inferred from the name
+      // string). email/edit_token stay OMITTED — the no-leak discipline is intact.
+      isOrganizer: participants.isOrganizer,
       optionId: votes.optionId,
       state: votes.state,
     })
@@ -179,12 +185,24 @@ export async function getResultsForPoll(pollId: string) {
 
   const byParticipant = new Map<
     string,
-    { id: string; name: string; votes: Record<string, string> }
+    {
+      id: string;
+      name: string;
+      isOrganizer: boolean;
+      votes: Record<string, string>;
+    }
   >();
   for (const r of rows) {
     let p = byParticipant.get(r.participantId);
     if (!p) {
-      p = { id: r.participantId, name: r.participantName, votes: {} };
+      p = {
+        id: r.participantId,
+        name: r.participantName,
+        // Coalesce the nullable is_organizer column to a boolean (legacy rows
+        // predating the column read as false).
+        isOrganizer: r.isOrganizer ?? false,
+        votes: {},
+      };
       byParticipant.set(r.participantId, p);
     }
     // A LEFT JOIN miss yields null optionId/state -> leave the empty record.

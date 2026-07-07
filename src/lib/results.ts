@@ -16,6 +16,11 @@ import { normalizeVoteState } from "@/lib/vote-state";
 export type ResultsParticipant = {
   id: string;
   name: string;
+  // ORG-01 presentation flag: true for the single organizer's own row, which the
+  // results grid labels "(you)". computeResults NEVER reads this — it folds in as
+  // a normal participant (SC5), so best-day/tallies are unchanged. Optional so
+  // pure-function callers (tests) may omit it.
+  isOrganizer?: boolean;
   votes: Record<string, string>; // optionId -> raw state string (may be unrecognized)
 };
 
