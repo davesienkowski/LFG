@@ -169,12 +169,19 @@ describe("getResultsForPoll", () => {
     expect(serialized).not.toContain("admin_url_id");
   });
 
-  it("returns participant objects whose own keys are exactly id/name/votes (structural)", async () => {
+  it("returns participant objects whose own keys are exactly id/name/isOrganizer/votes (structural)", async () => {
     const seed = await seedPollWithResults();
     const result = await getResultsForPoll(seed.pollId);
     expect(result.length).toBeGreaterThan(0);
     for (const p of result) {
-      expect(Object.keys(p).sort()).toEqual(["id", "name", "votes"]);
+      // ORG-01: isOrganizer joins the participant-safe shape (email/token stay
+      // omitted — see the no-leak test above). Sorted for order-independence.
+      expect(Object.keys(p).sort()).toEqual([
+        "id",
+        "isOrganizer",
+        "name",
+        "votes",
+      ]);
     }
   });
 

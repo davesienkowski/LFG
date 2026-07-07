@@ -34,8 +34,11 @@ import {
   formatMonthYear,
 } from "@/lib/format-date";
 import { computeResults } from "@/lib/results";
+import { isVotingOpen } from "@/lib/poll-status";
+import type { VoteState } from "@/components/availability-grid";
 import { PollSummary } from "@/components/poll-summary";
 import { DeadlineControl } from "@/components/deadline-control";
+import { OrganizerAvailabilityControl } from "@/components/organizer-availability-control";
 import { CopyLinkButton } from "@/components/copy-link-button";
 import { ResultsGrid } from "@/components/results-grid";
 import { InviteByEmailForm } from "@/components/invite-by-email-form";
@@ -112,6 +115,14 @@ export default async function AdminPage({
   const options = await getOptionsForPoll(poll.id);
   const participants = await getResultsForPoll(poll.id);
   const results = computeResults(participants, options);
+
+  // Organizer's own availability (ORG-01). The organizer row is already loaded by
+  // getResultsForPoll (now carrying isOrganizer + votes) — derive it here, no
+  // extra query. votingOpen gates the "Your availability" card the SAME way it
+  // gates participant voting (isVotingOpen; LOCKED 4). Only booleans/strings cross
+  // to the client island — never a raw Date (LOCKED 5).
+  const organizerRow = participants.find((p) => p.isOrganizer);
+  const votingOpen = isVotingOpen(poll, now);
 
   // Admin-only respondent tracking (RESP-01). This read RETURNS invitation
   // emails and is consumed ONLY by WhosRespondedCard below — never passed to
@@ -243,6 +254,20 @@ export default async function AdminPage({
           </ul>
         )}
       </details>
+
+      {/* Your availability (ORG-01) — the organizer adds/edits their OWN row
+          BEFORE reading results, so their vote is already folded into what they
+          see next. Editable while voting is open; hidden (no row) or read-only
+          (row exists) once voting closes (UI Probe #1). The saved row appears
+          "(you)" in the Results grid below. */}
+      <OrganizerAvailabilityControl
+        adminUrlId={poll.adminUrlId}
+        options={options}
+        initialName={organizerRow?.name ?? ""}
+        initialVotes={organizerRow?.votes as Record<string, VoteState> | undefined}
+        hasRow={!!organizerRow}
+        votingOpen={votingOpen}
+      />
 
       {/* Results (DASH-01..05) — full-width hero directly under the header.
           min-w-0 lets the wide table scroll inside its own overflow-x-auto
