@@ -64,12 +64,13 @@ Full detail: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
   4. The organizer can add and edit their own availability row from the admin view, without using the participant link.
   5. The organizer's row appears in the results grid and best-day computation just like any other participant.
 
-**Plans**: 4 plans
+**Plans**: 4/4 plans executed
 
-- [ ] 08-01-PLAN.md — Foundation: additive 0006 migration (deadline + is_organizer) + the shared isVotingOpen lazy-close helper
-- [ ] 08-02-PLAN.md — DEAD-01: set/clear-deadline action, isVotingOpen at every vote gate, participant read-only + distinct copy, admin deadline card + pill
-- [ ] 08-03-PLAN.md — ORG-01: organizer's own availability row (single-row upsert action, results "(you)" suffix, admin "Your availability" card)
-- [ ] 08-04-PLAN.md — Prod ship: backup → migrate 0006 → deploy + human-verify deadline auto-close & organizer row on prod
+- [x] 08-01-PLAN.md — Foundation: additive 0006 migration (deadline + is_organizer) + the shared isVotingOpen lazy-close helper
+- [x] 08-02-PLAN.md — DEAD-01: set/clear-deadline action, isVotingOpen at every vote gate, participant read-only + distinct copy, admin deadline card + pill
+- [x] 08-03-PLAN.md — ORG-01: organizer's own availability row (single-row upsert action, results "(you)" suffix, admin "Your availability" card)
+- [x] 08-04-PLAN.md — Prod ship: backup → migrate 0006 → deploy + human-verify deadline auto-close & organizer row on prod
+
 **UI hint**: yes
 
 ## Progress
@@ -85,4 +86,4 @@ Full detail: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 | 5. Vote-Grid Redesign       | v1.0      | 5/5            | Complete    | 2026-07-02 |
 | 6. Your Polls Dashboard     | v1.0      | 4/4            | Complete    | 2026-07-06 |
 | 7. Respondent Tracking & Nudges | v1.1  | 4/4 | In Progress|  |
-| 8. Scheduling Controls      | v1.1      | 0/4            | Not started | -          |
+| 8. Scheduling Controls      | v1.1      | 4/4 | In Progress|  |

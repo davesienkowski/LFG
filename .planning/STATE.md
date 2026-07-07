@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Organizer Controls
-current_phase: 7
-current_phase_name: Respondent Tracking & Nudges
+current_phase: 8
+current_phase_name: Scheduling Controls
 status: executing
 stopped_at: ROADMAP.md written with Phases 7 (Respondent Tracking & Nudges) and 8 (Scheduling Controls); REQUIREMENTS.md traceability filled (5/5 mapped); STATE.md advanced to v1.1 Phase 7 ready-to-plan
-last_updated: "2026-07-07T21:21:41.817Z"
+last_updated: "2026-07-07T22:32:47.012Z"
 last_activity: 2026-07-07
-last_activity_desc: Phase 7 execution started
+last_activity_desc: Phase 8 execution started
 progress:
   total_phases: 2
-  completed_phases: 0
-  total_plans: 4
-  completed_plans: 0
-  percent: 0
+  completed_phases: 1
+  total_plans: 8
+  completed_plans: 4
+  percent: 50
 ---
 
 # Project State
@@ -24,22 +24,25 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-07 after v1.0 milestone)
 
 **Core value:** A poll creator can propose candidate dates, get participants to mark their availability via an emailed link, and instantly see which day(s) work for the whole group — no participant login, no cost.
-**Current focus:** Phase 7 — Respondent Tracking & Nudges
+**Current focus:** Phase 8 — Scheduling Controls
 
 ## Current Position
 
-Phase: 7 (Respondent Tracking & Nudges) — CODE COMPLETE (human-verify pending)
-Plan: 4 of 4 (07-01/02/03 shipped + verified; 07-04 prod-shipped, inbox check deferred)
-Status: Phase 7 code complete & verified (4/4 code must-haves); prod migrated + deployed; awaiting human nudge-email inbox check. Phase 8 next (independent of Phase 7).
-Last activity: 2026-07-07 — Phase 7 shipped to prod; continuing to Phase 8
+Phase: 8 (Scheduling Controls) — CODE COMPLETE + PROD-SHIPPED (human-verify pending)
+Plan: 4 of 4 (08-01/02/03 shipped + verified 9/9; 08-04 prod-shipped, browser check deferred)
+Status: Milestone v1.1 CODE COMPLETE & prod-shipped. All 5 requirements (RESP-01/02/03, DEAD-01, ORG-01) implemented, verified (321 tests green), migrated to prod (0005/0006/0007) and deployed. Two human-verification checks remain before archiving the milestone.
+Last activity: 2026-07-07 — Phase 8 shipped to prod; v1.1 code complete
 
-Progress: [██████████] Phase 7 code 100% (RESP-01/02/03 verified, 299 tests green)
+Progress: [██████████] v1.1 code 100% — 2/2 phases shipped to prod (321 tests green). Milestone archival gated on 2 human checks below.
 
 ## Deferred Verification
 
 | Phase | State | Resume |
 |-------|-------|--------|
 | 7 | verification_deferred_human — real nudge email inbox delivery + responded-status flip on the live prod app (07-04 Task 2; no agent inbox access) | /gsd-verify-work 7 (or reply "approved") — see 07-04-SUMMARY.md for the exact steps |
+| 8 | verification_deferred_human — live prod deadline auto-close (vote form goes read-only after the deadline, distinct from "Booked") + organizer "(you)" row visual (08-04 Task 2; time-dependent + visual, no agent browser) | /gsd-verify-work 8 (or reply "approved") — see 08-04-SUMMARY.md for the exact steps |
+
+**To close the milestone** once both checks pass: `/gsd-complete-milestone v1.1` (archives ROADMAP/REQUIREMENTS, updates PROJECT.md + MILESTONES.md). Both deferred checks are the same class of human-verifiable acceptance v1.0 shipped with (see RETROSPECTIVE "Distinguish code-verifiable from human-verifiable").
 
 ## Performance Metrics
 
