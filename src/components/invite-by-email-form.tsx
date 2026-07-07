@@ -15,40 +15,19 @@
 //    isPending disabled state (no partial-submit).
 //  - Re-submitting replaces the prior result list (no accumulation).
 import { useActionState } from "react";
-import { Check, TriangleAlert, X, type LucideIcon } from "lucide-react";
 import {
   sendInvites,
   type SendInvitesState,
-  type SendInviteStatus,
 } from "@/lib/actions/send-invites";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-
-// Chip mechanic reused from Phase 2/3 STATE_META: icon + label + palette. Never
-// color alone (UI-SPEC Accessibility).
-const SEND_STATUS_META: Record<
-  SendInviteStatus,
-  { icon: LucideIcon; label: string; className: string }
-> = {
-  sent: {
-    icon: Check,
-    label: "Sent",
-    className: "bg-emerald-50 text-emerald-700 border border-emerald-300",
-  },
-  rate_limited: {
-    icon: TriangleAlert,
-    label: "Rate limited — try again tomorrow or share the link manually",
-    className: "bg-amber-50 text-amber-700 border border-amber-300",
-  },
-  failed: {
-    icon: X,
-    label: "Failed to send — share the link manually",
-    className: "bg-destructive/10 text-destructive border border-destructive/30",
-  },
-};
+// Shared chip metadata — icon + label + palette (never color alone). Extracted
+// to send-status-meta.ts so NudgeControl reuses the identical styling with no
+// restyle to these invite chips.
+import { SEND_STATUS_META } from "@/components/send-status-meta";
 
 export function InviteByEmailForm({ adminUrlId }: { adminUrlId: string }) {
   const [state, formAction, isPending] = useActionState<
