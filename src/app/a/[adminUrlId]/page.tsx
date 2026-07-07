@@ -21,6 +21,7 @@ import {
   getPollWithWinningOption,
   getOptionsForPoll,
   getResultsForPoll,
+  getInvitationTrackingForPoll,
 } from "@/lib/db/queries";
 import {
   resolveBaseUrl,
@@ -37,6 +38,7 @@ import { PollSummary } from "@/components/poll-summary";
 import { CopyLinkButton } from "@/components/copy-link-button";
 import { ResultsGrid } from "@/components/results-grid";
 import { InviteByEmailForm } from "@/components/invite-by-email-form";
+import { WhosRespondedCard } from "@/components/whos-responded-card";
 import { BookItControl } from "@/components/book-it-control";
 import { SubscribeCard } from "@/components/subscribe-card";
 import { Card } from "@/components/ui/card";
@@ -99,6 +101,11 @@ export default async function AdminPage({
   const options = await getOptionsForPoll(poll.id);
   const participants = await getResultsForPoll(poll.id);
   const results = computeResults(participants, options);
+
+  // Admin-only respondent tracking (RESP-01). This read RETURNS invitation
+  // emails and is consumed ONLY by WhosRespondedCard below — never passed to
+  // ResultsGrid or any participant-facing surface (D-09 / T-07-01 no-leak).
+  const invitations = await getInvitationTrackingForPoll(poll.id);
 
   const h = await headers();
   const base = resolveBaseUrl(h.get("host"), h.get("x-forwarded-proto"));
@@ -217,6 +224,17 @@ export default async function AdminPage({
           results={results}
         />
       </Card>
+
+      {/* Who's responded (RESP-01/02) — between Results and Book it so the flow
+          reads: see the grid -> see who's missing -> decide whether to nudge
+          before booking. Admin-only; reuses the page's isClosed + emailConfigured
+          gates (never recomputed). Invitation data flows ONLY here. */}
+      <WhosRespondedCard
+        invitations={invitations}
+        adminUrlId={poll.adminUrlId}
+        isClosed={isClosed}
+        emailConfigured={emailConfigured}
+      />
 
       {/* Book it (FNL-01/02/03). Renders EXACTLY ONE of {picker, finalized card}
           based on poll.status — never both, never neither. BookItControl already

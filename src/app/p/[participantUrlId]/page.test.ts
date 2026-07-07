@@ -12,6 +12,8 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { inArray, eq } from "drizzle-orm";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 vi.mock("next/navigation", () => ({
   notFound: () => {
@@ -34,7 +36,14 @@ vi.mock("next/headers", () => ({
 import ParticipantPage from "./page";
 import ThanksPage from "./thanks/page";
 import { db } from "@/lib/db";
-import { polls, options, participants, votes } from "@/lib/db/schema";
+import {
+  polls,
+  options,
+  participants,
+  votes,
+  invitations,
+} from "@/lib/db/schema";
+import { getInvitationTrackingForPoll } from "@/lib/db/queries";
 import { generateToken } from "@/lib/tokens";
 
 const createdAdminIds: string[] = [];
@@ -276,5 +285,44 @@ describe("ParticipantPage — same-device auto-load (VOTE-05)", () => {
     const html = await renderParticipant(participantUrlId);
     expect(html).not.toContain(adminUrlId);
     expect(html).not.toContain("/a/");
+  });
+});
+
+describe("ParticipantPage — invitation no-leak (RESP-01 / D-09 / T-07-01)", () => {
+  it("NON-VACUOUS canary: a seeded invitation email is admin-visible yet ABSENT from the participant page", async () => {
+    const canary = "invited-canary-do-not-leak@example.com";
+    const { pollId, participantUrlId } = await seedPoll("open");
+    // Record an invitation carrying the canary — exactly what 07-01 records on
+    // send. It is intentionally admin-visible (getInvitationTrackingForPoll)…
+    await db.insert(invitations).values({ pollId, email: canary });
+
+    // …proven here: the admin-only tracking read DOES surface it (non-vacuous —
+    // the canary genuinely exists and would render on the admin surface).
+    const tracking = await getInvitationTrackingForPoll(pollId);
+    expect(tracking.map((t) => t.email)).toContain(canary);
+
+    // …but the PARTICIPANT page must never expose it (D-09 no-leak boundary).
+    const html = await renderParticipant(participantUrlId);
+    expect(html).not.toContain(canary);
+  });
+
+  it("no participant-facing route module imports getInvitationTrackingForPoll (grep-style)", async () => {
+    // Structural guard: the invitations read is admin-only. If a future edit
+    // wires it into a participant route this fails loudly.
+    const participantRoutes = [
+      "src/app/p/[participantUrlId]/page.tsx",
+      "src/app/p/[participantUrlId]/thanks/page.tsx",
+      "src/app/p/[participantUrlId]/edit/[editToken]/page.tsx",
+    ];
+    for (const rel of participantRoutes) {
+      let source: string;
+      try {
+        source = readFileSync(join(process.cwd(), rel), "utf8");
+      } catch {
+        continue; // route file may not exist — skip
+      }
+      expect(source).not.toContain("getInvitationTrackingForPoll");
+      expect(source).not.toContain("invitations");
+    }
   });
 });

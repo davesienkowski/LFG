@@ -21,7 +21,13 @@ vi.mock("next/headers", () => ({
 
 import AdminPage from "./page";
 import { db } from "@/lib/db";
-import { polls, options, participants, votes } from "@/lib/db/schema";
+import {
+  polls,
+  options,
+  participants,
+  votes,
+  invitations,
+} from "@/lib/db/schema";
 import { generateToken } from "@/lib/tokens";
 
 const createdAdminIds: string[] = [];
@@ -45,6 +51,10 @@ async function seedPoll(overrides?: {
     email?: string | null;
     votes?: Partial<Record<number, VoteState>>;
   }[];
+  // Email addresses to seed into the invitations table (RESP-01). An invitation
+  // renders "Responded" iff some seeded participant on THIS poll shares the
+  // address (case-insensitive), else "Not yet responded".
+  invitations?: string[];
 }) {
   const participantUrlId = generateToken();
   const adminUrlId = generateToken();
@@ -91,6 +101,12 @@ async function seedPoll(overrides?: {
       state: state as VoteState,
     }));
     if (voteRows.length) await db.insert(votes).values(voteRows);
+  }
+
+  if (overrides?.invitations?.length) {
+    await db
+      .insert(invitations)
+      .values(overrides.invitations.map((email) => ({ pollId: poll.id, email })));
   }
 
   if (overrides?.winningOptionIndex !== undefined) {
@@ -289,6 +305,105 @@ describe("AdminPage", () => {
 
     expect(html).not.toContain("/feed/");
     expect(html).not.toContain("Subscribe to your booked-dates calendar");
+  });
+
+  // ── Who's responded card (RESP-01/02) ───────────────────────────────────
+
+  it("(a) EMPTY — renders the empty-state copy and NO nudge button for a poll with zero invitations", async () => {
+    const { adminUrlId } = await seedPoll();
+    const html = await renderAdmin(adminUrlId);
+
+    expect(html).toContain("Who&#x27;s responded");
+    expect(html).toContain(
+      "No invitations sent yet. Invite people by email above",
+    );
+    // Empty state renders neither the summary/caption nor the nudge control.
+    expect(html).not.toContain(
+      "Only counts people invited by email through this tool.",
+    );
+    expect(html).not.toContain("Nudge non-respondents");
+  });
+
+  it("(b) POPULATED OPEN — renders emails with Responded/Not-yet-responded badges, the stat + mandatory caption, and the nudge button", async () => {
+    vi.stubEnv("EMAIL_PROVIDER", "resend");
+    try {
+      // One invited email that responded (matching participant email) and one
+      // that has not — 1 of 2 responded.
+      const { adminUrlId } = await seedPoll({
+        participants: [
+          {
+            name: "Responder",
+            email: "responder-r01@example.com",
+            votes: { 0: "yes", 1: "no" },
+          },
+        ],
+        invitations: [
+          "responder-r01@example.com",
+          "pending-r01@example.com",
+        ],
+      });
+      const html = await renderAdmin(adminUrlId);
+
+      // Both invited emails render in the badge list.
+      expect(html).toContain("responder-r01@example.com");
+      expect(html).toContain("pending-r01@example.com");
+      // Emerald "Responded" (capital R — the heading + stat use lowercase) and
+      // amber "Not yet responded" badges both appear.
+      expect(html).toContain(">Responded<");
+      expect(html).toContain("Not yet responded");
+      expect(html).toContain("text-emerald-800");
+      expect(html).toContain("text-amber-700");
+      // Summary stat AND the mandatory disambiguating caption (Prohibition
+      // Probe #2) — both always rendered together.
+      expect(html).toContain("1 of 2 responded");
+      expect(html).toContain(
+        "Only counts people invited by email through this tool.",
+      );
+      // Nudge control renders (email configured + open + non-respondents > 0).
+      expect(html).toContain("Nudge non-respondents");
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("(c) POPULATED CLOSED — renders the badge list + summary but NO nudge control at all", async () => {
+    vi.stubEnv("EMAIL_PROVIDER", "resend");
+    try {
+      const { adminUrlId } = await seedPoll({
+        status: "closed",
+        winningOptionIndex: 0,
+        invitations: ["closed-pending@example.com"],
+      });
+      const html = await renderAdmin(adminUrlId);
+
+      // The tracking card still renders on a closed poll.
+      expect(html).toContain("closed-pending@example.com");
+      expect(html).toContain("Not yet responded");
+      expect(html).toContain("0 of 1 responded");
+      expect(html).toContain(
+        "Only counts people invited by email through this tool.",
+      );
+      // But the nudge control is HIDDEN (not disabled) once the poll is closed —
+      // even with EMAIL_PROVIDER set.
+      expect(html).not.toContain("Nudge non-respondents");
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("(d) NO-LEAK — a seeded invitation canary email never appears when email is unconfigured, and the card is admin-only", async () => {
+    // No EMAIL_PROVIDER: the nudge control is absent, but the badge list (admin
+    // surface) still shows the invited email intentionally. This asserts the
+    // card degrades correctly without a mail provider.
+    const canary = "invite-canary-no-leak@example.com";
+    const { adminUrlId } = await seedPoll({ invitations: [canary] });
+    const html = await renderAdmin(adminUrlId);
+
+    // Admin surface shows the invitation (by design) and the not-responded badge.
+    expect(html).toContain(canary);
+    expect(html).toContain("Not yet responded");
+    // Email unconfigured -> no active nudge control.
+    expect(html).not.toContain("Nudge non-respondents");
   });
 
   it("calls notFound() (404) for an unknown admin token", async () => {
