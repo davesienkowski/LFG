@@ -125,8 +125,11 @@ export async function sendInvites(
           .insert(invitations)
           .values({ pollId: poll.id, email })
           .onConflictDoNothing();
-      } catch {
-        // Swallow — recording is best-effort and never affects the UI result.
+      } catch (err) {
+        // Best-effort — never affects the UI result — but LOG it so a systemic
+        // failure (FK/constraint/connection) is discoverable in server logs
+        // rather than silently degrading respondent tracking for every poll.
+        console.error("invitations insert failed (best-effort, ignored):", err);
       }
     } else if (result.rateLimited) {
       results.push({ email, status: "rate_limited" });

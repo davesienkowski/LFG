@@ -17,6 +17,22 @@
 //    external <link>/webfont, no <script>. No react-email dependency (D-10).
 import { formatDateWithTime } from "@/lib/format-date";
 
+// Minimal HTML-entity escaping for USER-CONTROLLED strings interpolated into the
+// email HTML shell — poll `title`, `location`, and `participantName`. Without it,
+// a crafted value (e.g. a poll title containing `<a href>`/markup) renders as live
+// HTML in every delivered email; the RESP-02 nudge makes that an organizer-invoked
+// repeatable send path, so the strings are escaped at the point of interpolation.
+// URLs (participant/edit/admin/calendar) are app-generated (nanoid tokens + a
+// resolved base URL) and are NOT escaped here.
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 // Hex approximations of the app's OKLCH tokens (email clients cannot inherit the
 // app's CSS variables). Near-black on white and mid-gray on white both clear
 // WCAG AA 4.5:1.
@@ -97,7 +113,7 @@ export function renderInviteEmail({
   participantUrl: string;
 }): string {
   return renderShell({
-    heading: `You're invited: ${title}`,
+    heading: `You're invited: ${escapeHtml(title)}`,
     bodyText:
       "You've been invited to help pick a date. Tap below to mark your availability.",
     ctaUrl: participantUrl,
@@ -126,7 +142,7 @@ export function renderReminderEmail({
 }): string {
   return renderShell({
     heading: "Reminder: your response is needed",
-    bodyText: `A quick reminder to mark your availability for ${title}. Tap below to let everyone know which days work for you.`,
+    bodyText: `A quick reminder to mark your availability for ${escapeHtml(title)}. Tap below to let everyone know which days work for you.`,
     ctaUrl: participantUrl,
     ctaLabel: "View the poll & vote",
   });
@@ -145,7 +161,7 @@ export function renderConfirmationEmail({
   editUrl: string;
 }): string {
   return renderShell({
-    heading: `Your response to ${title} is saved`,
+    heading: `Your response to ${escapeHtml(title)} is saved`,
     bodyText:
       "Thanks for responding! Use the link below any time to review or change your answer while the poll is open.",
     ctaUrl: editUrl,
@@ -176,7 +192,7 @@ export function renderCreatorAdminLinkEmail({
   adminUrl: string;
 }): string {
   return renderShell({
-    heading: `Manage your poll: ${title}`,
+    heading: `Manage your poll: ${escapeHtml(title)}`,
     bodyText:
       "Save this link — it's the only way to manage or close your poll. Don't share it; anyone with this link can manage your poll.",
     ctaUrl: adminUrl,
@@ -212,8 +228,8 @@ export function renderParticipantResponseNotification({
   adminUrl: string;
 }): string {
   return renderShell({
-    heading: `New response to ${title}`,
-    bodyText: `${participantName} just submitted their availability.`,
+    heading: `New response to ${escapeHtml(title)}`,
+    bodyText: `${escapeHtml(participantName)} just submitted their availability.`,
     ctaUrl: adminUrl,
     ctaLabel: "View current results",
   });
@@ -245,10 +261,10 @@ export function renderFinalizationEmail({
   icsUrl?: string | null;
 }): string {
   const locationLine = location
-    ? `<p style="font-size:14px; color:${MUTED}; margin:0;">${location}</p>`
+    ? `<p style="font-size:14px; color:${MUTED}; margin:0;">${escapeHtml(location)}</p>`
     : "";
   const eventDetailsBlock = `<div style="border:1px solid ${CARD_BORDER}; background-color:${CARD_BG}; border-radius:8px; padding:16px; margin:0 0 24px 0;">
-          <p style="font-size:14px; font-weight:600; margin:0 0 4px 0;">${title}</p>
+          <p style="font-size:14px; font-weight:600; margin:0 0 4px 0;">${escapeHtml(title)}</p>
           <p style="font-size:16px; font-weight:400; margin:0 0 4px 0;">${formatDateWithTime(chosenDate, chosenTime)}</p>
           ${locationLine}
         </div>`;
@@ -272,7 +288,7 @@ export function renderFinalizationEmail({
 
   return renderShell({
     heading: "The date is set!",
-    bodyText: `${title} is booked. Here are the details:`,
+    bodyText: `${escapeHtml(title)} is booked. Here are the details:`,
     eventDetailsBlock,
     calendarBlock,
     ctaUrl: participantUrl,

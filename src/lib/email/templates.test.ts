@@ -25,7 +25,8 @@ describe("renderInviteEmail", () => {
       participantUrl: PARTICIPANT_URL,
     });
     expect(html).toContain(PARTICIPANT_URL);
-    expect(html).toContain("You're invited: D&D Session");
+    // Static copy ("You're invited: ") is literal; the user title is HTML-escaped.
+    expect(html).toContain("You're invited: D&amp;D Session");
     expect(html).toContain("View the poll & vote");
   });
 });
@@ -39,8 +40,8 @@ describe("renderReminderEmail", () => {
     expect(html).toContain(PARTICIPANT_URL);
     expect(html).toContain("Reminder: your response is needed");
     expect(html).toContain("View the poll & vote");
-    // Reminder-appropriate copy naming the poll.
-    expect(html).toContain("D&D Session");
+    // Reminder-appropriate copy naming the poll (title HTML-escaped).
+    expect(html).toContain("D&amp;D Session");
   });
 
   it("carries NO /a/ admin path given only a participant URL (T-04-02 / T-07-04)", () => {
@@ -62,7 +63,7 @@ describe("renderConfirmationEmail", () => {
       editUrl: EDIT_URL,
     });
     expect(html).toContain(EDIT_URL);
-    expect(html).toContain("Your response to D&D Session is saved");
+    expect(html).toContain("Your response to D&amp;D Session is saved");
     expect(html).toContain("View or edit my response");
   });
 });
@@ -76,7 +77,7 @@ describe("renderCreatorAdminLinkEmail", () => {
     // The SOLE template that legitimately carries an /a/ admin URL (recipient is
     // the creator, a recovery channel for their own credential).
     expect(html).toContain(ADMIN_URL);
-    expect(html).toContain("Manage your poll: D&D Session");
+    expect(html).toContain("Manage your poll: D&amp;D Session");
     expect(html).toContain("Manage my poll");
   });
 });
@@ -91,7 +92,7 @@ describe("renderParticipantResponseNotification", () => {
     // The creator-recipient notification legitimately carries the /a/ admin URL
     // (T-04-02 exception, like renderCreatorAdminLinkEmail).
     expect(html).toContain(ADMIN_URL);
-    expect(html).toContain("New response to D&D Session");
+    expect(html).toContain("New response to D&amp;D Session");
     expect(html).toContain("Alex");
     expect(html).toContain("View current results");
   });
@@ -126,7 +127,7 @@ describe("renderFinalizationEmail", () => {
     // The raw ISO date-only string must NOT appear as the visible date — proving
     // the formatter ran rather than a naive interpolation.
     expect(html).not.toContain("2026-07-19");
-    expect(html).toContain("Dave's place");
+    expect(html).toContain("Dave&#39;s place");
     expect(html).toContain("The date is set!");
     expect(html).toContain(PARTICIPANT_URL);
   });
@@ -203,5 +204,47 @@ describe("no admin-path leakage (T-04-02)", () => {
     for (const html of [invite, reminder, confirmation, finalization]) {
       expect(html).not.toContain("/a/");
     }
+  });
+});
+
+describe("HTML escaping of user-controlled strings", () => {
+  const XSS = `<script>alert('x')</script> & "<b>`;
+
+  it("escapes a crafted poll title in the reminder email (no live markup)", () => {
+    const html = renderReminderEmail({
+      title: XSS,
+      participantUrl: PARTICIPANT_URL,
+    });
+    // The raw markup must not survive into the email HTML...
+    expect(html).not.toContain("<script>alert('x')</script>");
+    // ...but the escaped, human-readable form must be present.
+    expect(html).toContain(
+      "&lt;script&gt;alert(&#39;x&#39;)&lt;/script&gt; &amp; &quot;&lt;b&gt;",
+    );
+  });
+
+  it("escapes a crafted title and location in the finalization email", () => {
+    const html = renderFinalizationEmail({
+      title: XSS,
+      location: `<img src=x onerror="alert(1)">`,
+      chosenDate: "2026-07-19",
+      chosenTime: "14:00",
+      participantUrl: PARTICIPANT_URL,
+      googleCalendarUrl: null,
+      icsUrl: null,
+    });
+    expect(html).not.toContain("<script>");
+    expect(html).not.toContain('<img src=x onerror="alert(1)">');
+    expect(html).toContain("&lt;img src=x onerror=&quot;alert(1)&quot;&gt;");
+  });
+
+  it("escapes a crafted participant name in the response notification", () => {
+    const html = renderParticipantResponseNotification({
+      title: "Game Night",
+      participantName: `<b>Mallory</b>`,
+      adminUrl: ADMIN_URL,
+    });
+    expect(html).not.toContain("<b>Mallory</b>");
+    expect(html).toContain("&lt;b&gt;Mallory&lt;/b&gt;");
   });
 });
