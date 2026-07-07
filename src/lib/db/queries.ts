@@ -9,7 +9,7 @@
 //    'YYYY-MM-DD' strings end-to-end — never a JS Date (D-11 / P3).
 import { db } from "@/lib/db";
 import { polls, options, participants, votes } from "@/lib/db/schema";
-import { eq, asc, sql, and, isNotNull } from "drizzle-orm";
+import { eq, asc, desc, sql, and, isNotNull } from "drizzle-orm";
 
 /** Full poll row by admin token (admin route is the management surface). */
 export async function getPollByAdminUrlId(adminUrlId: string) {
@@ -315,4 +315,51 @@ export async function getFinalizedPollsByOrganizerId(organizerId: string) {
       sql`${options.startTime} asc nulls first`,
       asc(polls.id),
     );
+}
+
+/**
+ * The "Your polls" dashboard read (MYP-01 / MYP-04 / MYP-05 / MYP-07). Returns
+ * EVERY poll — open AND closed — for one `lfg_organizer` token, newest-first,
+ * with per-poll aggregate counts. Unlike getFinalizedPollsByOrganizerId (the
+ * calendar feed), an OPEN poll (winning_option_id NULL) IS included: the LEFT
+ * JOIN on winning_option_id simply yields winningDate/winningStartTime = null
+ * for it, and the caller branches on `status`.
+ *
+ * ORDER BY created_at DESC with a STABLE `polls.id` tiebreaker (MYP-01) so two
+ * polls sharing the same created_at have a deterministic order across repeated
+ * calls (mirrors the feed's EP-FEED-ORDER; prevents flaky ordering).
+ *
+ * Selects PARTICIPANT-SAFE columns ONLY — the organizer owns these admin links,
+ * so `adminUrlId` IS selected, but the shape DELIBERATELY OMITS
+ * participant_url_id, edit_token, participant names/emails, and creator_email:
+ * the dashboard renders per-poll summaries without exposing any participant
+ * identity or third token (T-06-01 / PROH-2). `optionCount`/`responseCount` are
+ * correlated `COUNT(*)` subqueries cast to `::int` so neon returns a JS number
+ * (never a bigint string) and an empty poll yields 0, never null (MYP-04).
+ *
+ * A single-statement read (no interactive transaction, neon-http safe). Guards
+ * MYP-05 up front: an empty or whitespace-only organizerId returns [] BEFORE any
+ * query is issued — an empty/whitespace token is never a wildcard, mirroring the
+ * create-poll organizer normalization. The exact `eq(polls.organizerId,
+ * organizerId)` predicate is a SQL `= $1` that never matches a NULL organizer_id
+ * (MYP-07 / PROH-1), so a null-organizer poll can never appear.
+ */
+export async function getPollsByOrganizerId(organizerId: string) {
+  // MYP-05: empty/whitespace token is ABSENT, never a wildcard — no query.
+  if (!organizerId || !organizerId.trim()) return [];
+
+  return db
+    .select({
+      adminUrlId: polls.adminUrlId,
+      title: polls.title,
+      status: polls.status,
+      winningDate: options.date,
+      winningStartTime: options.startTime,
+      optionCount: sql<number>`(select count(*) from ${options} where ${options.pollId} = ${polls.id})::int`,
+      responseCount: sql<number>`(select count(*) from ${participants} where ${participants.pollId} = ${polls.id})::int`,
+    })
+    .from(polls)
+    .leftJoin(options, eq(options.id, polls.winningOptionId))
+    .where(eq(polls.organizerId, organizerId))
+    .orderBy(desc(polls.createdAt), asc(polls.id));
 }

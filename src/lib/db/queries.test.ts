@@ -17,6 +17,7 @@ import {
   getResultsForPoll,
   getVoterEmailsForPoll,
   getFinalizedPollsByOrganizerId,
+  getPollsByOrganizerId,
   getPollAdminNotifyTargets,
 } from "@/lib/db/queries";
 import { db } from "@/lib/db";
@@ -361,6 +362,240 @@ describe("getFinalizedPollsByOrganizerId", () => {
   it("returns [] for an unknown organizerId", async () => {
     const result = await getFinalizedPollsByOrganizerId(generateToken());
     expect(result).toEqual([]);
+  });
+});
+
+// getPollsByOrganizerId (MYP-01 / MYP-04 / MYP-05 / MYP-07 / PROH-1 / PROH-2).
+// The "Your polls" dashboard read: every poll (open + closed) for one organizer
+// token, newest-first, with per-poll aggregate counts and participant-safe
+// columns only. Each case mints its OWN generateToken() organizer so rows from
+// other cases (or other describe blocks) can never contaminate an assertion.
+async function seedDashboardPoll(
+  organizerId: string | null,
+  opts?: {
+    title?: string;
+    optionSpecs?: { date: string; startTime: string | null }[];
+    participantSpecs?: { name: string; email: string | null }[];
+    winnerIndex?: number; // index into optionSpecs to set as winner (closes poll)
+  },
+) {
+  const [poll] = await db
+    .insert(polls)
+    .values({
+      title: opts?.title ?? "Dashboard Poll",
+      participantUrlId: generateToken(),
+      adminUrlId: generateToken(),
+      // null => leave organizer_id NULL (the null-organizer / legacy case).
+      organizerId: organizerId ?? undefined,
+      status: opts?.winnerIndex != null ? "closed" : "open",
+    })
+    .returning({ id: polls.id, adminUrlId: polls.adminUrlId });
+  createdPollIds.push(poll.id);
+
+  let insertedOptions: { id: string }[] = [];
+  if (opts?.optionSpecs?.length) {
+    insertedOptions = await db
+      .insert(options)
+      .values(
+        opts.optionSpecs.map((o, i) => ({
+          pollId: poll.id,
+          date: o.date,
+          startTime: o.startTime,
+          position: i,
+        })),
+      )
+      .returning({ id: options.id });
+  }
+
+  const editTokens: string[] = [];
+  if (opts?.participantSpecs?.length) {
+    for (const p of opts.participantSpecs) {
+      const editToken = generateToken();
+      editTokens.push(editToken);
+      await db.insert(participants).values({
+        pollId: poll.id,
+        name: p.name,
+        email: p.email,
+        editToken,
+      });
+    }
+  }
+
+  if (opts?.winnerIndex != null && insertedOptions[opts.winnerIndex]) {
+    await db
+      .update(polls)
+      .set({ winningOptionId: insertedOptions[opts.winnerIndex].id })
+      .where(inArray(polls.id, [poll.id]));
+  }
+
+  return {
+    pollId: poll.id,
+    adminUrlId: poll.adminUrlId,
+    optionIds: insertedOptions.map((o) => o.id),
+    editTokens,
+  };
+}
+
+describe("getPollsByOrganizerId", () => {
+  const DASH_CANARY_EMAIL = "dash-canary@example.com";
+  const DASH_CANARY_NAME = "Zorbnax The Canary";
+
+  it("returns every poll (open + closed) newest-first (created_at DESC), MYP-01", async () => {
+    const organizerId = generateToken();
+    // Sequential inserts => strictly increasing created_at; newest is last seeded.
+    const oldest = await seedDashboardPoll(organizerId, { title: "Oldest" });
+    const middle = await seedDashboardPoll(organizerId, { title: "Middle" });
+    const newest = await seedDashboardPoll(organizerId, { title: "Newest" });
+
+    const result = await getPollsByOrganizerId(organizerId);
+    expect(result.map((p) => p.adminUrlId)).toEqual([
+      newest.adminUrlId,
+      middle.adminUrlId,
+      oldest.adminUrlId,
+    ]);
+  });
+
+  it("orders deterministically across repeated calls via the stable polls.id tiebreaker (MYP-01)", async () => {
+    const organizerId = generateToken();
+    await seedDashboardPoll(organizerId, { title: "One" });
+    await seedDashboardPoll(organizerId, { title: "Two" });
+
+    const first = await getPollsByOrganizerId(organizerId);
+    const second = await getPollsByOrganizerId(organizerId);
+    expect(second.map((p) => p.adminUrlId)).toEqual(
+      first.map((p) => p.adminUrlId),
+    );
+  });
+
+  it("computes optionCount/responseCount as numbers, 0 (not null) for an empty poll (MYP-04)", async () => {
+    const organizerId = generateToken();
+    const counted = await seedDashboardPoll(organizerId, {
+      title: "Counted",
+      optionSpecs: [
+        { date: "2026-09-01", startTime: null },
+        { date: "2026-09-02", startTime: "14:00" },
+        { date: "2026-09-03", startTime: "18:00" },
+      ],
+      participantSpecs: [
+        { name: "P1", email: null },
+        { name: "P2", email: null },
+      ],
+    });
+    const empty = await seedDashboardPoll(organizerId, { title: "Empty" });
+
+    const result = await getPollsByOrganizerId(organizerId);
+    const countedRow = result.find((p) => p.adminUrlId === counted.adminUrlId)!;
+    const emptyRow = result.find((p) => p.adminUrlId === empty.adminUrlId)!;
+
+    expect(typeof countedRow.optionCount).toBe("number");
+    expect(typeof countedRow.responseCount).toBe("number");
+    expect(countedRow.optionCount).toBe(3);
+    expect(countedRow.responseCount).toBe(2);
+
+    expect(emptyRow.optionCount).toBe(0);
+    expect(emptyRow.responseCount).toBe(0);
+    expect(emptyRow.optionCount).not.toBeNull();
+    expect(emptyRow.responseCount).not.toBeNull();
+  });
+
+  it("resolves winner columns for a CLOSED poll and null for an OPEN poll — both appear (MYP-01)", async () => {
+    const organizerId = generateToken();
+    const closed = await seedDashboardPoll(organizerId, {
+      title: "Closed",
+      optionSpecs: [{ date: "2026-10-05", startTime: "19:30:00" }],
+      winnerIndex: 0,
+    });
+    const open = await seedDashboardPoll(organizerId, {
+      title: "Open",
+      optionSpecs: [{ date: "2026-10-06", startTime: null }],
+    });
+
+    const result = await getPollsByOrganizerId(organizerId);
+    const closedRow = result.find((p) => p.adminUrlId === closed.adminUrlId)!;
+    const openRow = result.find((p) => p.adminUrlId === open.adminUrlId)!;
+
+    expect(closedRow).toBeDefined();
+    expect(openRow).toBeDefined();
+    expect(closedRow.status).toBe("closed");
+    expect(closedRow.winningDate).toBe("2026-10-05");
+    expect(closedRow.winningStartTime).toBe("19:30:00");
+    expect(openRow.status).toBe("open");
+    expect(openRow.winningDate).toBeNull();
+    expect(openRow.winningStartTime).toBeNull();
+  });
+
+  it("scopes strictly to the organizer — never leaks another organizer's poll (PROH-1)", async () => {
+    const organizerA = generateToken();
+    const organizerB = generateToken();
+    const a = await seedDashboardPoll(organizerA, { title: "A's Poll" });
+    const b = await seedDashboardPoll(organizerB, { title: "B's Poll" });
+
+    const resultA = await getPollsByOrganizerId(organizerA);
+    const resultB = await getPollsByOrganizerId(organizerB);
+
+    const aIds = resultA.map((p) => p.adminUrlId);
+    const bIds = resultB.map((p) => p.adminUrlId);
+    expect(aIds).toContain(a.adminUrlId);
+    expect(aIds).not.toContain(b.adminUrlId);
+    expect(bIds).toContain(b.adminUrlId);
+    expect(bIds).not.toContain(a.adminUrlId);
+  });
+
+  it("returns [] for an empty/whitespace organizerId even with a null-organizer poll present (MYP-05)", async () => {
+    // Seed a poll with organizer_id NULL — it must not be grouped by "" or "   ".
+    await seedDashboardPoll(null, { title: "Null Organizer" });
+    expect(await getPollsByOrganizerId("")).toEqual([]);
+    expect(await getPollsByOrganizerId("   ")).toEqual([]);
+  });
+
+  it("never returns a null-organizer poll under any organizer token (MYP-07)", async () => {
+    const nullPoll = await seedDashboardPoll(null, { title: "Orphan" });
+    const organizerId = generateToken();
+    await seedDashboardPoll(organizerId, { title: "Owned" });
+
+    const result = await getPollsByOrganizerId(organizerId);
+    expect(result.map((p) => p.adminUrlId)).not.toContain(nullPoll.adminUrlId);
+    // And an unknown organizer sees nothing (the orphan is not a wildcard match).
+    expect(await getPollsByOrganizerId(generateToken())).toEqual([]);
+  });
+
+  it("leaks no participant email/name/edit-token/participant_url_id and has EXACTLY the 7-key shape (non-vacuous, PROH-2)", async () => {
+    const organizerId = generateToken();
+    const seeded = await seedDashboardPoll(organizerId, {
+      title: "No-Leak Poll",
+      participantSpecs: [
+        { name: DASH_CANARY_NAME, email: DASH_CANARY_EMAIL },
+      ],
+    });
+
+    const result = await getPollsByOrganizerId(organizerId);
+    // Non-vacuous: the poll DID appear.
+    expect(result.length).toBeGreaterThanOrEqual(1);
+    const row = result.find((p) => p.adminUrlId === seeded.adminUrlId)!;
+    expect(row).toBeDefined();
+
+    // Exactly the 7 documented, participant-safe columns (sorted).
+    expect(Object.keys(row).sort()).toEqual([
+      "adminUrlId",
+      "optionCount",
+      "responseCount",
+      "status",
+      "title",
+      "winningDate",
+      "winningStartTime",
+    ]);
+
+    const serialized = JSON.stringify(result);
+    expect(serialized).not.toContain(DASH_CANARY_EMAIL);
+    expect(serialized).not.toContain(DASH_CANARY_NAME);
+    expect(serialized).not.toContain(seeded.editTokens[0]);
+    expect(serialized).not.toContain("email");
+    expect(serialized).not.toContain("editToken");
+    expect(serialized).not.toContain("edit_token");
+    expect(serialized).not.toContain("participantUrlId");
+    expect(serialized).not.toContain("participant_url_id");
+    expect(serialized).not.toContain("creatorEmail");
+    expect(serialized).not.toContain("creator_email");
   });
 });
 
