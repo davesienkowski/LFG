@@ -12,6 +12,16 @@ A free, self-hostable clone of Doodle.com's "Group Poll" feature, focused on the
 
 A poll creator can propose candidate dates, get participants to mark their availability via an emailed link, and instantly see which day(s) work for the whole group — with no login required for participants and no cost to run.
 
+## Current Milestone: v1.1 Organizer Controls
+
+**Goal:** Give the organizer the tools to drive a poll to a confident decision — track who hasn't responded, nudge them, auto-close on a deadline, and vote in their own availability.
+
+**Target features:**
+- See which invited people have not yet responded (requires persisting invitations)
+- One-click "nudge" email to non-respondents
+- Optional voting deadline that auto-closes the poll (serverless-safe lazy close, no cron)
+- Organizer can add their own availability row from the admin view
+
 ## Requirements
 
 ### Validated
@@ -33,9 +43,12 @@ A poll creator can propose candidate dates, get participants to mark their avail
 
 ### Active
 
-<!-- Current scope. Building toward these. Next milestone TBD — see v2 candidates in the archived milestones/v1.0-REQUIREMENTS.md (respondent tracking, deadlines, comments, per-day multi-slot). -->
+<!-- Current scope (milestone v1.1 Organizer Controls). Remaining v2 candidates (comments CMNT-01, mobile grid MOBL-01, per-day multi-slot SLOT-01) stay deferred — see milestones/v1.0-REQUIREMENTS.md. -->
 
-- (none — v1.0 shipped; next milestone not yet defined. Run `/gsd-new-milestone`.)
+- [ ] Organizer can see which invited people have not yet responded — *RESP-01 (v1.1)*
+- [ ] Organizer can send a one-click "nudge" email to non-respondents — *RESP-02 (v1.1)*
+- [ ] Organizer can set a deadline after which voting auto-closes — *DEAD-01 (v1.1)*
+- [ ] Organizer can add their own availability row from the admin view — *ORG-01 (v1.1)*
 
 ### Out of Scope
 
@@ -98,4 +111,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-07 after v1.0 MVP milestone*
+*Last updated: 2026-07-07 — started milestone v1.1 Organizer Controls*
