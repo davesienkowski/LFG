@@ -106,6 +106,33 @@ export function renderInviteEmail({
 }
 
 /**
+ * Reminder email (RESP-02). Sent by the nudge action to a not-yet-responded
+ * invited address. CTA is the SAME participant voting link the original invite
+ * carried — a reminder, not a new credential. Accepts ONLY a participant URL
+ * string — never an admin URL (T-04-02 / T-07-04). This is a PARTICIPANT-recipient
+ * template, so — unlike renderCreatorAdminLinkEmail / renderParticipantResponseNotification
+ * — the no-admin-URL discipline applies exactly as it does for renderInviteEmail;
+ * it is NOT a creator-recipient admin-URL exception.
+ *
+ * The subject line ("Reminder: your response is needed") is owned by the nudge
+ * action, mirroring how sendInvites owns the invite subject.
+ */
+export function renderReminderEmail({
+  title,
+  participantUrl,
+}: {
+  title: string;
+  participantUrl: string;
+}): string {
+  return renderShell({
+    heading: "Reminder: your response is needed",
+    bodyText: `A quick reminder to mark your availability for ${title}. Tap below to let everyone know which days work for you.`,
+    ctaUrl: participantUrl,
+    ctaLabel: "View the poll & vote",
+  });
+}
+
+/**
  * Confirmation email (VOTE-04). CTA is the participant's personal edit link — an
  * additional channel for the SAME link /thanks already shows, not a new
  * credential. Accepts only an edit URL string — never an admin URL (T-04-02).

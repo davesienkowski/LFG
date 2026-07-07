@@ -6,6 +6,7 @@
 import { describe, it, expect } from "vitest";
 import {
   renderInviteEmail,
+  renderReminderEmail,
   renderConfirmationEmail,
   renderFinalizationEmail,
   renderCreatorAdminLinkEmail,
@@ -26,6 +27,31 @@ describe("renderInviteEmail", () => {
     expect(html).toContain(PARTICIPANT_URL);
     expect(html).toContain("You're invited: D&D Session");
     expect(html).toContain("View the poll & vote");
+  });
+});
+
+describe("renderReminderEmail", () => {
+  it("embeds the participant CTA URL, reminder heading, and CTA label", () => {
+    const html = renderReminderEmail({
+      title: "D&D Session",
+      participantUrl: PARTICIPANT_URL,
+    });
+    expect(html).toContain(PARTICIPANT_URL);
+    expect(html).toContain("Reminder: your response is needed");
+    expect(html).toContain("View the poll & vote");
+    // Reminder-appropriate copy naming the poll.
+    expect(html).toContain("D&D Session");
+  });
+
+  it("carries NO /a/ admin path given only a participant URL (T-04-02 / T-07-04)", () => {
+    // Non-vacuous: even if an admin URL string is floating around the caller,
+    // this template has no param for it and must never emit an /a/ path.
+    const html = renderReminderEmail({
+      title: "D&D Session",
+      participantUrl: PARTICIPANT_URL,
+    });
+    expect(html).not.toContain("/a/");
+    expect(html).not.toContain(ADMIN_URL);
   });
 });
 
@@ -151,8 +177,12 @@ describe("renderFinalizationEmail", () => {
 });
 
 describe("no admin-path leakage (T-04-02)", () => {
-  it("none of the three templates emit an /a/ admin path given participant/edit URLs", () => {
+  it("none of the participant templates emit an /a/ admin path given participant/edit URLs", () => {
     const invite = renderInviteEmail({
+      title: "T",
+      participantUrl: PARTICIPANT_URL,
+    });
+    const reminder = renderReminderEmail({
       title: "T",
       participantUrl: PARTICIPANT_URL,
     });
@@ -170,7 +200,7 @@ describe("no admin-path leakage (T-04-02)", () => {
         "https://calendar.google.com/calendar/render?action=TEMPLATE",
       icsUrl: `${PARTICIPANT_URL}/event.ics`,
     });
-    for (const html of [invite, confirmation, finalization]) {
+    for (const html of [invite, reminder, confirmation, finalization]) {
       expect(html).not.toContain("/a/");
     }
   });
