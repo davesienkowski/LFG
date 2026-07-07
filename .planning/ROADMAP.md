@@ -39,7 +39,11 @@ Full detail: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
   2. The admin view shows every invited email with a clear "responded" or "not yet responded" status, matched to the participant who actually voted.
   3. The organizer can trigger a one-click "nudge" that emails only the non-respondents, each message carrying the participant link.
   4. The nudge routes through the existing env-switched `sendEmail()` seam — with no email configured it degrades gracefully (no error, copy-link fallback) exactly like v1.0 invites.
-**Plans**: TBD
+**Plans**: 4 plans (waves 1→4, sequential)
+- [ ] 07-01-PLAN.md — Invitation persistence & recording: additive `invitations` table + migration; record-on-successful-send in sendInvites (RESP-03)
+- [ ] 07-02-PLAN.md — Tracking read + nudge backend: admin-only responded/not-responded query; renderReminderEmail; nudgeNonRespondents action with server-side recompute + closed re-check (RESP-01, RESP-02)
+- [ ] 07-03-PLAN.md — Who's responded card + nudge control UI wired into the admin page, no-leak canary tests (RESP-01, RESP-02)
+- [ ] 07-04-PLAN.md — Prod backup → migrate → deploy + human-verify a real nudge email delivers (RESP-03, RESP-02)
 **UI hint**: yes
 
 ### Phase 8: Scheduling Controls
@@ -67,5 +71,5 @@ Full detail: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 | 4. Email & Finalization     | v1.0      | 3/3            | Complete    | 2026-07-02 |
 | 5. Vote-Grid Redesign       | v1.0      | 5/5            | Complete    | 2026-07-02 |
 | 6. Your Polls Dashboard     | v1.0      | 4/4            | Complete    | 2026-07-06 |
-| 7. Respondent Tracking & Nudges | v1.1  | 0/TBD          | Not started | -          |
+| 7. Respondent Tracking & Nudges | v1.1  | 0/4            | Planned     | -          |
 | 8. Scheduling Controls      | v1.1      | 0/TBD          | Not started | -          |
