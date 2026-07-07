@@ -35,6 +35,11 @@ export async function getPollByParticipantUrlId(participantUrlId: string) {
       description: polls.description,
       location: polls.location,
       status: polls.status,
+      // The voting deadline instant (DEAD-01) — participant-safe: it is not a
+      // secret, and both vote gates (submit/update) + both participant pages
+      // derive readOnly from isVotingOpen(poll, now) using it. admin_url_id
+      // stays OMITTED (D-09 / P2 unchanged).
+      deadline: polls.deadline,
       createdAt: polls.createdAt,
     })
     .from(polls)
@@ -265,6 +270,9 @@ export async function getPollWithWinningOption(adminUrlId: string) {
       // organizerId (LD-4) so the admin page can decide whether to render the
       // subscribe card and build the feed URL. Null for legacy polls (card hidden).
       organizerId: polls.organizerId,
+      // The voting deadline instant (DEAD-01) so the admin page can render the
+      // deadline card + derive the deadline-passed header pill.
+      deadline: polls.deadline,
       createdAt: polls.createdAt,
       winningDate: options.date,
       winningStartTime: options.startTime,

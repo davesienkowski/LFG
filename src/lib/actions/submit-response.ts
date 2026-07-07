@@ -34,6 +34,7 @@ import {
   getPollAdminNotifyTargets,
 } from "@/lib/db/queries";
 import { generateToken } from "@/lib/tokens";
+import { isVotingOpen } from "@/lib/poll-status";
 import { resolveBaseUrl, buildEditUrl, buildAdminUrl } from "@/lib/urls";
 import { sendEmail } from "@/lib/email/send";
 import {
@@ -111,8 +112,12 @@ export async function submitResponse(
   const poll = await getPollByParticipantUrlId(participantUrlId);
   if (!poll) notFound();
 
-  // Server-enforced status guard, re-checked at write time (T-02-02).
-  if (poll.status !== "open") {
+  // Server-enforced voting-open guard, re-checked at write time (T-02-02 /
+  // DEAD-01 LOCKED 4). isVotingOpen derives "closed" from BOTH status and the
+  // deadline instant now selected by getPollByParticipantUrlId — so a stale open
+  // form that POSTs after the deadline is rejected here even though the client
+  // still rendered an editable form (no cron, evaluated fresh at write time).
+  if (!isVotingOpen(poll, new Date())) {
     return { errors: { _form: ["Voting is closed for this poll."] } };
   }
 

@@ -47,6 +47,7 @@ import {
   getParticipantByEditToken,
   getPollAdminNotifyTargets,
 } from "@/lib/db/queries";
+import { isVotingOpen } from "@/lib/poll-status";
 import { resolveBaseUrl, buildAdminUrl } from "@/lib/urls";
 import { sendEmail } from "@/lib/email/send";
 import { renderParticipantResponseNotification } from "@/lib/email/templates";
@@ -119,8 +120,11 @@ export async function updateResponse(
   const participant = await getParticipantByEditToken(editToken);
   if (!participant || participant.pollId !== poll.id) notFound();
 
-  // Server-enforced status guard, re-checked at write time (T-02-07).
-  if (poll.status !== "open") {
+  // Server-enforced voting-open guard, re-checked at write time (T-02-07 /
+  // DEAD-01 LOCKED 4). isVotingOpen derives "closed" from BOTH status and the
+  // deadline instant now selected by getPollByParticipantUrlId — a stale open
+  // edit form that POSTs after the deadline is rejected here with no write.
+  if (!isVotingOpen(poll, new Date())) {
     return { errors: { _form: ["Voting is closed for this poll."] } };
   }
 
