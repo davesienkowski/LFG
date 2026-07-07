@@ -27,6 +27,7 @@ import {
   getFinalizedPollByParticipantUrlId,
 } from "@/lib/db/queries";
 import { formatDateWithTime } from "@/lib/format-date";
+import { isVotingOpen } from "@/lib/poll-status";
 import { submitResponse } from "@/lib/actions/submit-response";
 import { updateResponse } from "@/lib/actions/update-response";
 import { PollSummary } from "@/components/poll-summary";
@@ -66,6 +67,18 @@ export default async function ParticipantPage({
   // link learns the outcome ON-PAGE (UX-UAT F2 — the core promise), not only by
   // email. Participant-safe read (omits admin token); winningDate is null while
   // the poll is open, so this only resolves once finalized.
+  // Derive the vote gate server-side (DEAD-01 / LOCKED 5). readOnly comes from
+  // the SINGLE isVotingOpen rule (status OR a passed deadline closes voting);
+  // deadlinePassed is the distinct "open-but-expired" case that drives the
+  // participant's deadline-specific copy. Only these BOOLEANS cross to the client
+  // — never poll.deadline (a raw Date). bookedLabel stays keyed on a real
+  // finalize (status !== "open"), so a deadline-passed-but-open poll has no
+  // bookedLabel and falls into the deadline branch (UI Probe #3).
+  const now = new Date();
+  const votingOpen = isVotingOpen(poll, now);
+  const deadlinePassed =
+    poll.status === "open" && poll.deadline != null && poll.deadline <= now;
+
   let bookedLabel: string | undefined;
   if (poll.status !== "open") {
     const finalized = await getFinalizedPollByParticipantUrlId(participantUrlId);
@@ -104,8 +117,9 @@ export default async function ParticipantPage({
         initialName={priorParticipant?.name ?? ""}
         initialEmail={priorParticipant?.email ?? ""}
         initialVotes={priorVotes ?? undefined}
-        readOnly={poll.status !== "open"}
+        readOnly={!votingOpen}
         bookedLabel={bookedLabel}
+        deadlinePassed={deadlinePassed}
         submitLabel="Submit availability"
         pendingLabel="Submitting..."
       />

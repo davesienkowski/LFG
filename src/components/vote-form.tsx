@@ -44,6 +44,7 @@ export function VoteForm({
   initialVotes,
   readOnly = false,
   bookedLabel,
+  deadlinePassed = false,
   heading = "Your availability",
   submitLabel,
   pendingLabel,
@@ -59,6 +60,12 @@ export function VoteForm({
   // The finalized date, preformatted server-side, shown in the closed-poll
   // banner so a returning participant learns the outcome on-page (UX-UAT F2).
   bookedLabel?: string;
+  // Server-computed boolean (DEAD-01 / LOCKED 5): true when the poll is still
+  // OPEN but its deadline has passed. Never a raw Date across the RSC boundary —
+  // the page derives this from isVotingOpen and passes only the boolean. When
+  // bookedLabel is set (a real finalize) it wins; deadlinePassed only branches
+  // the copy for the deadline-closed-but-unbooked case (UI Probe #3).
+  deadlinePassed?: boolean;
   heading?: string;
   submitLabel: string;
   pendingLabel: string;
@@ -179,21 +186,42 @@ export function VoteForm({
       */}
       {readOnly ? (
         <div className="sticky bottom-0 z-10 -mx-4 border-t bg-muted p-6 text-center sm:static sm:mx-0 sm:rounded-lg sm:border">
-          {/* F2: lead with the outcome the participant came back for. */}
+          {/* Three-way closed-copy branch (DEAD-01 / UI Probe #3): a real
+              finalize wins (F2 — lead with the booked outcome); otherwise a
+              passed deadline gets its OWN distinct "Voting has closed" copy so a
+              participant doesn't misread it as an organizer-triggered close; the
+              generic branch is the defensive fallback. Neutral treatment
+              throughout — a passed deadline is informational, not an error. */}
           {bookedLabel ? (
-            <p className="text-lg font-semibold text-emerald-700">
-              The group is meeting {bookedLabel}.
-            </p>
+            <>
+              <p className="text-lg font-semibold text-emerald-700">
+                The group is meeting {bookedLabel}.
+              </p>
+              <p className="text-base text-muted-foreground">
+                The organizer has finalized this date. Voting is closed.
+              </p>
+            </>
+          ) : deadlinePassed ? (
+            <>
+              <h2 className="text-2xl font-semibold leading-snug">
+                Voting has closed
+              </h2>
+              <p className="text-base text-muted-foreground">
+                The voting deadline has passed. Contact the organizer if you need
+                to update your availability.
+              </p>
+            </>
           ) : (
-            <h2 className="text-2xl font-semibold leading-snug">
-              Voting is closed
-            </h2>
+            <>
+              <h2 className="text-2xl font-semibold leading-snug">
+                Voting is closed
+              </h2>
+              <p className="text-base text-muted-foreground">
+                The organizer has closed this poll. You can no longer submit or
+                change your availability.
+              </p>
+            </>
           )}
-          <p className="text-base text-muted-foreground">
-            {bookedLabel
-              ? "The organizer has finalized this date. Voting is closed."
-              : "The organizer has closed this poll. You can no longer submit or change your availability."}
-          </p>
         </div>
       ) : (
         <div className="sticky bottom-0 z-10 -mx-4 flex flex-col gap-2 border-t bg-background px-4 py-4 sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">

@@ -18,6 +18,7 @@ import {
   getParticipantByEditToken,
   getVotesForParticipant,
 } from "@/lib/db/queries";
+import { isVotingOpen } from "@/lib/poll-status";
 import { updateResponse } from "@/lib/actions/update-response";
 import { PollSummary } from "@/components/poll-summary";
 import { VoteForm } from "@/components/vote-form";
@@ -43,6 +44,14 @@ export default async function EditParticipantPage({
     getVotesForParticipant(participant.id),
   ]);
 
+  // Server-computed vote gate (DEAD-01 / LOCKED 5) — readOnly from the single
+  // isVotingOpen rule; deadlinePassed drives the distinct deadline copy. Only
+  // booleans cross to the client, never poll.deadline.
+  const now = new Date();
+  const votingOpen = isVotingOpen(poll, now);
+  const deadlinePassed =
+    poll.status === "open" && poll.deadline != null && poll.deadline <= now;
+
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-12 flex flex-col gap-8">
       <div className="flex flex-col gap-2">
@@ -62,7 +71,8 @@ export default async function EditParticipantPage({
         initialName={participant.name}
         initialEmail={participant.email ?? ""}
         initialVotes={priorVotes as Record<string, VoteState>}
-        readOnly={poll.status !== "open"}
+        readOnly={!votingOpen}
+        deadlinePassed={deadlinePassed}
         heading="Edit your availability"
         submitLabel="Save changes"
         pendingLabel="Saving..."
