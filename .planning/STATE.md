@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 05
 current_phase_name: vote-grid-redesign-matrix-1c-rewrite-availabilitygrid-to-a-r
 status: ready-for-verification
-stopped_at: 05 execution COMPLETE — all 5 plans shipped (13 commits) on master. Post-merge gate green (176/176 tests + build). Verifier 10/10 must_haves (D-01..D-10 hold in real code); status human_needed → 9 pixel/AT-fidelity checks in 05-UAT.md await sign-off via /gsd-verify-work 5. Code review: no blockers (WR-01 roving-tabindex tradeoff, IN-01 bg-white token — optional follow-ups). ALSO STILL OPEN: Phase 04 verification (real prod invite lands in inbox not spam [MAIL-02] + full prod happy-path smoke).
-last_updated: "2026-07-03T22:25:00Z"
-last_activity: 2026-07-03
-last_activity_desc: "Quick task 260703-pdt — show current poll results on participant thanks page (176/176 tests + build green, deployed to prod)"
+stopped_at: Completed 06-03-PLAN.md
+last_updated: "2026-07-07T03:28:14.026Z"
+last_activity: 2026-07-02
+last_activity_desc: Phase 05 execution started
 progress:
-  total_phases: 5
-  completed_phases: 4
-  total_plans: 16
-  completed_plans: 16
+  total_phases: 1
+  completed_phases: 0
+  total_plans: 4
+  completed_plans: 2
 ---
 
 # Project State
@@ -68,6 +68,7 @@ Progress: [███████░░░] 75% (3 of 4 phases complete; Phase 04
 | Phase 05 P03 | 18min | 2 tasks | 1 files |
 | Phase 05 P04 | 15min | 2 tasks | 3 files |
 | Phase 05 P05 | 3min | 2 tasks | 2 files |
+| Phase 06 P03 | ~20m | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -100,12 +101,15 @@ Recent decisions affecting current work:
 - [Phase ?]: 05-03: D-03 mobile submit as sticky pinned footer
 - [Phase ?]: 05-04: reconciled poll-create surface to board 3a/3a-m — sm:-only card frame (desktop) + full-bleed mobile so the Create poll action pins as a sticky border-top footer (D-09); createPoll action + serialized dates + timezone-safe date-only handling unchanged
 - [Phase ?]: D-10 implemented: per-provider calendar-button color (Google #1a73e8 vs neutral FG #171717) via calLink background param
+- [Phase 06]: 06-03: /polls resolves base/feed URL only in the >=1-poll branch, so the empty state embeds no organizer token (PROH-4).
+- [Phase 06]: 06-03: /polls empty state is fully static (no organizerId), so absent vs unknown-cookie renders are byte-identical (MYP-03 no oracle).
 
 ### Pending Todos
 
 [From .planning/todos/pending/ — ideas captured during sessions]
 
 Live-site UX review (2026-07-03) captured 5 results/admin/participant polish items, being cleared via quick tasks:
+
 - ~~Redesign admin results display for readability (too small/cramped)~~ ✓ DONE 2026-07-03 (folded into results-grid rework 260703-r8r)
 - ~~Fix admin results filters (best-slot ranking + standalone status filter)~~ ✓ DONE 2026-07-03 (folded into results-grid rework 260703-r8r)
 - ~~Show current results on participant page~~ ✓ DONE 2026-07-03 (quick task 260703-pdt)
@@ -161,8 +165,8 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-02T22:02:09.699Z
-Stopped at: Completed 05-02-PLAN.md
+Last session: 2026-07-07T03:28:14.013Z
+Stopped at: Completed 06-03-PLAN.md
 Resume file: None
 
 **Planning gate note — RESOLVED (2026-07-01):** During Phase 2 and Phase 3 planning, the
