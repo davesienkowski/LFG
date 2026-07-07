@@ -142,6 +142,17 @@ describe("AdminPage", () => {
     expect(html).toContain("Admin link");
   });
 
+  it("renders the 'Your polls' (/polls) and 'Create a poll' (/) entry links (MYP-06)", async () => {
+    const { adminUrlId } = await seedPoll();
+    const html = await renderAdmin(adminUrlId);
+
+    // Both entry links are static paths — no token embedded (T-06-09).
+    expect(html).toContain('href="/polls"');
+    expect(html).toContain("Your polls");
+    expect(html).toContain('href="/"');
+    expect(html).toContain("Create a poll");
+  });
+
   it("shows the one-time 'poll created' banner only with ?created=1 (UX-UAT F5)", async () => {
     const { adminUrlId } = await seedPoll();
 
@@ -264,6 +275,9 @@ describe("AdminPage", () => {
 
     expect(html).toContain(`/feed/${organizerId}/calendar.ics`);
     expect(html).toContain("Subscribe to your booked-dates calendar");
+    // MYP-08: the shared SubscribeCard carries the same-browser guidance, so the
+    // admin surface shows it from the single source of truth after the swap.
+    expect(html).toContain("Create your polls from the same browser");
     // The subscribe card is NEUTRAL — it must not add a SECOND "Keep private"
     // badge (only the admin-link card carries the single one).
     expect(html.split("Keep private").length - 1).toBe(1);
