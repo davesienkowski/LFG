@@ -35,6 +35,7 @@ import {
 } from "@/lib/format-date";
 import { computeResults } from "@/lib/results";
 import { PollSummary } from "@/components/poll-summary";
+import { DeadlineControl } from "@/components/deadline-control";
 import { CopyLinkButton } from "@/components/copy-link-button";
 import { ResultsGrid } from "@/components/results-grid";
 import { InviteByEmailForm } from "@/components/invite-by-email-form";
@@ -98,6 +99,16 @@ export default async function AdminPage({
 
   const isClosed = poll.status === "closed";
 
+  // Deadline state (DEAD-01 / LOCKED 3, 5). deadlinePassed is the "open-but-
+  // expired" case that drives the amber header pill and the passed-state card
+  // copy — mutually exclusive with Booked by construction (isClosed wins; the
+  // card + pill are only ever evaluated when !isClosed, UI Probe #2). Only a
+  // STRING ISO instant crosses to the client island, never a raw Date (LOCKED 5).
+  const now = new Date();
+  const deadlinePassed =
+    !isClosed && poll.deadline != null && poll.deadline <= now;
+  const deadlineIso = poll.deadline ? poll.deadline.toISOString() : null;
+
   const options = await getOptionsForPoll(poll.id);
   const participants = await getResultsForPoll(poll.id);
   const results = computeResults(participants, options);
@@ -150,10 +161,17 @@ export default async function AdminPage({
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-3">
           <h1 className="text-3xl font-semibold leading-tight">{poll.title}</h1>
-          {/* "Booked" emerald pill — only once the poll is finalized (closed). */}
+          {/* Header status pill (UI Probe #2): an if/else so the two pills are
+              MUTUALLY EXCLUSIVE by construction — a real finalize (Booked) always
+              wins; the amber deadline-passed pill is only evaluated in the else
+              branch, and its card is hidden entirely once isClosed. */}
           {isClosed ? (
             <span className="inline-flex items-center rounded-full border border-emerald-300 bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">
               Booked
+            </span>
+          ) : deadlinePassed ? (
+            <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
+              Voting closed — deadline passed
             </span>
           ) : null}
         </div>
@@ -174,6 +192,19 @@ export default async function AdminPage({
             poll — bookmark it.
           </span>
         </Card>
+      ) : null}
+
+      {/* Voting deadline (DEAD-01). A poll-level scheduling control belongs at
+          the top of the page. Rendered ONLY when !isClosed — once booked, the
+          "Poll finalized" card owns the terminal state and this card (and its
+          amber pill) is hidden entirely, which is what makes the Booked/
+          deadline-passed pills mutually exclusive (UI-SPEC Surface 1). */}
+      {!isClosed ? (
+        <DeadlineControl
+          adminUrlId={poll.adminUrlId}
+          deadlineIso={deadlineIso}
+          deadlinePassed={deadlinePassed}
+        />
       ) : null}
 
       {/* Condensed candidate-date echo — short visible label, FULL date in
