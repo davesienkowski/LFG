@@ -1,5 +1,25 @@
 # Milestones
 
+## v1.2 Reliable Delivery — re-scoped to DLVR-04 (Closed: 2026-09-07)
+
+**Phases:** 9-10 (re-scoped mid-milestone). 1 plan executed (10-01); 1 deferred (10-02).
+**Codebase:** 332 tests green (local). Migration 0008 (`invitations.delivery_status`) applied to prod Neon by Dave 2026-09-07.
+**Git:** closing commit tagged `v1.2`. Phase 9 seam `1ad8ac3`; DLVR-04 `d708065`.
+
+**⚠️ Honest outcome — v1.2 delivered its RE-SCOPED goal, not its original one.** Partway through, Dave deferred the email portion of the project (does not want to set up email delivery), so the milestone was re-scoped from "make email actually deliver" to **DLVR-04 (failure visibility) only**.
+
+**Delivered (DLVR-04 — built & live):** per-recipient email delivery visibility. A failed/rate-limited send now persists a durable, admin-only "failed / needs-retry" record on the "Who's responded" card (was a silent drop). Additive nullable `invitations.delivery_status` (migration 0008, applied to prod by Dave), recorded via atomic upsert in the invite + nudge senders (a retry flips failed→sent); admin-only access boundary canary-locked (no participant-facing surface exposes it); reuses the existing status chips (no auto-retry implication).
+
+**Shipped but INERT (Phase 9, `1ad8ac3`):** the `sendEmail()` primary→fallback provider seam. Real and tested, but does nothing until a provider is configured — with none set it degrades to copy-link (D-02), which is the chosen state. This is NOT a working "reliable delivery" feature.
+
+**Deferred / out of scope (carried forward — see PROJECT.md backlog + `.planning/todos/pending/`):**
+- DLVR-03 — SPF/DKIM/DMARC alignment + human-verified real-inbox send (plan `milestones/v1.2-phases/10-deliverability-visibility/10-02-PLAN.md`, `status: DEFERRED`). Its D-19 gate (Phase 9 Task 3 prod creds) is WITHDRAWN PERMANENTLY.
+- Phase 9 Task 3 — prod EMAIL_PROVIDER credentials + redeploy: WITHDRAWN PERMANENTLY.
+
+**Net:** email delivery itself remains OFF by choice; what shipped is the *visibility* of send outcomes plus an inert delivery seam.
+
+---
+
 ## v1.1 Organizer Controls (Shipped: 2026-07-07 · Closed: 2026-09-07)
 
 **Phases completed:** 2 phases (7-8), 8 plans

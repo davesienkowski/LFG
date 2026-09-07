@@ -4,17 +4,17 @@ milestone: v1.2
 milestone_name: Reliable Delivery (re-scoped to DLVR-04 only)
 current_phase: 10
 current_phase_name: Deliverability & Visibility
-status: executing
-stopped_at: "v1.2 RE-SCOPED to DLVR-04 only (Dave 2026-09-07). Email deferred: Phase 9 Task 3 WITHDRAWN PERMANENTLY, DLVR-03/plan 10-02 deferred in full. DLVR-04/plan 10-01 BUILT: additive nullable invitations.delivery_status (migration 0008, LOCAL-only), sent/failed/rate_limited recorded via raw upsert in send-invites + nudge, admin-only deliveryStatus on getInvitationTrackingForPoll + whos-responded chip (SEND_STATUS_META), participant canary forbids invitations + delivery_status. Full suite green locally (5433). Prod Neon migration of 0008 is a FOLLOW-UP for Dave (not done — no prod access, creds withdrawn)."
+status: milestone_complete
+stopped_at: "v1.2 CLOSED 2026-09-07 (re-scoped to DLVR-04 only). DLVR-04 delivered & LIVE — Dave applied migration 0008 to prod Neon himself (2026-09-07; recorded on his authority, not agent-verified). Archived ROADMAP/REQUIREMENTS → milestones/v1.2-*, phases 9-10 → milestones/v1.2-phases/. PROJECT.md + MILESTONES.md updated (honest re-scoped outcome). Email deferred: DLVR-03/plan 10-02 carried forward (PROJECT.md Backlog + todos/pending), Phase 9 Task 3 WITHDRAWN PERMANENTLY. Tagged v1.2. Suite 332/332 green."
 last_updated: "2026-09-07T00:00:00.000Z"
 last_activity: 2026-09-07
-last_activity_desc: DLVR-04 built + v1.2 re-scoped to DLVR-04 only; email deferred
+last_activity_desc: v1.2 closed (re-scoped to DLVR-04); Dave applied 0008 to prod; tagged v1.2
 progress:
   total_phases: 2
-  completed_phases: 0
+  completed_phases: 2
   total_plans: 1
   completed_plans: 1
-  percent: 50
+  percent: 100
 ---
 
 # Project State
@@ -24,29 +24,31 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-07 after v1.0 milestone)
 
 **Core value:** A poll creator can propose candidate dates, get participants to mark their availability via an emailed link, and instantly see which day(s) work for the whole group — no participant login, no cost.
-**Current focus:** v1.2 RE-SCOPED to DLVR-04 only (Dave 2026-09-07). DLVR-04 built + green locally; one prod-migration follow-up remains for Dave.
+**Current focus:** none — v1.2 (re-scoped to DLVR-04) CLOSED 2026-09-07. No milestone in progress.
 
 ## Current Position
 
-Milestone v1.2 Reliable Delivery — **RE-SCOPED to DLVR-04 ONLY (Dave's 3 decisions, 2026-09-07):** Q1 BUILD DLVR-04, Q2 RE-SCOPE to DLVR-04 only (email moves OUT of scope), Q3 prod EMAIL_PROVIDER creds WITHDRAWN PERMANENTLY.
+Milestone v1.2 Reliable Delivery — **CLOSED 2026-09-07 (re-scoped to DLVR-04 only).** No milestone in progress.
 
-**DLVR-04 — BUILT & GREEN (plan 10-01):**
-- Additive nullable `invitations.delivery_status` + migration **0008** (`ADD COLUMN` only) — applied **LOCALLY (5433) only**.
-- `sent`/`failed`/`rate_limited` recorded per attempted recipient via a raw parameterized upsert on the functional index in **send-invites** AND **nudge** (a failed send is now a durable record; a retry flips failed→sent).
-- Admin-only `deliveryStatus` on `getInvitationTrackingForPoll`; `whos-responded-card` shows a failed/needs-retry chip (SEND_STATUS_META, no auto-retry implication).
-- Participant canary forbids BOTH `invitations` and `delivery_status` (D-15 / SC4).
-- **Full suite 332/332 green** locally (5433). No app code touched outside the DLVR-04 surface.
+**Honest outcome:** v1.2 delivered its **re-scoped** goal (DLVR-04 failure visibility), NOT its original "Reliable Delivery" goal. Email delivery itself remains OFF by choice.
 
-**Deferred — email (kept on disk, reversible):**
-- Phase 9 Task 3 — prod creds + redeploy: **WITHDRAWN PERMANENTLY** (09-01-SUMMARY.md).
-- DLVR-03 = plan **10-02** in full: DEFERRED (`status: DEFERRED` banner). Out of v1.2 scope now.
-- Phase 9 code seam (`1ad8ac3`) untouched — inert without a provider (D-02).
+**Delivered & LIVE — DLVR-04:**
+- Additive nullable `invitations.delivery_status` (migration **0008**, `ADD COLUMN` only). **Dave applied 0008 to prod Neon himself on 2026-09-07** — recorded on his authority; NOT agent-verified (no prod access, guardrail 3).
+- `sent`/`failed`/`rate_limited` recorded per attempted recipient via a raw upsert (send-invites + nudge); a failed send is a durable admin-visible record, a retry flips failed→sent.
+- Admin-only `deliveryStatus` on `getInvitationTrackingForPoll` + `whos-responded-card` chip; participant canary forbids `invitations` + `delivery_status` (D-15/SC4).
+- Full suite **332/332** green.
 
-**⚠️ Follow-up for Dave (not done — no prod access, creds withdrawn):** apply migration **0008** to prod Neon before DLVR-04 is live in production. Recorded in 10-01-SUMMARY.md.
+**Shipped but INERT:** the `sendEmail()` primary→fallback seam (Phase 9, `1ad8ac3`) — no provider configured, degrades to copy-link (D-02). Not a working "reliable delivery" feature.
 
-Prior: v1.1 Organizer Controls CLOSED 2026-09-07 (archived to milestones/v1.1-*).
+**Deferred / carried forward (email):**
+- DLVR-03 (plan 10-02) — deferred, out of scope. **Carried forward → PROJECT.md Backlog + `.planning/todos/pending/dlvr-03-email-deliverability.md`**; plan retained at `milestones/v1.2-phases/10-deliverability-visibility/10-02-PLAN.md`.
+- Phase 9 Task 3 (prod creds) — **WITHDRAWN PERMANENTLY**.
 
-Progress: [████████░░] v1.2 (re-scoped) — DLVR-04 built + green locally; prod 0008 migration is Dave's follow-up.
+Archived: ROADMAP/REQUIREMENTS → `milestones/v1.2-*`, phases 9-10 → `milestones/v1.2-phases/`. Tagged `v1.2`.
+
+Prior: v1.1 CLOSED 2026-09-07; v1.0 shipped 2026-07-07.
+
+Progress: [██████████] v1.2 (re-scoped) 100% — DLVR-04 delivered & live; email deliverability carried to Backlog.
 
 ## Deferred Verification — RESOLVED
 
@@ -154,21 +156,18 @@ Items acknowledged and deferred at v1.0 milestone close on 2026-07-07 (override_
 | uat | Phase 03 03-UAT.md — 0 pending scenarios (effectively clear; flagged only because file present) | passed | 2026-07-07 |
 | seed | SEED-001-phase4-free-email-no-domain — obsolete; Phase 4 email shipped (Gmail SMTP live in prod) | dormant | 2026-07-07 |
 | email | **Phase 9 Task 3** — prod primary+fallback EMAIL_PROVIDER creds + redeploy. **WITHDRAWN PERMANENTLY** per Dave (2026-09-07 Q3) — not a delay. Reversible only if email is ever revived (remediation retained in 09-01-SUMMARY.md). | withdrawn (permanent) | 2026-09-07 |
-| email | **DLVR-03 / plan 10-02** — SPF/DKIM/DMARC alignment, real-inbox human check, deliverability runbook + alignment checker. Deferred in full per Dave (2026-09-07); moved OUT of v1.2 scope by the DLVR-04-only re-scope. Plan kept on disk (`status: DEFERRED`); resume by un-deferring 10-02-PLAN.md. | deferred | 2026-09-07 |
-| prod-migration | **Migration 0008** (`invitations.delivery_status`) applied LOCAL-only. Must be applied to prod Neon before DLVR-04 works in prod — Dave's follow-up (no agent prod access; creds withdrawn). Steps in 10-01-SUMMARY.md. | follow-up (Dave) | 2026-09-07 |
+| email | **DLVR-03** — SPF/DKIM/DMARC alignment, real-inbox human check, deliverability runbook + alignment checker. Deferred, out of scope. **Carried forward → PROJECT.md Backlog + `.planning/todos/pending/dlvr-03-email-deliverability.md`**; plan at `milestones/v1.2-phases/10-deliverability-visibility/10-02-PLAN.md` (`status: DEFERRED`). Gate (Phase 9 Task 3) withdrawn permanently. | deferred (carried fwd) | 2026-09-07 |
+| prod-migration | **Migration 0008** (`invitations.delivery_status`) — **DONE: Dave applied it to prod Neon himself, 2026-09-07** (recorded on his authority; not agent-verified). DLVR-04 is live. | resolved | 2026-09-07 |
 
 ## Session Continuity
 
-Last session: 2026-09-07 — DLVR-04 built + v1.2 re-scoped to DLVR-04 only (Dave's 3 decisions); email deferred
-Stopped at: DLVR-04 (plan 10-01) built and green locally (332/332, 5433). v1.2 re-scoped to DLVR-04 only across STATE/ROADMAP/PROJECT; Q3 recorded WITHDRAWN PERMANENTLY. Email (Phase 9 Task 3 + DLVR-03/10-02) stays deferred, out of scope. Committed + pushed.
+Last session: 2026-09-07 — v1.2 CLOSED (re-scoped to DLVR-04); Dave applied 0008 to prod; tagged v1.2
+Stopped at: Milestone v1.2 archived (ROADMAP/REQUIREMENTS → milestones/v1.2-*, phases 9-10 → milestones/v1.2-phases/), PROJECT.md + MILESTONES.md updated (honest re-scoped outcome), tagged `v1.2`. DLVR-03 carried forward to Backlog + todos/pending. No milestone in progress.
 Resume file: None
 
 ## Operator Next Steps
 
-**Dave's follow-up (the one open item):**
-- **Apply migration `0008` (`invitations.delivery_status`) to prod Neon** so DLVR-04 works in production — backup → migrate → (no redeploy needed for a column, but a deploy of the app code is). Steps in 10-01-SUMMARY.md. Not done here: no agent prod access, and prod email creds are withdrawn (email itself stays off; DLVR-04 just records "failed"/nothing when no provider is configured).
-- Then decide whether to **close/label the re-scoped v1.2** (DLVR-04 delivered) and tag `v1.2`.
-
-**Deferred (email — reversible, out of current scope):** Phase 9 Task 3 (withdrawn permanently); DLVR-03 / plan 10-02.
-
-- Note: v1.1 is tagged (`v1.1` on remote).
+- **Define the next milestone** when ready. Top backlog candidate if email is ever revived: **DLVR-03 email deliverability** (see PROJECT.md Backlog + `.planning/todos/pending/dlvr-03-email-deliverability.md`; plan `milestones/v1.2-phases/10-deliverability-visibility/10-02-PLAN.md`). Its gate (Phase 9 Task 3 prod creds) is withdrawn permanently — reviving it means re-taking-up email setup first.
+- Other backlog: MOBL-01 (mobile results grid), SLOT-01 (per-day time slots), CMNT-01 (comments).
+- **Open, unresolved (Dave's to settle):** the 5432-vs-5433 local-Postgres port discrepancy — repo docs say 5432, this machine uses 5433. Only the in-tree MACHINE STATE note in the archived 10-01-PLAN.md records it.
+- Tags on remote: `v1.0`, `v1.1`, `v1.2`.

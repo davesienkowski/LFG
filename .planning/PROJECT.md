@@ -2,7 +2,9 @@
 
 ## Current State
 
-**Shipped v1.1 Organizer Controls (2026-07-07, milestone closed 2026-09-07)** — builds on the v1.0 MVP, live on Vercel free tier + Neon with all 5 v1.1 requirements implemented, verified (321 tests green), migrated to prod (migrations 0005/0006/0007) and deployed. The organizer can now track who has/hasn't responded and nudge the stragglers, set an optional lazy-close voting deadline, and add their own availability row from the admin view. **Note:** outbound email delivery from this project is a known and accepted limitation at present — the respond-and-choose flow works regardless; the nudge/invite actions degrade gracefully to copy-link.
+**Shipped v1.2 Reliable Delivery — re-scoped to DLVR-04 (closed 2026-09-07)** — 332 tests green. Mid-milestone Dave deferred the email portion, so v1.2 was re-scoped from "make email deliver" to **DLVR-04 (failure visibility) only**. Delivered & LIVE: per-recipient email delivery visibility — a failed/rate-limited send now persists a durable, admin-only "failed / needs-retry" record on the "Who's responded" card (previously a silent drop); migration 0008 (`invitations.delivery_status`) applied to prod Neon by Dave (2026-09-07). The Phase 9 `sendEmail()` primary→fallback seam (`1ad8ac3`) is shipped but **INERT** — no provider configured, degrades to copy-link (D-02). **Email delivery itself remains OFF by choice; DLVR-03 deliverability is deferred (see Backlog).** v1.2 delivered its re-scoped goal, not its original "Reliable Delivery" goal.
+
+**Shipped v1.1 Organizer Controls (2026-07-07, closed 2026-09-07)** — builds on v1.0, live on Vercel free tier + Neon; all 5 v1.1 requirements (321 tests green), migrations 0005/0006/0007. Respondent tracking + nudge, lazy-close voting deadline, organizer's own availability row.
 
 **Shipped v1.0 MVP (2026-07-07)** — live on Vercel free tier + Neon, with all 30 v1 requirements complete and verified. The full happy path works end-to-end in production: create poll → (optionally email) invite → account-free three-state vote → admin results grid + best-day → "Book it" → confirmation emails.
 
@@ -14,20 +16,16 @@ A free, self-hostable clone of Doodle.com's "Group Poll" feature, focused on the
 
 A poll creator can propose candidate dates, get participants to mark their availability via an emailed link, and instantly see which day(s) work for the whole group — with no login required for participants and no cost to run.
 
-## Current Milestone: v1.2 Reliable Delivery — 🎯 RE-SCOPED to DLVR-04 only (2026-09-07)
+## Current Milestone: none active
 
-**Decision (2026-09-07, Dave):** the email portion of the project is deferred — he does not want to set up email delivery. v1.2 is **re-scoped to DLVR-04 (failure visibility) only**; the email deliverability work moves out of scope.
+**v1.2 Reliable Delivery (re-scoped to DLVR-04) closed 2026-09-07.** No milestone is in progress. See the Backlog below for the deferred email deliverability work, and `milestones/` for archived roadmaps/requirements.
 
-**Delivered — DLVR-04 (built + green locally):**
-- Additive nullable `invitations.delivery_status` (migration 0008, **local-only** — prod Neon migration is a Dave follow-up)
-- `sent`/`failed`/`rate_limited` recorded per recipient in invite + nudge (a failed send is now a durable, admin-visible needs-retry record, not a silent drop)
-- Admin-only per-recipient chip on the "Who's responded" card (SEND_STATUS_META, no auto-retry implication); participant/admin access boundary canary-locked
+## Backlog (deferred, carried across milestone close)
 
-**Deferred / out of scope (email — reversible):**
-- Phase 9 Task 3 — prod credentials + redeploy: **WITHDRAWN PERMANENTLY**
-- DLVR-03 (plan 10-02) — SPF/DKIM/DMARC alignment, real-inbox human check, runbook + checker
+<!-- Deferred work that must survive milestone archiving so a future session finds it. -->
 
-**Shipped, inert:** the `sendEmail()` primary→fallback seam (Phase 9 Tasks 1–2, `1ad8ac3`) — degrades to copy-link with no provider configured (D-02), the chosen state.
+- **DLVR-03 — Email deliverability (SPF/DKIM/DMARC alignment + human-verified real-inbox send).** DEFERRED / moved out of scope by Dave (2026-09-07); he does not want to set up email delivery. The full plan is retained at `milestones/v1.2-phases/10-deliverability-visibility/10-02-PLAN.md` (`status: DEFERRED`), with a free-tier alignment approach and a non-secret DNS-alignment checker in its tasks. **Gate:** its D-19 dependency (Phase 9 Task 3 — prod EMAIL_PROVIDER credentials + redeploy) is **WITHDRAWN PERMANENTLY**; reviving DLVR-03 means first re-taking-up email setup. The `sendEmail()` primary→fallback seam it would build on is already shipped and inert (`1ad8ac3`). Also tracked in `.planning/todos/pending/` and STATE.md Deferred Items.
+- Longer-term (from v1.2-REQUIREMENTS Future Requirements): MOBL-01 mobile results grid, SLOT-01 per-day time slots, CMNT-01 comments.
 
 ## Requirements
 
@@ -51,14 +49,15 @@ A poll creator can propose candidate dates, get participants to mark their avail
 - [x] Organizer can send a one-click "nudge" reminder to non-respondents — *Validated in Phase 7 (RESP-02; action + copy-link fallback shipped; live email delivery an accepted limitation)*
 - [x] Organizer can set a deadline after which voting auto-closes — *Validated in Phase 8 (DEAD-01; lazy close on poll access, no cron)*
 - [x] Organizer can add their own availability row from the admin view — *Validated in Phase 8 (ORG-01; single-row upsert, "(you)" row in results/best-day)*
+- [x] Send failures surfaced to the organizer, never silent — *Validated in Phase 10 (DLVR-04; admin-only per-recipient delivery chip; migration 0008 applied to prod by Dave 2026-09-07)*
 
 ### Active
 
-<!-- Current scope (milestone v1.2 Reliable Delivery). Deferred set (MOBL-01 mobile grid, SLOT-01 per-day multi-slot, CMNT-01 comments) stays in Future Requirements — see REQUIREMENTS.md. -->
+<!-- No milestone in progress. v1.2 (re-scoped to DLVR-04) closed 2026-09-07. Deferred email deliverability (DLVR-03) + longer-term ideas are in the Backlog above. -->
 
-- [x] Send failures surfaced to the organizer, never silent — *DLVR-04 (v1.2): BUILT + green locally 2026-09-07 (admin-only per-recipient delivery chip; prod 0008 migration is Dave's follow-up).*
-- [~] Outbound email sends through the `sendEmail()` seam + fallback provider — *DLVR-01/02 (v1.2): CODE shipped (`1ad8ac3`), inert until a provider is configured. Prod turn-on DEFERRED (email out of scope 2026-09-07).*
-- [⏸] SPF/DKIM/DMARC-aligned deliverability + human-verified real-inbox prod send — *DLVR-03 (v1.2): DEFERRED 2026-09-07, out of scope. Kept in plan 10-02, resumable.*
+- _(none — awaiting next milestone definition)_
+
+**Shipped but inert (not a working feature):** the `sendEmail()` primary→fallback seam — *DLVR-01/02 (`1ad8ac3`); no provider configured, degrades to copy-link (D-02). Email delivery is OFF by choice; DLVR-03 deferred (Backlog).*
 
 ### Out of Scope
 
@@ -125,4 +124,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-07 — started milestone v1.2 Reliable Delivery*
+*Last updated: 2026-09-07 — closed milestone v1.2 Reliable Delivery (re-scoped to DLVR-04)*
