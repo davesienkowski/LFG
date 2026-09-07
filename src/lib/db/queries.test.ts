@@ -12,7 +12,7 @@
 //     shape (SPEC Prohibition #1/#2). Asserting "no email substring" would pass
 //     vacuously if email were NULL; the canary makes the assertion real.
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { inArray } from "drizzle-orm";
+import { inArray, and, eq, sql } from "drizzle-orm";
 import {
   getResultsForPoll,
   getVoterEmailsForPoll,
@@ -798,13 +798,40 @@ describe("getInvitationTrackingForPoll", () => {
     expect(await getInvitationTrackingForPoll(poll.id)).toEqual([]);
   });
 
-  it("returns rows whose own keys are EXACTLY email/responded (structural)", async () => {
+  it("returns rows whose own keys are EXACTLY email/responded/deliveryStatus (structural)", async () => {
     const seed = await seedTrackingPoll();
     const rows = await getInvitationTrackingForPoll(seed.pollId);
     expect(rows.length).toBeGreaterThan(0);
     for (const r of rows) {
-      expect(Object.keys(r).sort()).toEqual(["email", "responded"]);
+      // DLVR-04: deliveryStatus is now part of the admin-only shape. No other
+      // columns leak (still no email of participants, no tokens, etc.).
+      expect(Object.keys(r).sort()).toEqual([
+        "deliveryStatus",
+        "email",
+        "responded",
+      ]);
       expect(typeof r.responded).toBe("boolean");
     }
+  });
+
+  it("surfaces the recorded delivery_status (DLVR-04), NULL when never recorded", async () => {
+    const seed = await seedTrackingPoll();
+    // Seeded invitations recorded no status yet → NULL (unknown).
+    let rows = await getInvitationTrackingForPoll(seed.pollId);
+    expect(rows.every((r) => r.deliveryStatus === null)).toBe(true);
+    // Record a failed outcome for one invitation; the admin read reflects it.
+    await db
+      .update(invitations)
+      .set({ deliveryStatus: "failed" })
+      .where(
+        and(
+          eq(invitations.pollId, seed.pollId),
+          sql`lower(${invitations.email}) = lower(${"nomatch@example.com"})`,
+        ),
+      );
+    rows = await getInvitationTrackingForPoll(seed.pollId);
+    expect(
+      rows.find((r) => r.email === "nomatch@example.com")?.deliveryStatus,
+    ).toBe("failed");
   });
 });

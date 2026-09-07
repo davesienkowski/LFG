@@ -198,6 +198,12 @@ export const invitations = pgTable(
     invitedAt: timestamp("invited_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    // DLVR-04 (D-14): per-recipient delivery outcome — 'sent' | 'failed' |
+    // 'rate_limited'. Additive + NULLABLE: legacy rows (pre-0008) read as NULL =
+    // unknown and render exactly as before (no NOT NULL, no default). Recorded by
+    // sendInvites + nudge via upsert; surfaced ADMIN-ONLY (D-15) — no
+    // participant-facing query selects this column.
+    deliveryStatus: text("delivery_status"),
   },
   (t) => [
     uniqueIndex("invitations_poll_lower_email_unique").on(

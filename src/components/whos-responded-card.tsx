@@ -17,6 +17,8 @@
 // badge idiom already used site-wide (no shadcn Badge primitive installed).
 import { Card } from "@/components/ui/card";
 import { NudgeControl } from "@/components/nudge-control";
+import { SEND_STATUS_META } from "@/components/send-status-meta";
+import { cn } from "@/lib/utils";
 
 export function WhosRespondedCard({
   invitations,
@@ -24,7 +26,14 @@ export function WhosRespondedCard({
   isClosed,
   emailConfigured,
 }: {
-  invitations: { email: string; responded: boolean }[];
+  // DLVR-04 (D-15): deliveryStatus is admin-only. This component is rendered ONLY
+  // on the admin route (D-09) and passes NO invitation data to any participant
+  // surface — a structural canary forbids 'invitations'/'delivery_status' there.
+  invitations: {
+    email: string;
+    responded: boolean;
+    deliveryStatus: string | null;
+  }[];
   adminUrlId: string;
   isClosed: boolean;
   emailConfigured: boolean;
@@ -76,6 +85,30 @@ export function WhosRespondedCard({
                     Not yet responded
                   </span>
                 )}
+                {/* DLVR-04 (D-16): a per-recipient delivery chip, shown ONLY for a
+                    failed/rate_limited last send so the happy path (sent / NULL =
+                    unknown) is unchanged. Reuses SEND_STATUS_META verbatim — icon
+                    + text label (never colour alone, WCAG 1.4.1), and its label
+                    prescribes MANUAL action ("share the link manually"), never an
+                    implied auto-retry. */}
+                {invitation.deliveryStatus === "failed" ||
+                invitation.deliveryStatus === "rate_limited"
+                  ? (() => {
+                      const meta = SEND_STATUS_META[invitation.deliveryStatus];
+                      const Icon = meta.icon;
+                      return (
+                        <span
+                          className={cn(
+                            "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold",
+                            meta.className,
+                          )}
+                        >
+                          <Icon aria-hidden className="size-3.5" />
+                          {meta.label}
+                        </span>
+                      );
+                    })()
+                  : null}
               </li>
             ))}
           </ul>

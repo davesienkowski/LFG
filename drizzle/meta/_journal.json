@@ -57,6 +57,13 @@
       "when": 1783465295742,
       "tag": "0007_strange_earthquake",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1788798793429,
+      "tag": "0008_futuristic_retro_girl",
+      "breakpoints": true
     }
   ]
 }

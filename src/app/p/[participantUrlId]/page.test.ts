@@ -292,16 +292,24 @@ describe("ParticipantPage — invitation no-leak (RESP-01 / D-09 / T-07-01)", ()
   it("NON-VACUOUS canary: a seeded invitation email is admin-visible yet ABSENT from the participant page", async () => {
     const canary = "invited-canary-do-not-leak@example.com";
     const { pollId, participantUrlId } = await seedPoll("open");
-    // Record an invitation carrying the canary — exactly what 07-01 records on
-    // send. It is intentionally admin-visible (getInvitationTrackingForPoll)…
-    await db.insert(invitations).values({ pollId, email: canary });
+    // Record an invitation carrying the canary + a DLVR-04 delivery_status —
+    // exactly what a failed send records. Both are intentionally admin-visible
+    // (getInvitationTrackingForPoll)…
+    await db
+      .insert(invitations)
+      .values({ pollId, email: canary, deliveryStatus: "failed" });
 
-    // …proven here: the admin-only tracking read DOES surface it (non-vacuous —
-    // the canary genuinely exists and would render on the admin surface).
+    // …proven here: the admin-only tracking read DOES surface the email AND the
+    // delivery status (non-vacuous — they genuinely exist and would render on the
+    // admin surface).
     const tracking = await getInvitationTrackingForPoll(pollId);
     expect(tracking.map((t) => t.email)).toContain(canary);
+    expect(tracking.find((t) => t.email === canary)?.deliveryStatus).toBe(
+      "failed",
+    );
 
-    // …but the PARTICIPANT page must never expose it (D-09 no-leak boundary).
+    // …but the PARTICIPANT page must never expose the invited email (D-09/D-15
+    // no-leak boundary). deliveryStatus rides the same admin-only read.
     const html = await renderParticipant(participantUrlId);
     expect(html).not.toContain(canary);
   });
@@ -323,6 +331,11 @@ describe("ParticipantPage — invitation no-leak (RESP-01 / D-09 / T-07-01)", ()
       }
       expect(source).not.toContain("getInvitationTrackingForPoll");
       expect(source).not.toContain("invitations");
+      // DLVR-04 (D-15 / SC4): the delivery status is an admin-only access-control
+      // boundary — no participant-facing route may read it, by column name or
+      // property. Forbid BOTH spellings.
+      expect(source).not.toContain("delivery_status");
+      expect(source).not.toContain("deliveryStatus");
     }
   });
 });

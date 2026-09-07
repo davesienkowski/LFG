@@ -22,7 +22,7 @@ import {
   beforeEach,
   vi,
 } from "vitest";
-import { inArray, eq } from "drizzle-orm";
+import { inArray, eq, and, sql } from "drizzle-orm";
 
 vi.mock("next/navigation", () => ({
   notFound: () => {
@@ -56,6 +56,23 @@ async function invitationCount(pollId: string): Promise<number> {
     .from(invitations)
     .where(eq(invitations.pollId, pollId));
   return rows.length;
+}
+
+// Read the recorded delivery_status for one address on a poll (case-insensitive).
+async function deliveryStatusOf(
+  pollId: string,
+  email: string,
+): Promise<string | null | undefined> {
+  const rows = await db
+    .select({ deliveryStatus: invitations.deliveryStatus })
+    .from(invitations)
+    .where(
+      and(
+        eq(invitations.pollId, pollId),
+        sql`lower(${invitations.email}) = lower(${email})`,
+      ),
+    );
+  return rows[0]?.deliveryStatus;
 }
 
 function fd(fields: Record<string, string | undefined>): FormData {
@@ -303,5 +320,24 @@ describe("nudgeNonRespondents — writes no invitations (edge-probe must-NOT)", 
     const after = await invitationCount(pollId);
     expect(after).toBe(before);
     expect(after).toBe(2);
+  });
+
+  it("(i) DLVR-04: a nudge UPDATES the targeted row's delivery_status (no new row)", async () => {
+    // Two invited, neither responded → both nudged. Script one failure.
+    const { adminUrlId, pollId } = await seedPoll({
+      invited: ["good@example.com", "bad@example.com"],
+    });
+    // Seeded rows have delivery_status NULL (unknown) before the nudge.
+    expect(await deliveryStatusOf(pollId, "good@example.com")).toBeNull();
+    sendEmailMock.mockImplementation(({ to }: { to: string }) =>
+      to === "bad@example.com"
+        ? Promise.resolve({ ok: false, error: "smtp down" })
+        : Promise.resolve({ ok: true }),
+    );
+    await run(fd({ adminUrlId }));
+    // The nudge updated each EXISTING row in place — no new rows, statuses set.
+    expect(await invitationCount(pollId)).toBe(2);
+    expect(await deliveryStatusOf(pollId, "good@example.com")).toBe("sent");
+    expect(await deliveryStatusOf(pollId, "bad@example.com")).toBe("failed");
   });
 });

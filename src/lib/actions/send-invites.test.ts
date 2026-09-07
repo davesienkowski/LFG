@@ -65,6 +65,23 @@ async function invitationCount(
   return rows.length;
 }
 
+// Read the recorded delivery_status for one address on a poll (case-insensitive).
+async function deliveryStatusOf(
+  pollId: string,
+  email: string,
+): Promise<string | null | undefined> {
+  const rows = await db
+    .select({ deliveryStatus: invitations.deliveryStatus })
+    .from(invitations)
+    .where(
+      and(
+        eq(invitations.pollId, pollId),
+        sql`lower(${invitations.email}) = lower(${email})`,
+      ),
+    );
+  return rows[0]?.deliveryStatus;
+}
+
 function fd(fields: Record<string, string | undefined>): FormData {
   const f = new FormData();
   for (const [k, v] of Object.entries(fields)) {
@@ -262,9 +279,11 @@ describe("sendInvites — invitation recording (RESP-03)", () => {
     });
     expect(await invitationCount(pollId, "recorded@example.com")).toBe(1);
     expect(await invitationCount(pollId)).toBe(1);
+    // DLVR-04 (D-14): the success is recorded as delivery_status 'sent'.
+    expect(await deliveryStatusOf(pollId, "recorded@example.com")).toBe("sent");
   });
 
-  it("(b) records NO row for a rate_limited send", async () => {
+  it("(b) DLVR-04: records a durable rate_limited row for a rate-limited send", async () => {
     const { adminUrlId, pollId } = await seedPoll();
     sendEmailMock.mockResolvedValue({
       ok: false,
@@ -275,17 +294,33 @@ describe("sendInvites — invitation recording (RESP-03)", () => {
       fd({ adminUrlId, addresses: "cap@example.com" }),
     );
     expect(state?.results?.[0].status).toBe("rate_limited");
-    expect(await invitationCount(pollId)).toBe(0);
+    // A row now EXISTS where pre-DLVR-04 there was none, carrying the status.
+    expect(await invitationCount(pollId)).toBe(1);
+    expect(await deliveryStatusOf(pollId, "cap@example.com")).toBe("rate_limited");
   });
 
-  it("(b) records NO row for a failed send", async () => {
+  it("(b) DLVR-04: records a durable failed row for a failed send (no silent drop)", async () => {
     const { adminUrlId, pollId } = await seedPoll();
     sendEmailMock.mockResolvedValue({ ok: false, error: "smtp down" });
     const { state } = await run(
       fd({ adminUrlId, addresses: "boom@example.com" }),
     );
     expect(state?.results?.[0].status).toBe("failed");
-    expect(await invitationCount(pollId)).toBe(0);
+    expect(await invitationCount(pollId)).toBe(1);
+    expect(await deliveryStatusOf(pollId, "boom@example.com")).toBe("failed");
+  });
+
+  it("(b') DLVR-04: a later successful send flips the SAME row failed→sent (idempotency/upsert)", async () => {
+    const { adminUrlId, pollId } = await seedPoll();
+    // First attempt fails and persists a 'failed' row.
+    sendEmailMock.mockResolvedValueOnce({ ok: false, error: "smtp down" });
+    await run(fd({ adminUrlId, addresses: "retry@example.com" }));
+    expect(await deliveryStatusOf(pollId, "retry@example.com")).toBe("failed");
+    // Retry succeeds — the SAME row updates to 'sent', still exactly one row.
+    sendEmailMock.mockResolvedValue({ ok: true });
+    await run(fd({ adminUrlId, addresses: "retry@example.com" }));
+    expect(await invitationCount(pollId, "retry@example.com")).toBe(1);
+    expect(await deliveryStatusOf(pollId, "retry@example.com")).toBe("sent");
   });
 
   it("(c) a re-invite of the same address (any casing) stays exactly one row", async () => {
@@ -321,7 +356,8 @@ describe("sendInvites — invitation recording (RESP-03)", () => {
           "ok@example.com, cap@example.com, fail@example.com, not-an-email",
       }),
     );
-    // Byte-for-byte the same result rows the pre-change action returned.
+    // Byte-for-byte the same result rows the pre-change action returned (the
+    // SendInviteResult contract is unchanged by the recording — SC4 clause).
     expect(state?.results).toEqual([
       { email: "ok@example.com", status: "sent" },
       { email: "cap@example.com", status: "rate_limited" },
@@ -332,9 +368,14 @@ describe("sendInvites — invitation recording (RESP-03)", () => {
         message: "Not a valid email address",
       },
     ]);
-    // Only the ok recipient was recorded.
-    expect(await invitationCount(pollId)).toBe(1);
-    expect(await invitationCount(pollId, "ok@example.com")).toBe(1);
+    // DLVR-04: every ATTEMPTED send (the 3 that reached sendEmail) is recorded
+    // with its status; the malformed address never reached sendEmail so it has
+    // NO row (a validation failure, not a send failure).
+    expect(await invitationCount(pollId)).toBe(3);
+    expect(await deliveryStatusOf(pollId, "ok@example.com")).toBe("sent");
+    expect(await deliveryStatusOf(pollId, "cap@example.com")).toBe("rate_limited");
+    expect(await deliveryStatusOf(pollId, "fail@example.com")).toBe("failed");
+    expect(await invitationCount(pollId, "not-an-email")).toBe(0);
   });
 });
 

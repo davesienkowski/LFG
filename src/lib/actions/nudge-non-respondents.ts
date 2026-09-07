@@ -26,10 +26,12 @@
 
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
+import { sql } from "drizzle-orm";
 import {
   getPollByAdminUrlId,
   getInvitationTrackingForPoll,
 } from "@/lib/db/queries";
+import { db } from "@/lib/db";
 import { resolveBaseUrl, buildParticipantUrl } from "@/lib/urls";
 import { sendEmail } from "@/lib/email/send";
 import { renderReminderEmail } from "@/lib/email/templates";
@@ -77,16 +79,36 @@ export async function nudgeNonRespondents(
   const html = renderReminderEmail({ title: poll.title, participantUrl });
 
   // Sequential, best-effort loop (D-05). One failure never aborts the batch.
-  // Records NO new invitations row (nudge only targets already-invited addresses).
+  // Nudge targets ALREADY-invited addresses, so recording UPDATES the existing
+  // invitations row's delivery_status (DLVR-04 / D-14) — a failed nudge is a
+  // durable, admin-visible needs-retry record just like a failed invite, and a
+  // later successful nudge flips the SAME row failed→sent. Admin-only (D-15).
   const results: SendInviteResult[] = [];
   for (const email of recipients) {
     const result = await sendEmail({ to: email, subject, html });
-    if (result.ok) {
-      results.push({ email, status: "sent" });
-    } else if (result.rateLimited) {
-      results.push({ email, status: "rate_limited" });
-    } else {
-      results.push({ email, status: "failed" });
+    const status: SendInviteResult["status"] = result.ok
+      ? "sent"
+      : result.rateLimited
+        ? "rate_limited"
+        : "failed";
+    results.push({ email, status });
+
+    // Best-effort (D-05): never throws to the user, never aborts the loop, never
+    // alters the pushed row. Atomic upsert on (poll_id, lower(email)).
+    try {
+      // Raw parameterized upsert on the functional index (see send-invites for
+      // why the drizzle builder can't target an expression index).
+      await db.execute(sql`
+        insert into "invitations" ("poll_id", "email", "delivery_status")
+        values (${poll.id}, ${email}, ${status})
+        on conflict ("poll_id", lower("email"))
+        do update set "delivery_status" = ${status}
+      `);
+    } catch (err) {
+      console.error(
+        "nudge delivery-status upsert failed (best-effort, ignored):",
+        err,
+      );
     }
   }
 

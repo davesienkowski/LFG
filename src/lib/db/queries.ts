@@ -420,7 +420,9 @@ export async function getFinalizedPollsByOrganizerId(organizerId: string) {
  */
 export async function getInvitationTrackingForPoll(
   pollId: string,
-): Promise<{ email: string; responded: boolean }[]> {
+): Promise<
+  { email: string; responded: boolean; deliveryStatus: string | null }[]
+> {
   return db
     .select({
       email: invitations.email,
@@ -431,6 +433,11 @@ export async function getInvitationTrackingForPoll(
       // (trivially true). Hardcoding `p.*` (subquery) vs `invitations.*` (outer)
       // keeps the correlation — and the cross-poll isolation — unambiguous.
       responded: sql<boolean>`exists (select 1 from participants p where p.poll_id = invitations.poll_id and lower(p.email) = lower(invitations.email))`,
+      // DLVR-04 (D-14/D-15): the per-recipient delivery outcome, select-only —
+      // ADMIN-ONLY. This read is never called by a participant-facing route (see
+      // the participant canary). Adding the column does NOT change the ORDER BY,
+      // so the stable invited_at asc + id tiebreaker ordering is preserved.
+      deliveryStatus: invitations.deliveryStatus,
     })
     .from(invitations)
     .where(eq(invitations.pollId, pollId))

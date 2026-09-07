@@ -26,9 +26,9 @@
 import { z } from "zod";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
+import { sql } from "drizzle-orm";
 import { getPollByAdminUrlId } from "@/lib/db/queries";
 import { db } from "@/lib/db";
-import { invitations } from "@/lib/db/schema";
 import { resolveBaseUrl, buildParticipantUrl } from "@/lib/urls";
 import { sendEmail } from "@/lib/email/send";
 import { renderInviteEmail } from "@/lib/email/templates";
@@ -112,29 +112,41 @@ export async function sendInvites(
 
     // Sequential await — one individual send per address, never CC (T-04-03).
     const result = await sendEmail({ to: email, subject, html });
-    if (result.ok) {
-      results.push({ email, status: "sent" });
-      // RESP-03: persist WHO actually got a link — recorded ONLY on a successful
-      // send (never rate_limited/failed). Best-effort (D-05): a DB failure MUST
-      // NOT throw to the user, MUST NOT abort the send loop, and MUST NOT alter
-      // the SendInviteResult row already pushed above. Store the address
-      // as-entered; the target-less onConflictDoNothing() catches the functional
-      // unique index (poll_id, lower(email)) so any-casing re-invites are no-ops.
-      try {
-        await db
-          .insert(invitations)
-          .values({ pollId: poll.id, email })
-          .onConflictDoNothing();
-      } catch (err) {
-        // Best-effort — never affects the UI result — but LOG it so a systemic
-        // failure (FK/constraint/connection) is discoverable in server logs
-        // rather than silently degrading respondent tracking for every poll.
-        console.error("invitations insert failed (best-effort, ignored):", err);
-      }
-    } else if (result.rateLimited) {
-      results.push({ email, status: "rate_limited" });
-    } else {
-      results.push({ email, status: "failed" });
+    const status: SendInviteStatus = result.ok
+      ? "sent"
+      : result.rateLimited
+        ? "rate_limited"
+        : "failed";
+    results.push({ email, status });
+
+    // RESP-03 + DLVR-04 (D-14): persist WHO got a link AND the delivery outcome
+    // for EVERY attempted send — sent / failed / rate_limited — so a failure is a
+    // durable, admin-visible needs-retry record (D-15), not a transient form-only
+    // result. Upsert on the functional unique index (poll_id, lower(email)): a
+    // later successful retry flips the SAME row failed→sent, and a concurrent or
+    // any-casing duplicate resolves ATOMICALLY via onConflictDoUpdate (never a
+    // thrown unique violation). Best-effort (D-05): a DB failure MUST NOT throw to
+    // the user, MUST NOT abort the send loop, and MUST NOT alter the pushed row.
+    try {
+      // Raw parameterized upsert: drizzle's onConflictDoUpdate builder cannot
+      // serialize a FUNCTIONAL index target (poll_id, lower(email)), so the
+      // ON CONFLICT inference clause is written directly. Values are bound
+      // parameters (no injection); the atomic upsert flips failed→sent on retry
+      // and de-dupes any-casing/concurrent recordings via the unique index.
+      await db.execute(sql`
+        insert into "invitations" ("poll_id", "email", "delivery_status")
+        values (${poll.id}, ${email}, ${status})
+        on conflict ("poll_id", lower("email"))
+        do update set "delivery_status" = ${status}
+      `);
+    } catch (err) {
+      // Best-effort — never affects the UI result — but LOG it so a systemic
+      // failure (FK/constraint/connection) is discoverable in server logs
+      // rather than silently degrading respondent tracking for every poll.
+      console.error(
+        "invitation delivery-status upsert failed (best-effort, ignored):",
+        err,
+      );
     }
   }
 
