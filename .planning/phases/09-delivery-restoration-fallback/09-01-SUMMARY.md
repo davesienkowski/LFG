@@ -24,7 +24,17 @@
 
 The send **code path exists and is tested** (Phase 4); the "accepted limitation" is **configuration/credentials, not code**. In production, outbound email is off because `EMAIL_PROVIDER` is unset (→ the first-class `{ok:false, error:"Email not configured"}` MAIL-03 path) or its provider credentials are stale/revoked (→ a transport auth error surfaced as a `failed` send chip). Either way `sendEmail()` already degrades gracefully to the copy-link fallback the organizer sees today via `send-status-meta.ts` (sent / rate_limited / failed chips).
 
-**Remediation (Dave, Task 3 — escalated, NOT performed here):**
+> **⛔ Task 3 DEFERRED / WITHDRAWN — 2026-09-07 (Dave's decision).** Dave has
+> deferred the email portion of the project and does not want to set up email
+> delivery. The prod-credential + redeploy step below is therefore **withdrawn,
+> not delayed** — it is not going to happen, and the D-19 gate it feeds will never
+> be satisfied while email is deferred. The shipped Phase 9 code (Tasks 1–2,
+> commit `1ad8ac3`) stays as-is: it degrades gracefully to copy-link with no
+> provider configured (D-02), which is exactly the state Dave is choosing.
+> Reversible — the remediation below still applies verbatim if email is ever
+> taken up again.
+
+**Remediation (Dave, Task 3 — DEFERRED 2026-09-07; retained for a future email revival):**
 1. Set the **primary** provider env in Vercel prod: `EMAIL_PROVIDER` + its creds (SMTP_* for Gmail, or `RESEND_API_KEY`) + `EMAIL_FROM` aligned to it.
 2. Set the **fallback**: `EMAIL_FALLBACK_PROVIDER` (a *different* provider) + that provider's creds (+ optional `EMAIL_FALLBACK_FROM`).
 3. Redeploy prod; confirm a real send **dispatches** (no "Email not configured").

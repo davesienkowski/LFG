@@ -4,7 +4,7 @@
 
 - ✅ **v1.0 MVP** — Phases 1-6 (shipped 2026-07-07)
 - ✅ **v1.1 Organizer Controls** — Phases 7-8 (shipped 2026-07-07, closed 2026-09-07)
-- 🚧 **v1.2 Reliable Delivery** — Phases 9-10 (in progress)
+- ⏸️ **v1.2 Reliable Delivery** — Phases 9-10 (**email work DEFERRED 2026-09-07** per Dave; Phase 9 code seam shipped. Deferred: Phase 9 Task 3 prod creds + all of DLVR-03/plan 10-02. Disposition of the milestone + DLVR-04/plan 10-01 PENDING Dave's decision — see STATE.md.)
 
 ## Phases
 
@@ -36,8 +36,8 @@ Full detail: [milestones/v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md)
 
 **Milestone Goal:** Make outbound email actually deliver to inboxes so invites, nudges, and confirmations work reliably — retiring the "accepted limitation" at v1.1 close and closing the inbox-deliverability human check open since v1.0.
 
-- [ ] **Phase 9: Delivery Restoration & Fallback** — get outbound email sending again in prod through the existing `sendEmail()` seam, and add a fallback provider behind the same seam so one provider failing degrades to a backup, not to nothing
-- [ ] **Phase 10: Deliverability & Visibility** — align sender identity (SPF/DKIM/DMARC) so mail lands in the inbox with a human-verified prod send, and surface send failures to the organizer so nothing fails silently
+- [~] **Phase 9: Delivery Restoration & Fallback** — the `sendEmail()` primary→fallback seam is CODE-SHIPPED (`1ad8ac3`); the prod-credential step (Task 3) is DEFERRED 2026-09-07 (Dave declined email setup)
+- [ ] **Phase 10: Deliverability & Visibility** — ⏸️ DLVR-03 (SPF/DKIM/DMARC + real-inbox, plan 10-02) DEFERRED 2026-09-07; DLVR-04 (failure visibility, plan 10-01) PENDING Dave's decision (needs no email setup)
 
 ## Phase Details
 
@@ -59,6 +59,8 @@ Full detail: [milestones/v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md)
 **UI hint**: minimal — primarily backend/config; copy-link fallback UI already exists.
 
 ### Phase 10: Deliverability & Visibility
+
+> **⏸️ Email deliverability DEFERRED 2026-09-07 (Dave).** DLVR-03 (SPF/DKIM/DMARC + real-inbox check, plan 10-02) is deferred in full — Dave declined email setup; its Phase-9-Task-3 gate is withdrawn. DLVR-04 (failure visibility, plan 10-01) needs NO email setup and its fate is PENDING Dave's decision (see STATE.md open questions). Planned but not executed; kept for a future email revival.
 
 **Goal**: The mail that now sends actually lands in the inbox, and the organizer can see when it doesn't. Sender identity is SPF/DKIM/DMARC-aligned for the configured provider(s), a real production send is human-verified to arrive in a real inbox (not spam) with a working link, and send failures (hard bounce, auth error, all providers down) surface to the organizer instead of failing silently.
 **Depends on**: Phase 9 (email must send before deliverability and failure-surfacing are meaningful)
@@ -89,5 +91,5 @@ Full detail: [milestones/v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md)
 | 6. Your Polls Dashboard     | v1.0      | 4/4            | Complete    | 2026-07-06 |
 | 7. Respondent Tracking & Nudges | v1.1  | 4/4            | Complete    | 2026-07-07 |
 | 8. Scheduling Controls      | v1.1      | 4/4            | Complete    | 2026-07-07 |
-| 9. Delivery Restoration & Fallback | v1.2 | 0/? | Not Started |  |
-| 10. Deliverability & Visibility | v1.2  | 0/? | Not Started |  |
+| 9. Delivery Restoration & Fallback | v1.2 | code shipped | Seam shipped (`1ad8ac3`); Task 3 prod creds DEFERRED 2026-09-07 | 2026-09-07 |
+| 10. Deliverability & Visibility | v1.2  | 0/2 | DLVR-03 (10-02) DEFERRED 2026-09-07; DLVR-04 (10-01) PENDING decision |  |
