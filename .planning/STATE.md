@@ -4,17 +4,17 @@ milestone: v1.1
 milestone_name: Organizer Controls
 current_phase: 8
 current_phase_name: Scheduling Controls
-status: executing
-stopped_at: ROADMAP.md written with Phases 7 (Respondent Tracking & Nudges) and 8 (Scheduling Controls); REQUIREMENTS.md traceability filled (5/5 mapped); STATE.md advanced to v1.1 Phase 7 ready-to-plan
-last_updated: "2026-07-07T22:32:47.012Z"
-last_activity: 2026-07-07
-last_activity_desc: Phase 8 execution started
+status: milestone_complete
+stopped_at: Milestone v1.1 closed 2026-09-07 — both deferred human checks approved; ROADMAP/REQUIREMENTS + phases 7-8 archived to milestones/v1.1-*; PROJECT.md + MILESTONES.md updated. No milestone in progress.
+last_updated: "2026-09-07T00:00:00.000Z"
+last_activity: 2026-09-07
+last_activity_desc: v1.1 milestone closed (both human checks approved)
 progress:
   total_phases: 2
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 8
-  completed_plans: 4
-  percent: 50
+  completed_plans: 8
+  percent: 100
 ---
 
 # Project State
@@ -24,25 +24,24 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-07 after v1.0 milestone)
 
 **Core value:** A poll creator can propose candidate dates, get participants to mark their availability via an emailed link, and instantly see which day(s) work for the whole group — no participant login, no cost.
-**Current focus:** Phase 8 — Scheduling Controls
+**Current focus:** none — v1.1 milestone closed 2026-09-07; awaiting next milestone definition
 
 ## Current Position
 
-Phase: 8 (Scheduling Controls) — CODE COMPLETE + PROD-SHIPPED (human-verify pending)
-Plan: 4 of 4 (08-01/02/03 shipped + verified 9/9; 08-04 prod-shipped, browser check deferred)
-Status: Milestone v1.1 CODE COMPLETE & prod-shipped. All 5 requirements (RESP-01/02/03, DEAD-01, ORG-01) implemented, verified (321 tests green), migrated to prod (0005/0006/0007) and deployed. Two human-verification checks remain before archiving the milestone.
-Last activity: 2026-07-07 — Phase 8 shipped to prod; v1.1 code complete
+Milestone v1.1 Organizer Controls — **CLOSED 2026-09-07**. No milestone in progress.
+All 5 requirements (RESP-01/02/03, DEAD-01, ORG-01) implemented, verified (321 tests green), migrated to prod (0005/0006/0007) and deployed. Both deferred human checks approved by the operator on 2026-09-07. Archived: ROADMAP/REQUIREMENTS → milestones/v1.1-*, phases 7-8 → milestones/v1.1-phases/. PROJECT.md + MILESTONES.md updated.
+Last activity: 2026-09-07 — v1.1 milestone closed
 
-Progress: [██████████] v1.1 code 100% — 2/2 phases shipped to prod (321 tests green). Milestone archival gated on 2 human checks below.
+Progress: [██████████] v1.1 100% — 2/2 phases shipped to prod and human-verified; milestone archived.
 
-## Deferred Verification
+## Deferred Verification — RESOLVED
 
-| Phase | State | Resume |
-|-------|-------|--------|
-| 7 | verification_deferred_human — real nudge email inbox delivery + responded-status flip on the live prod app (07-04 Task 2; no agent inbox access) | /gsd-verify-work 7 (or reply "approved") — see 07-04-SUMMARY.md for the exact steps |
-| 8 | verification_deferred_human — live prod deadline auto-close (vote form goes read-only after the deadline, distinct from "Booked") + organizer "(you)" row visual (08-04 Task 2; time-dependent + visual, no agent browser) | /gsd-verify-work 8 (or reply "approved") — see 08-04-SUMMARY.md for the exact steps |
+| Phase | Resolution (2026-09-07) |
+|-------|-------------------------|
+| 7 | **Approved.** Respondent tracking + nudge shipped and code-verified. Live outbound email delivery is a **known and accepted limitation** at close (not verified as delivering) — the respond/choose flow works and the actions degrade to copy-link. See 07-04-SUMMARY.md. |
+| 8 | **Approved.** Operator confirmed on prod: deadline auto-close makes the vote form read-only (distinct from "Booked") and the organizer "(you)" row renders correctly. See 08-04-SUMMARY.md. |
 
-**To close the milestone** once both checks pass: `/gsd-complete-milestone v1.1` (archives ROADMAP/REQUIREMENTS, updates PROJECT.md + MILESTONES.md). Both deferred checks are the same class of human-verifiable acceptance v1.0 shipped with (see RETROSPECTIVE "Distinguish code-verifiable from human-verifiable").
+Milestone closed manually following the `/gsd-complete-milestone v1.1` process (archive ROADMAP/REQUIREMENTS, update PROJECT.md + MILESTONES.md).
 
 ## Performance Metrics
 
@@ -143,11 +142,11 @@ Items acknowledged and deferred at v1.0 milestone close on 2026-07-07 (override_
 
 ## Session Continuity
 
-Last session: 2026-07-07 — v1.1 roadmap created
-Stopped at: ROADMAP.md written with Phases 7 (Respondent Tracking & Nudges) and 8 (Scheduling Controls); REQUIREMENTS.md traceability filled (5/5 mapped); STATE.md advanced to v1.1 Phase 7 ready-to-plan
+Last session: 2026-09-07 — v1.1 milestone closed (both human checks approved)
+Stopped at: v1.1 fully archived; no milestone in progress
 Resume file: None
 
 ## Operator Next Steps
 
-- Plan Phase 7 with `/gsd-plan-phase 7` (Respondent Tracking & Nudges — RESP-03 → RESP-01 → RESP-02).
-- Per project hook: run the edge-probe family after SPEC.md/PLAN.md and close findings before execution.
+- **Define the next milestone** when ready (`/gsd-*` milestone/roadmap flow). Likely first candidate: re-enable outbound email delivery (currently an accepted limitation). Other deferred candidates: CMNT-01 (comments), MOBL-01 (mobile grid), SLOT-01 (per-day multi-slot).
+- Optional housekeeping: tag the v1.1 release (only `v1.0` is tagged today); remove the stray `.planning/config.json.bak-premempalace` backup if no longer needed.

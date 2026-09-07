@@ -1,5 +1,17 @@
 # Milestones
 
+## v1.1 Organizer Controls (Shipped: 2026-07-07 · Closed: 2026-09-07)
+
+**Phases completed:** 2 phases (7-8), 8 plans
+**Codebase:** 321 tests green
+**Prod:** migrations 0005/0006/0007 applied to Neon; deployed to Vercel free tier
+**Closeout:** Both end-of-phase human checks approved 2026-09-07. Phase 8 (deadline auto-close + organizer "(you)" row) visually confirmed on prod. Phase 7 respondent tracking / nudge shipped and code-verified; **live outbound email delivery is a known and accepted limitation** — participants can still open, respond, and choose, and the nudge/invite actions degrade gracefully to copy-link.
+**Requirements:** 5/5 v1.1 requirements complete (RESP-01/02/03, DEAD-01, ORG-01).
+
+**Delivered:** Organizer controls to drive a poll to a confident decision — persisted invitations with a responded / not-responded status on the admin view, a one-click nudge to the non-respondents, an optional voting deadline that lazily closes the poll on access (no cron), and the organizer's own availability row (single-row upsert, "(you)" in the results grid and best-day computation). All schema changes additive + nullable, consistent with the v1.0 prod-safe pattern.
+
+---
+
 ## v1.0 MVP (Shipped: 2026-07-07)
 
 **Phases completed:** 6 phases (1-6), 20 plans

@@ -2,7 +2,9 @@
 
 ## Current State
 
-**Shipped v1.0 MVP (2026-07-07)** — live on Vercel free tier + Neon, with all 30 v1 requirements complete and verified. The full happy path works end-to-end in production: create poll → (optionally email) invite → account-free three-state vote → admin results grid + best-day → "Book it" → confirmation emails. Free-tier email is enabled via Gmail SMTP.
+**Shipped v1.1 Organizer Controls (2026-07-07, milestone closed 2026-09-07)** — builds on the v1.0 MVP, live on Vercel free tier + Neon with all 5 v1.1 requirements implemented, verified (321 tests green), migrated to prod (migrations 0005/0006/0007) and deployed. The organizer can now track who has/hasn't responded and nudge the stragglers, set an optional lazy-close voting deadline, and add their own availability row from the admin view. **Note:** outbound email delivery from this project is a known and accepted limitation at present — the respond-and-choose flow works regardless; the nudge/invite actions degrade gracefully to copy-link.
+
+**Shipped v1.0 MVP (2026-07-07)** — live on Vercel free tier + Neon, with all 30 v1 requirements complete and verified. The full happy path works end-to-end in production: create poll → (optionally email) invite → account-free three-state vote → admin results grid + best-day → "Book it" → confirmation emails.
 
 ## What This Is
 
@@ -12,15 +14,9 @@ A free, self-hostable clone of Doodle.com's "Group Poll" feature, focused on the
 
 A poll creator can propose candidate dates, get participants to mark their availability via an emailed link, and instantly see which day(s) work for the whole group — with no login required for participants and no cost to run.
 
-## Current Milestone: v1.1 Organizer Controls
+## Current Milestone: none active
 
-**Goal:** Give the organizer the tools to drive a poll to a confident decision — track who hasn't responded, nudge them, auto-close on a deadline, and vote in their own availability.
-
-**Target features:**
-- See which invited people have not yet responded (requires persisting invitations)
-- One-click "nudge" email to non-respondents
-- Optional voting deadline that auto-closes the poll (serverless-safe lazy close, no cron)
-- Organizer can add their own availability row from the admin view
+**v1.1 Organizer Controls closed 2026-09-07.** No milestone is in progress. Next milestone candidates live in the Future Requirements of `milestones/v1.1-REQUIREMENTS.md` (CMNT-01 comments, MOBL-01 mobile grid, SLOT-01 per-day multi-slot). Re-enabling outbound email delivery is a likely near-term item (currently an accepted limitation).
 
 ## Requirements
 
@@ -40,15 +36,16 @@ A poll creator can propose candidate dates, get participants to mark their avail
 - [x] Organizer can finalize on the winning date ("Book it") and every voter gets a confirmation email — *Validated in Phase 4 (FNL-01..03; two-step confirm closes the poll)*
 - [x] Accessible, responsive UI across all screens (WCAG radiogroup vote matrix, mobile sticky footers) — *Validated in Phase 5 (D-01..D-10; behavior-preserving redesign)*
 - [x] Organizer "Your polls" dashboard + subscribable calendar feed of booked dates — *Validated in Phase 6 (account-free `lfg_organizer` cookie identity)*
+- [x] Organizer can see which invited people have not yet responded — *Validated in Phase 7 (RESP-01/03; persisted invitations + responded/not-responded status)*
+- [x] Organizer can send a one-click "nudge" reminder to non-respondents — *Validated in Phase 7 (RESP-02; action + copy-link fallback shipped; live email delivery an accepted limitation)*
+- [x] Organizer can set a deadline after which voting auto-closes — *Validated in Phase 8 (DEAD-01; lazy close on poll access, no cron)*
+- [x] Organizer can add their own availability row from the admin view — *Validated in Phase 8 (ORG-01; single-row upsert, "(you)" row in results/best-day)*
 
 ### Active
 
-<!-- Current scope (milestone v1.1 Organizer Controls). Remaining v2 candidates (comments CMNT-01, mobile grid MOBL-01, per-day multi-slot SLOT-01) stay deferred — see milestones/v1.0-REQUIREMENTS.md. -->
+<!-- No milestone in progress. Next candidates: re-enable outbound email; v2 deferred set (CMNT-01 comments, MOBL-01 mobile grid, SLOT-01 per-day multi-slot) — see milestones/v1.1-REQUIREMENTS.md Future Requirements. -->
 
-- [ ] Organizer can see which invited people have not yet responded — *RESP-01 (v1.1)*
-- [ ] Organizer can send a one-click "nudge" email to non-respondents — *RESP-02 (v1.1)*
-- [ ] Organizer can set a deadline after which voting auto-closes — *DEAD-01 (v1.1)*
-- [ ] Organizer can add their own availability row from the admin view — *ORG-01 (v1.1)*
+- _(none — awaiting next milestone definition)_
 
 ### Out of Scope
 
@@ -92,6 +89,10 @@ A poll creator can propose candidate dates, get participants to mark their avail
 | Gmail SMTP with `EMAIL_FROM = SMTP_USER` (self-aligned SPF/DKIM/DMARC) | Free-tier deliverability without a domain | ⚠️ Revisit — live inbox/spam landing not yet human-verified |
 | WCAG role=radiogroup/radio vote matrix, both responsive layers in DOM | Accessible three-state input | ⚠️ Revisit — code-verified; formal screen-reader pass deferred |
 | Account-free organizer identity via `lfg_organizer` cookie + nullable `organizer_id` | Same-browser poll grouping without auth | ✓ Good — powers /polls + calendar feed |
+| [v1.1] Persist invitations in an additive `invitations` table; record on successful send | Respondent tracking needs a source of truth (v1.0 sent invites transiently) | ✓ Good — RESP-01/03 shipped |
+| [v1.1] Lazy deadline close (evaluated on poll access), not cron | Vercel Hobby cron too limited; reuse FNL-02 closed guard | ✓ Good — DEAD-01, no scheduler, never blocks page load |
+| [v1.1] DB-enforce one-organizer-row-per-poll via partial unique index + graceful race fallthrough | Prevent duplicate organizer availability rows under concurrency | ✓ Good — ORG-01 (code-review hardening) |
+| [v1.1] Outbound email delivery accepted as a known limitation at milestone close | Respond/choose flow works without it; nudge/invite degrade to copy-link | ⚠️ Revisit — re-enable email as a likely next item |
 
 ## Evolution
 
@@ -111,4 +112,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-07 — started milestone v1.1 Organizer Controls*
+*Last updated: 2026-09-07 — closed milestone v1.1 Organizer Controls*
