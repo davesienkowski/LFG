@@ -30,8 +30,9 @@ The participant canary forbids BOTH strings on every participant-facing route so
 - New/changed: send-invites — 2 `(b)` tests flipped to assert a durable failed/rate_limited row + delivery_status, plus a new `(b')` failed→sent flip; nudge — new `(i)` update-in-place test; queries — structural key test updated to include `deliveryStatus` + a new NULL/failed surfacing test; participant canary extended.
 - **Full suite: 31 files, 332/332 passed, exit 0** — re-verified in-session against local Postgres on `127.0.0.1:5433` (`DATABASE_URL` port-overridden for the run only; no repo/config/.env change). `tsc --noEmit` + eslint clean.
 
-## ⚠️ Follow-up for Dave (NOT done — guardrail 3, no agent prod access, prod creds withdrawn)
-- **Apply migration `0008` (`invitations.delivery_status`) to prod Neon** before DLVR-04 works in production. Follow the established prod pattern: back up prod Neon → `npm run db:migrate` against the prod `DATABASE_URL` → deploy the app code. This is additive/nullable, so it is safe on existing rows (they read NULL = unknown).
+## ⚠️ Follow-up for Dave — prod status of migration 0008 is UNCONFIRMED
+> **Correction (2026-09-07):** this section originally read "NOT done". The honest state is **UNCONFIRMED, not not-done.** After this summary was written, a message in the LFG session pane attributed to Dave said *"Applied 0008 to prod"*, and it was briefly recorded as applied; Dave (2026-09-07) then said he does not recall applying it and deferred checking. It was never agent-verified (no prod access). **Resolve by checking whether column `delivery_status` exists on the `invitations` table in prod Neon** — if present, 0008 is applied; if absent, apply it.
+- **If 0008 is not yet in prod Neon, apply it** before DLVR-04 works in production. Follow the established prod pattern: back up prod Neon → `npm run db:migrate` against the prod `DATABASE_URL` → deploy the app code. This is additive/nullable, so it is safe on existing rows (they read NULL = unknown).
 - Email itself stays OFF (deferred): with no provider configured, sends return "Email not configured" and record nothing new; DLVR-04 simply has nothing to show until/unless email is revived. It does no harm in the meantime.
 
 ## Notes

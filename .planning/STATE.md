@@ -5,10 +5,10 @@ milestone_name: Reliable Delivery (re-scoped to DLVR-04 only)
 current_phase: 10
 current_phase_name: Deliverability & Visibility
 status: milestone_complete
-stopped_at: "v1.2 CLOSED 2026-09-07 (re-scoped to DLVR-04 only). DLVR-04 delivered & LIVE — Dave applied migration 0008 to prod Neon himself (2026-09-07; recorded on his authority, not agent-verified). Archived ROADMAP/REQUIREMENTS → milestones/v1.2-*, phases 9-10 → milestones/v1.2-phases/. PROJECT.md + MILESTONES.md updated (honest re-scoped outcome). Email deferred: DLVR-03/plan 10-02 carried forward (PROJECT.md Backlog + todos/pending), Phase 9 Task 3 WITHDRAWN PERMANENTLY. Tagged v1.2. Suite 332/332 green."
+stopped_at: "v1.2 CLOSED 2026-09-07 (re-scoped to DLVR-04 only). DLVR-04 CODE-COMPLETE (shipped to master); LIVE-IN-PROD UNCONFIRMED — migration 0008 was recorded as prod-applied only from a 2026-09-07 message in the LFG session pane attributed to Dave (\"Applied 0008 to prod\"); Dave (2026-09-07) does not recall applying it and deferred checking; never agent-verified (no prod access). RESOLUTION TRIGGER: check whether column delivery_status exists on the invitations table in prod Neon. Archived ROADMAP/REQUIREMENTS → milestones/v1.2-*, phases 9-10 → milestones/v1.2-phases/. PROJECT.md + MILESTONES.md updated. Email deferred: DLVR-03/plan 10-02 carried forward, Phase 9 Task 3 WITHDRAWN PERMANENTLY. Tagged v1.2. Suite 332/332 green."
 last_updated: "2026-09-07T00:00:00.000Z"
 last_activity: 2026-09-07
-last_activity_desc: v1.2 closed (re-scoped to DLVR-04); Dave applied 0008 to prod; tagged v1.2
+last_activity_desc: v1.2 closed (re-scoped to DLVR-04); DLVR-04 code-complete, prod-applied UNCONFIRMED; tagged v1.2
 progress:
   total_phases: 2
   completed_phases: 2
@@ -30,13 +30,14 @@ See: .planning/PROJECT.md (updated 2026-07-07 after v1.0 milestone)
 
 Milestone v1.2 Reliable Delivery — **CLOSED 2026-09-07 (re-scoped to DLVR-04 only).** No milestone in progress.
 
-**Honest outcome:** v1.2 delivered its **re-scoped** goal (DLVR-04 failure visibility), NOT its original "Reliable Delivery" goal. Email delivery itself remains OFF by choice.
+**Honest outcome:** v1.2 delivered its **re-scoped** goal (DLVR-04 failure visibility) at the CODE level, NOT its original "Reliable Delivery" goal. Email delivery itself remains OFF by choice.
 
-**Delivered & LIVE — DLVR-04:**
-- Additive nullable `invitations.delivery_status` (migration **0008**, `ADD COLUMN` only). **Dave applied 0008 to prod Neon himself on 2026-09-07** — recorded on his authority; NOT agent-verified (no prod access, guardrail 3).
+**DLVR-04 — CODE-COMPLETE (shipped to master); LIVE-IN-PROD UNCONFIRMED:**
+- Additive nullable `invitations.delivery_status` (migration **0008**, `ADD COLUMN` only) — applied **locally (5433)**. **Whether 0008 is applied to prod Neon is UNCONFIRMED:** it was recorded as prod-applied only from a 2026-09-07 message in the LFG session pane attributed to Dave at the time (*"Applied 0008 to prod"*), and recorded as done on that basis. Dave (2026-09-07) **does not recall applying it** and chose to look into it later. Never agent-verified (no prod access — guardrail 3).
+  - **⭐ RESOLUTION TRIGGER (checkable by whoever has prod access):** does column `delivery_status` exist on the `invitations` table in **prod Neon**? If YES → 0008 is applied and DLVR-04 is live in prod. If NO → 0008 is not yet applied and DLVR-04 is code-only.
 - `sent`/`failed`/`rate_limited` recorded per attempted recipient via a raw upsert (send-invites + nudge); a failed send is a durable admin-visible record, a retry flips failed→sent.
 - Admin-only `deliveryStatus` on `getInvitationTrackingForPoll` + `whos-responded-card` chip; participant canary forbids `invitations` + `delivery_status` (D-15/SC4).
-- Full suite **332/332** green.
+- Full suite **332/332** green (local).
 
 **Shipped but INERT:** the `sendEmail()` primary→fallback seam (Phase 9, `1ad8ac3`) — no provider configured, degrades to copy-link (D-02). Not a working "reliable delivery" feature.
 
@@ -48,7 +49,7 @@ Archived: ROADMAP/REQUIREMENTS → `milestones/v1.2-*`, phases 9-10 → `milesto
 
 Prior: v1.1 CLOSED 2026-09-07; v1.0 shipped 2026-07-07.
 
-Progress: [██████████] v1.2 (re-scoped) 100% — DLVR-04 delivered & live; email deliverability carried to Backlog.
+Progress: [█████████░] v1.2 (re-scoped) — DLVR-04 code-complete & shipped to master; live-in-prod UNCONFIRMED (prod 0008 unverified — see resolution trigger); email deliverability carried to Backlog.
 
 ## Deferred Verification — RESOLVED
 
@@ -157,16 +158,17 @@ Items acknowledged and deferred at v1.0 milestone close on 2026-07-07 (override_
 | seed | SEED-001-phase4-free-email-no-domain — obsolete; Phase 4 email shipped (Gmail SMTP live in prod) | dormant | 2026-07-07 |
 | email | **Phase 9 Task 3** — prod primary+fallback EMAIL_PROVIDER creds + redeploy. **WITHDRAWN PERMANENTLY** per Dave (2026-09-07 Q3) — not a delay. Reversible only if email is ever revived (remediation retained in 09-01-SUMMARY.md). | withdrawn (permanent) | 2026-09-07 |
 | email | **DLVR-03** — SPF/DKIM/DMARC alignment, real-inbox human check, deliverability runbook + alignment checker. Deferred, out of scope. **Carried forward → PROJECT.md Backlog + `.planning/todos/pending/dlvr-03-email-deliverability.md`**; plan at `milestones/v1.2-phases/10-deliverability-visibility/10-02-PLAN.md` (`status: DEFERRED`). Gate (Phase 9 Task 3) withdrawn permanently. | deferred (carried fwd) | 2026-09-07 |
-| prod-migration | **Migration 0008** (`invitations.delivery_status`) — **DONE: Dave applied it to prod Neon himself, 2026-09-07** (recorded on his authority; not agent-verified). DLVR-04 is live. | resolved | 2026-09-07 |
+| prod-migration | **Migration 0008** (`invitations.delivery_status`) prod application is **UNCONFIRMED.** Recorded as applied only from a 2026-09-07 session-pane message attributed to Dave (*"Applied 0008 to prod"*); Dave (2026-09-07) does not recall and deferred checking. Never agent-verified (no prod access). **Resolve by:** checking whether column `delivery_status` exists on the `invitations` table in prod Neon (yes → applied/live; no → not applied). DLVR-04 is code-complete on master regardless. | unconfirmed | 2026-09-07 |
 
 ## Session Continuity
 
-Last session: 2026-09-07 — v1.2 CLOSED (re-scoped to DLVR-04); Dave applied 0008 to prod; tagged v1.2
+Last session: 2026-09-07 — v1.2 CLOSED (re-scoped to DLVR-04); DLVR-04 code-complete, prod-applied UNCONFIRMED; tagged v1.2
 Stopped at: Milestone v1.2 archived (ROADMAP/REQUIREMENTS → milestones/v1.2-*, phases 9-10 → milestones/v1.2-phases/), PROJECT.md + MILESTONES.md updated (honest re-scoped outcome), tagged `v1.2`. DLVR-03 carried forward to Backlog + todos/pending. No milestone in progress.
 Resume file: None
 
 ## Operator Next Steps
 
+- **Confirm migration 0008 in prod (UNCONFIRMED).** Whoever has prod access: check whether column `delivery_status` exists on the `invitations` table in prod Neon. If present, 0008 is applied and DLVR-04 is live — update the docs to say so; if absent, apply 0008 (backup → migrate) then deploy. Dave flagged (2026-09-07) he does not recall applying it.
 - **Define the next milestone** when ready. Top backlog candidate if email is ever revived: **DLVR-03 email deliverability** (see PROJECT.md Backlog + `.planning/todos/pending/dlvr-03-email-deliverability.md`; plan `milestones/v1.2-phases/10-deliverability-visibility/10-02-PLAN.md`). Its gate (Phase 9 Task 3 prod creds) is withdrawn permanently — reviving it means re-taking-up email setup first.
 - Other backlog: MOBL-01 (mobile results grid), SLOT-01 (per-day time slots), CMNT-01 (comments).
 - **Open, unresolved (Dave's to settle):** the 5432-vs-5433 local-Postgres port discrepancy — repo docs say 5432, this machine uses 5433. Only the in-tree MACHINE STATE note in the archived 10-01-PLAN.md records it.
