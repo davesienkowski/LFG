@@ -32,12 +32,14 @@ beforeEach(() => {
   // Start each test from a clean email-env slate.
   for (const k of [
     "EMAIL_PROVIDER",
+    "EMAIL_FALLBACK_PROVIDER",
     "SMTP_HOST",
     "SMTP_PORT",
     "SMTP_SECURE",
     "SMTP_USER",
     "SMTP_PASS",
     "EMAIL_FROM",
+    "EMAIL_FALLBACK_FROM",
     "RESEND_API_KEY",
   ]) {
     delete process.env[k];
@@ -203,6 +205,151 @@ describe("sendEmail — attachments (04-k1u)", () => {
     expect(result).toEqual({ ok: false, error: "Email not configured" });
     expect(sendMailSpy).not.toHaveBeenCalled();
     expect(resendSendSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("sendEmail — fallback chain (DLVR-02)", () => {
+  it("uses ONLY the primary when the primary send succeeds (fallback never attempted)", async () => {
+    process.env.EMAIL_PROVIDER = "smtp";
+    process.env.EMAIL_FALLBACK_PROVIDER = "resend";
+    process.env.SMTP_HOST = "mailpit";
+    process.env.RESEND_API_KEY = "re_test_key";
+    process.env.EMAIL_FROM = "me@example.com";
+    sendMailSpy.mockResolvedValue({ messageId: "abc" });
+
+    const sendEmail = await importSend();
+    const result = await sendEmail({ to: "a@example.com", subject: "s", html: "<p>h</p>" });
+
+    expect(result).toEqual({ ok: true });
+    expect(sendMailSpy).toHaveBeenCalledTimes(1);
+    expect(resendSendSpy).not.toHaveBeenCalled();
+  });
+
+  it("falls through to the fallback when the primary FAILS, attempting them in order", async () => {
+    process.env.EMAIL_PROVIDER = "smtp";
+    process.env.EMAIL_FALLBACK_PROVIDER = "resend";
+    process.env.SMTP_HOST = "mailpit";
+    process.env.RESEND_API_KEY = "re_test_key";
+    process.env.EMAIL_FROM = "me@example.com";
+    sendMailSpy.mockRejectedValue(new Error("ECONNREFUSED"));
+    resendSendSpy.mockResolvedValue({ data: { id: "1" }, error: null });
+
+    const sendEmail = await importSend();
+    const result = await sendEmail({ to: "a@example.com", subject: "s", html: "<p>h</p>" });
+
+    expect(result).toEqual({ ok: true });
+    expect(sendMailSpy).toHaveBeenCalledTimes(1);
+    expect(resendSendSpy).toHaveBeenCalledTimes(1);
+    // Primary attempted strictly before the fallback.
+    expect(sendMailSpy.mock.invocationCallOrder[0]).toBeLessThan(
+      resendSendSpy.mock.invocationCallOrder[0],
+    );
+  });
+
+  it("falls through on a primary RATE-LIMIT (the core DLVR-02 win)", async () => {
+    process.env.EMAIL_PROVIDER = "smtp";
+    process.env.EMAIL_FALLBACK_PROVIDER = "resend";
+    process.env.SMTP_HOST = "smtp.gmail.com";
+    process.env.RESEND_API_KEY = "re_test_key";
+    process.env.EMAIL_FROM = "me@gmail.com";
+    sendMailSpy.mockRejectedValue(new Error("450 4.2.1 rate limit exceeded"));
+    resendSendSpy.mockResolvedValue({ data: { id: "1" }, error: null });
+
+    const sendEmail = await importSend();
+    const result = await sendEmail({ to: "a@example.com", subject: "s", html: "<p>h</p>" });
+
+    expect(result).toEqual({ ok: true });
+    expect(resendSendSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("gives the fallback its own EMAIL_FALLBACK_FROM sender when set (D-03 alignment)", async () => {
+    process.env.EMAIL_PROVIDER = "smtp";
+    process.env.EMAIL_FALLBACK_PROVIDER = "resend";
+    process.env.SMTP_HOST = "smtp.gmail.com";
+    process.env.RESEND_API_KEY = "re_test_key";
+    process.env.EMAIL_FROM = "me@gmail.com";
+    process.env.EMAIL_FALLBACK_FROM = "poll@relay.example";
+    sendMailSpy.mockRejectedValue(new Error("ECONNREFUSED"));
+    resendSendSpy.mockResolvedValue({ data: { id: "1" }, error: null });
+
+    const sendEmail = await importSend();
+    await sendEmail({ to: "a@example.com", subject: "s", html: "<p>h</p>" });
+
+    const call = resendSendSpy.mock.calls[0][0];
+    expect(call.from).toBe("poll@relay.example");
+  });
+
+  it("returns the LAST provider's failure and leaks no secret when BOTH fail (T-04-05)", async () => {
+    process.env.EMAIL_PROVIDER = "smtp";
+    process.env.EMAIL_FALLBACK_PROVIDER = "resend";
+    process.env.SMTP_HOST = "smtp.gmail.com";
+    process.env.SMTP_USER = "me@gmail.com";
+    process.env.SMTP_PASS = "super-secret-app-password";
+    process.env.RESEND_API_KEY = "re_super_secret_key";
+    process.env.EMAIL_FROM = "me@gmail.com";
+    sendMailSpy.mockRejectedValue(new Error("ECONNREFUSED"));
+    resendSendSpy.mockResolvedValue({ data: null, error: { message: "resend domain not verified" } });
+
+    const sendEmail = await importSend();
+    const result = await sendEmail({ to: "a@example.com", subject: "s", html: "<p>h</p>" });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      // The final (fallback) provider's error is surfaced.
+      expect(result.error).toBe("resend domain not verified");
+      // Neither the SMTP password nor the Resend key appears anywhere in the error.
+      expect(result.error).not.toContain("super-secret-app-password");
+      expect(result.error).not.toContain("re_super_secret_key");
+    }
+    expect(sendMailSpy).toHaveBeenCalledTimes(1);
+    expect(resendSendSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("de-duplicates a fallback equal to the primary (no same-provider double-send)", async () => {
+    process.env.EMAIL_PROVIDER = "smtp";
+    process.env.EMAIL_FALLBACK_PROVIDER = "smtp";
+    process.env.SMTP_HOST = "mailpit";
+    process.env.EMAIL_FROM = "me@example.com";
+    sendMailSpy.mockRejectedValue(new Error("ECONNREFUSED"));
+
+    const sendEmail = await importSend();
+    const result = await sendEmail({ to: "a@example.com", subject: "s", html: "<p>h</p>" });
+
+    expect(result.ok).toBe(false);
+    // Same provider is never tried twice.
+    expect(sendMailSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("with the fallback UNSET behaves as a single-provider send (backward-compatible)", async () => {
+    process.env.EMAIL_PROVIDER = "smtp";
+    process.env.SMTP_HOST = "mailpit";
+    process.env.EMAIL_FROM = "me@example.com";
+    sendMailSpy.mockResolvedValue({ messageId: "abc" });
+
+    const sendEmail = await importSend();
+    const result = await sendEmail({ to: "a@example.com", subject: "s", html: "<p>h</p>" });
+
+    expect(result).toEqual({ ok: true });
+    expect(sendMailSpy).toHaveBeenCalledTimes(1);
+    expect(resendSendSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("sendEmail — dispatch guard (DLVR-01)", () => {
+  it("a configured provider actually dispatches to the transport exactly once", async () => {
+    // Code-level stand-in for "email sends again" that needs no live creds:
+    // a configured chain reaches the transport, it does not merely return ok.
+    process.env.EMAIL_PROVIDER = "smtp";
+    process.env.SMTP_HOST = "mailpit";
+    process.env.SMTP_PORT = "1025";
+    process.env.EMAIL_FROM = "dev@localhost";
+    sendMailSpy.mockResolvedValue({ messageId: "abc" });
+
+    const sendEmail = await importSend();
+    const result = await sendEmail({ to: "a@example.com", subject: "s", html: "<p>h</p>" });
+
+    expect(result).toEqual({ ok: true });
+    expect(sendMailSpy).toHaveBeenCalledTimes(1);
   });
 });
 

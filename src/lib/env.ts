@@ -15,6 +15,12 @@ export const env = createEnv({
     // "smtp" | "resend" | "none" (default when unset). Selects the sendEmail()
     // transport branch; unset/invalid is treated as "none" downstream.
     EMAIL_PROVIDER: z.enum(["smtp", "resend", "none"]).optional(),
+    // DLVR-02 fallback provider — OPTIONAL. When set to a DIFFERENT provider than
+    // EMAIL_PROVIDER, sendEmail() falls through to it if the primary send fails
+    // (transport error / rate-limit). Unset reproduces today's single-provider
+    // behavior exactly. Reuses the same-kind creds (SMTP_* or RESEND_API_KEY) as
+    // the primary of the other kind — no per-provider cred duplication needed.
+    EMAIL_FALLBACK_PROVIDER: z.enum(["smtp", "resend", "none"]).optional(),
     SMTP_HOST: z.string().optional(),
     SMTP_PORT: z.coerce.number().optional(),
     SMTP_SECURE: z.coerce.boolean().optional(),
@@ -26,6 +32,10 @@ export const env = createEnv({
     // on a third-party relay (that fails DMARC alignment and spam-folders); a
     // gmail Reply-To on a relay is fine (EMAIL_REPLY_TO).
     EMAIL_FROM: z.string().optional(),
+    // DLVR-02: sender the FALLBACK provider is authorized for, when it differs
+    // from EMAIL_FROM (keeps the fallback DMARC-aligned — D-03). Defaults to
+    // EMAIL_FROM when unset. Full SPF/DKIM/DMARC alignment work is Phase 10.
+    EMAIL_FALLBACK_FROM: z.string().optional(),
     EMAIL_REPLY_TO: z.string().optional(),
     RESEND_API_KEY: z.string().optional(),
   },
@@ -37,12 +47,14 @@ export const env = createEnv({
     // Email vars mirrored 1:1 with `server` above — this file keeps zero drift
     // between the two objects; never add to one without the other.
     EMAIL_PROVIDER: process.env.EMAIL_PROVIDER,
+    EMAIL_FALLBACK_PROVIDER: process.env.EMAIL_FALLBACK_PROVIDER,
     SMTP_HOST: process.env.SMTP_HOST,
     SMTP_PORT: process.env.SMTP_PORT,
     SMTP_SECURE: process.env.SMTP_SECURE,
     SMTP_USER: process.env.SMTP_USER,
     SMTP_PASS: process.env.SMTP_PASS,
     EMAIL_FROM: process.env.EMAIL_FROM,
+    EMAIL_FALLBACK_FROM: process.env.EMAIL_FALLBACK_FROM,
     EMAIL_REPLY_TO: process.env.EMAIL_REPLY_TO,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
