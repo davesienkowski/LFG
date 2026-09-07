@@ -1,0 +1,84 @@
+# Requirements: Looking For Group (LFG) — Milestone v1.2 Reliable Delivery
+
+**Defined:** 2026-09-07
+**Builds on:** v1.1 Organizer Controls (shipped 2026-07-07, closed 2026-09-07). For v1.1 requirements see `milestones/v1.1-REQUIREMENTS.md`; for v1.0 see `milestones/v1.0-REQUIREMENTS.md`.
+**Core Value (unchanged):** A poll creator can propose candidate dates, get participants to mark their availability via an emailed link, and instantly see which day(s) work for the whole group — no participant login, no cost.
+
+**Milestone goal:** Make outbound email actually deliver to inboxes so invites, nudges, and confirmations work reliably — retiring the "accepted limitation" that outbound email carries at v1.1 close, and closing the inbox-deliverability human check open since v1.0.
+
+## Why now
+
+v1.1 shipped respondent tracking (RESP-01) and the one-click nudge (RESP-02), but with **outbound email delivery a known and accepted limitation** — the nudge/invite actions degrade to copy-link. Those features are only half-useful until email actually sends: the organizer can see who hasn't responded but cannot reliably chase them. This milestone unlocks value already coded, adds no new poll data model, and closes the oldest open verification gap (Gmail SMTP inbox/spam landing was never human-verified — a v1.0 ⚠️ Revisit decision).
+
+## User Stories
+
+- **As an organizer,** I want the invite and nudge emails to actually reach my participants' inboxes, so the link I send them works without me copy-pasting it by hand.
+- **As an organizer,** I want email to keep working if one provider has a bad day, so a single outage doesn't silently drop every message.
+- **As an organizer,** I want to know when a message failed to send, so a silent bounce doesn't leave me thinking someone was contacted when they weren't.
+
+## v1.2 Requirements
+
+Each maps to a roadmap phase (filled in by the roadmapper).
+
+### Delivery Restoration
+
+- [ ] **DLVR-01**: Outbound email sends again in production through the existing env-switched `sendEmail()` seam — invitations (MAIL-01..03), the RESP-02 nudge, and the finalization/confirmation emails (FNL-03) all actually dispatch. The zero-config / no-email-configured path still degrades gracefully (copy-link fallback, no error) exactly as today (D-02 preserved).
+- [ ] **DLVR-02**: A fallback email provider (e.g. SMTP2GO) sits behind the same `sendEmail()` seam, so if the primary provider fails to send, delivery falls back to the secondary rather than to nothing — configured by env, no new email code path per feature.
+
+### Deliverability & Visibility
+
+- [ ] **DLVR-03**: Email lands in the inbox, not spam — sender identity is SPF/DKIM/DMARC-aligned for the configured provider(s), and a real production send is **human-verified** to arrive in a real inbox (not spam) with a working link. This closes the v1.0 open human check ("a real prod invite/nudge landing in the owner's inbox, not spam").
+- [ ] **DLVR-04**: When a send fails (hard bounce, auth/config error, both providers down), the failure is surfaced to the organizer (e.g. a per-recipient failed/needs-retry indicator on the admin view) rather than failing silently — so best-effort email never leaves the organizer falsely believing someone was contacted.
+
+## Future Requirements
+
+Deferred to a later milestone. Tracked, not in this roadmap.
+
+### UX & Reach
+
+- **MOBL-01**: Dedicated mobile-optimized results grid (sticky name column, horizontal scroll) — partly addressed by the Phase 5 responsive redesign; candidate for the next milestone after delivery is trustworthy.
+- **SLOT-01**: Multiple candidate time slots on the same day (e.g. Sat 2pm OR Sat 7pm) — data-model change to poll creation; a deliberate v2.0-class step.
+- **CMNT-01**: Participants can post comments/notes on the poll — communication feature; scope-creep risk (Zawinski). Revisit only if the group actually asks.
+
+## Out of Scope
+
+Explicitly excluded (carried forward from v1.0/v1.1; reasons still valid).
+
+| Feature | Reason |
+|---------|--------|
+| Automatic periodic reminders (scheduled jobs / cron) | Needs background cron/queue; Vercel Hobby cron is too limited. The nudge stays a **manual** one-click action. |
+| A custom sending domain / paid email plan | The $0 constraint holds — deliverability must be achieved on free-tier SMTP/providers (self-aligned SPF/DKIM/DMARC), not by buying a domain or plan. If free-tier deliverability proves impossible, that is a finding to raise, not a licence to spend. |
+| Full transactional-email analytics (open/click tracking) | Beyond a small private group's needs; DLVR-04 covers only send success/failure, not engagement. |
+| Participant accounts / login | Access stays link-based; unchanged from v1.0. |
+| Inbound email / reply handling | One-way outbound only; replies are out of scope. |
+
+## Traceability
+
+Which phases cover which requirements. **Populated by the roadmapper.**
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| DLVR-01 | Phase 9 | Pending |
+| DLVR-02 | Phase 9 | Pending |
+| DLVR-03 | Phase 10 | Pending |
+| DLVR-04 | Phase 10 | Pending |
+
+**Coverage:**
+
+- v1.2 requirements: 4 total
+- Mapped to phases: 4 (100%)
+- Unmapped: 0
+
+## Definition of Done
+
+- All v1.2 requirements above are implemented, verified, and committed.
+- Outbound email sends in production through the `sendEmail()` seam for invites, nudges, and confirmations; the no-email-configured path still degrades gracefully (D-02 preserved).
+- A fallback provider takes over when the primary fails, verified by simulating a primary-send failure.
+- A real production send is human-verified to land in a real inbox (not spam) with a working link — the v1.0/v1.1 open human check is closed, not re-deferred.
+- Send failures are visible to the organizer, never silent.
+- Any schema changes are additive and nullable (backward-compatible, prod-safe migration) — consistent with the v1.0/v1.1 pattern.
+- The app still runs end-to-end locally AND on the Vercel free-tier deploy, at $0, with no regression to the v1.0/v1.1 happy path.
+
+---
+*Requirements defined: 2026-09-07 for milestone v1.2 Reliable Delivery*
+*Traceability populated by roadmapper: 2026-09-07 (Phases 9-10)*

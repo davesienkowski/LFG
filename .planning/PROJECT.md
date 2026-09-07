@@ -14,9 +14,15 @@ A free, self-hostable clone of Doodle.com's "Group Poll" feature, focused on the
 
 A poll creator can propose candidate dates, get participants to mark their availability via an emailed link, and instantly see which day(s) work for the whole group — with no login required for participants and no cost to run.
 
-## Current Milestone: none active
+## Current Milestone: v1.2 Reliable Delivery
 
-**v1.1 Organizer Controls closed 2026-09-07.** No milestone is in progress. Next milestone candidates live in the Future Requirements of `milestones/v1.1-REQUIREMENTS.md` (CMNT-01 comments, MOBL-01 mobile grid, SLOT-01 per-day multi-slot). Re-enabling outbound email delivery is a likely near-term item (currently an accepted limitation).
+**Goal:** Make outbound email actually deliver to inboxes so invites, nudges, and confirmations work reliably — retiring the "accepted limitation" carried at v1.1 close and closing the inbox-deliverability human check open since v1.0.
+
+**Target features:**
+- Outbound email sends again in prod through the existing env-switched `sendEmail()` seam (invites, nudge, confirmations) — graceful no-email fallback preserved
+- Fallback email provider behind the same seam (one provider failing degrades to a backup, not to nothing)
+- SPF/DKIM/DMARC-aligned sender identity + a human-verified real-inbox (not-spam) prod send
+- Send failures surfaced to the organizer, never silent
 
 ## Requirements
 
@@ -43,9 +49,12 @@ A poll creator can propose candidate dates, get participants to mark their avail
 
 ### Active
 
-<!-- No milestone in progress. Next candidates: re-enable outbound email; v2 deferred set (CMNT-01 comments, MOBL-01 mobile grid, SLOT-01 per-day multi-slot) — see milestones/v1.1-REQUIREMENTS.md Future Requirements. -->
+<!-- Current scope (milestone v1.2 Reliable Delivery). Deferred set (MOBL-01 mobile grid, SLOT-01 per-day multi-slot, CMNT-01 comments) stays in Future Requirements — see REQUIREMENTS.md. -->
 
-- _(none — awaiting next milestone definition)_
+- [ ] Outbound email sends again in prod through the `sendEmail()` seam (invites, nudge, confirmations) — *DLVR-01 (v1.2)*
+- [ ] Fallback email provider behind the same seam — *DLVR-02 (v1.2)*
+- [ ] SPF/DKIM/DMARC-aligned deliverability + human-verified real-inbox prod send — *DLVR-03 (v1.2; closes the v1.0 open inbox check)*
+- [ ] Send failures surfaced to the organizer, never silent — *DLVR-04 (v1.2)*
 
 ### Out of Scope
 
@@ -112,4 +121,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-07 — closed milestone v1.1 Organizer Controls*
+*Last updated: 2026-09-07 — started milestone v1.2 Reliable Delivery*

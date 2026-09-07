@@ -1,20 +1,20 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: Organizer Controls
-current_phase: 8
-current_phase_name: Scheduling Controls
-status: milestone_complete
-stopped_at: Milestone v1.1 closed 2026-09-07 — both deferred human checks approved; ROADMAP/REQUIREMENTS + phases 7-8 archived to milestones/v1.1-*; PROJECT.md + MILESTONES.md updated. No milestone in progress.
+milestone: v1.2
+milestone_name: Reliable Delivery
+current_phase: 9
+current_phase_name: Delivery Restoration & Fallback
+status: ready_to_plan
+stopped_at: v1.2 Reliable Delivery roadmap created — ROADMAP.md + REQUIREMENTS.md written (Phases 9-10, DLVR-01..04, 4/4 mapped); PROJECT.md milestone entry + Active reqs updated. STATE advanced to v1.2 Phase 9 ready-to-plan. Planning docs committed locally, unpushed (Dave reviews & pushes).
 last_updated: "2026-09-07T00:00:00.000Z"
 last_activity: 2026-09-07
-last_activity_desc: v1.1 milestone closed (both human checks approved)
+last_activity_desc: v1.2 roadmap created (Phases 9-10)
 progress:
   total_phases: 2
-  completed_phases: 2
-  total_plans: 8
-  completed_plans: 8
-  percent: 100
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -24,15 +24,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-07 after v1.0 milestone)
 
 **Core value:** A poll creator can propose candidate dates, get participants to mark their availability via an emailed link, and instantly see which day(s) work for the whole group — no participant login, no cost.
-**Current focus:** none — v1.1 milestone closed 2026-09-07; awaiting next milestone definition
+**Current focus:** v1.2 Reliable Delivery — Phase 9 (Delivery Restoration & Fallback), ready to plan
 
 ## Current Position
 
-Milestone v1.1 Organizer Controls — **CLOSED 2026-09-07**. No milestone in progress.
-All 5 requirements (RESP-01/02/03, DEAD-01, ORG-01) implemented, verified (321 tests green), migrated to prod (0005/0006/0007) and deployed. Both deferred human checks approved by the operator on 2026-09-07. Archived: ROADMAP/REQUIREMENTS → milestones/v1.1-*, phases 7-8 → milestones/v1.1-phases/. PROJECT.md + MILESTONES.md updated.
-Last activity: 2026-09-07 — v1.1 milestone closed
+Milestone v1.2 Reliable Delivery — **roadmap created 2026-09-07, ready to plan Phase 9.**
+ROADMAP.md + REQUIREMENTS.md written: Phases 9 (Delivery Restoration & Fallback) and 10 (Deliverability & Visibility); 4 requirements DLVR-01..04, 4/4 mapped to phases. PROJECT.md milestone entry + Active requirements updated. Planning docs committed locally and **unpushed** — Dave reviews and pushes.
+Prior: v1.1 Organizer Controls CLOSED 2026-09-07 (2/2 phases, 5/5 reqs, 321 tests green, prod-deployed, both human checks approved; archived to milestones/v1.1-*).
+Last activity: 2026-09-07 — v1.2 roadmap created
 
-Progress: [██████████] v1.1 100% — 2/2 phases shipped to prod and human-verified; milestone archived.
+Progress: [░░░░░░░░░░] v1.2 0% — 2 phases defined (9-10), 0 plans executed. Next: `/gsd-plan-phase 9`.
 
 ## Deferred Verification — RESOLVED
 
@@ -142,11 +143,13 @@ Items acknowledged and deferred at v1.0 milestone close on 2026-07-07 (override_
 
 ## Session Continuity
 
-Last session: 2026-09-07 — v1.1 milestone closed (both human checks approved)
-Stopped at: v1.1 fully archived; no milestone in progress
+Last session: 2026-09-07 — v1.2 Reliable Delivery roadmap created (Phases 9-10)
+Stopped at: ROADMAP.md + REQUIREMENTS.md written (DLVR-01..04, 4/4 mapped); PROJECT.md milestone entry + Active reqs updated; STATE advanced to v1.2 Phase 9 ready-to-plan. Planning docs committed locally, unpushed.
 Resume file: None
 
 ## Operator Next Steps
 
-- **Define the next milestone** when ready (`/gsd-*` milestone/roadmap flow). Likely first candidate: re-enable outbound email delivery (currently an accepted limitation). Other deferred candidates: CMNT-01 (comments), MOBL-01 (mobile grid), SLOT-01 (per-day multi-slot).
-- Optional housekeeping: tag the v1.1 release (only `v1.0` is tagged today); remove the stray `.planning/config.json.bak-premempalace` backup if no longer needed.
+- **Review + push** the v1.2 roadmap commit (unpushed by request). Then plan Phase 9 with `/gsd-plan-phase 9` (Delivery Restoration & Fallback — DLVR-01 → DLVR-02).
+- Phase 9 planning should first **diagnose why outbound email is currently off** (accepted limitation) before choosing the restore path; reuse the existing env-switched `sendEmail()` seam — no new per-feature email code path.
+- Per project hook: run the edge-probe family after SPEC.md/PLAN.md and close findings before execution.
+- Note: v1.1 is tagged (`v1.1` on remote); `v1.2` tag will follow at that milestone's close.
