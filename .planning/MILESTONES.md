@@ -37,6 +37,7 @@
 **Phases completed:** 6 phases (1-6), 20 plans
 **Timeline:** 2026-06-30 → 2026-07-07 (8 days)
 **Git range:** 195 commits (63 `feat`), first `5d7c602` → tag `v1.0`
+**Tag note (why v1.0 is the outlier — BY DESIGN, not an oversight):** the annotated `v1.0` tag points at `07151c4` *"chore: remove REQUIREMENTS.md for v1.0 milestone"*. Unlike `v1.1` (→ `8f8d02b`) and `v1.2` (→ `a785304`), there is **no** `docs: close milestone v1.0` commit — the close-milestone-commit convention began with **v1.1**, after v1.0 had already shipped. So v1.0 predates the convention; its tag is intentionally left pointing where it is. Do NOT "fix" it to match v1.1/v1.2 — moving a published annotated tag would be destructive and would apply a rule that did not exist when v1.0 shipped. (Verified 2026-09-07: v1.0→`07151c4`; v1.1→`8f8d02b` and v1.2→`a785304` are both `docs: close milestone` commits; no `close milestone v1.0` commit exists in history.)
 **Codebase:** ~13.5K LOC TypeScript/TSX (app + tests), 270 tests green
 **Closeout:** override_closeout — 4 items acknowledged and deferred (see STATE.md Deferred Items); all are human visual/AT sign-offs or an obsolete seed, no shipped-code gaps.
 **Requirements:** 30/30 v1 requirements complete and verified.
